@@ -1,0 +1,14 @@
+{
+  "name": "ctx-kit",
+  "description": "Marketplace for ctx-kit — a session lifecycle toolkit for Claude Code: state lives on disk, sessions are disposable.",
+  "owner": {
+    "name": "ctx-kit contributors"
+  },
+  "plugins": [
+    {
+      "name": "ctx-kit",
+      "source": "./",
+      "description": "Session lifecycle toolkit for Claude Code: state lives on disk, sessions are disposable. Close out fat sessions into takeover-ready case files; a fresh session (or a different agent) picks up from the file alone."
+    }
+  ]
+}

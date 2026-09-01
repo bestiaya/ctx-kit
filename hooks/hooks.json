@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"会话即将压缩，未落盘状态将有损\" with title \"Claude auto-compact\"' 2>/dev/null || echo '[PreCompact] 会话即将压缩，未落盘状态将有损——先落盘再说 / Session about to compact; un-persisted state will be lossy. Write it to disk first.' >&2"
+          }
+        ]
+      }
+    ]
+  }
+}
