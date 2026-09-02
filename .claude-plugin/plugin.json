@@ -7,6 +7,8 @@
     "name": "ctx-kit contributors"
   },
   "license": "MIT",
+  "homepage": "https://github.com/demontunes/ctx-kit",
+  "repository": "https://github.com/demontunes/ctx-kit",
   "keywords": [
     "context",
     "session",
