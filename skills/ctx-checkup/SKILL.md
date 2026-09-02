@@ -39,15 +39,33 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cache-audit.py" --all
 - **配不上就留着 `(待回填)` 并说明**。宁可空着，也不许填一个"看起来像"的路径——`ls -t` 自指实测会指到两周前的旧文件。
 
 ## 4. 案尺寸检查
-逐案量"头行+A~D"字符数（E 起不计）：
+口径 = **接手时的实际加载量**（头行 + A~D + E 的活跃行与最新判定 + I），不是"文件多大"，也不是旧口径的"量到 E 为止"。逐案跑 `ctx-takeover` 第 2 节那段提取命令（`F=` 换成各案路径）、`| tail -1` 只取末行那个字符数——**别把提取出来的正文读进上下文**，周检只要数；决策附录 / 实验档案 / TASKBOARD 跳过。
+
+判据（2026-08-24 负责人放宽，原 7,000）：每案 **≤10,000 为绿**，**>15,000 必瘦**。超线逐案报数并点名持笔会话瘦身：C 表旧行上交线级决策档案 / E 的已交货老行滚动归档（见 `ctx-handoff`）/ D 清已了项 / F 编年压缩；历史细节留转录与档案，不留案。
+
+**E 行长度检查（只报不改）**：判定与"对方案的影响"两格各 ≤200 字。全案库跑一遍，超长行按字数倒序列出（案文件 / 行号 / 哪一格 / 字数），报给该案持笔会话自己瘦——**周检不改别人的案**：
 
 ```bash
-D=_ops/CASES; [ -d "$D" ] || D=cases
-for f in "$D"/*.md; do case "$f" in *决策附录*|*决策档案*|*TASKBOARD*) continue;; esac
-  printf "%6d  %s\n" "$(awk '/^## E /{exit}{print}' "$f" | wc -m)" "$f"; done
+D=_ops/CASES; [ -d "$D" ] || D=cases; python3 - "$D"/*.md <<'PY'
+import sys,re
+w=[]
+for p in sys.argv[1:]:
+    L=open(p,encoding='utf-8').read().split('\n')
+    P=[i for i,l in enumerate(L) if re.match(r'^##\s+[A-Z]\b',l)]+[len(L)]
+    for n,i in enumerate(P[:-1]):
+        if L[i].split()[1]!='E': continue
+        R=[(k+1,l) for k,l in enumerate(L[i:P[n+1]],i) if l.lstrip().startswith('|')]
+        h=[c.strip() for c in R[0][1].strip().strip('|').split('|')] if R else []
+        C=[x for x,c in enumerate(h) if '判定' in c or '影响' in c]
+        for ln,l in R[2:]:
+            c=[x.strip() for x in l.strip().strip('|').split('|')]
+            w+=[(len(c[x]),f'{p}:{ln} 「{h[x]}」{len(c[x])} 字') for x in C if x<len(c) and len(c[x])>200]
+for n,s in sorted(w,reverse=True): print(s)
+print(f'--- 超 200 字的格 {len(w)} 处（只报不改，请写的人自己瘦）---')
+PY
 ```
 
-判据（2026-08-24 负责人放宽，原 7,000）：每案 **≤10,000 为绿**，**>15,000 必瘦**。超线逐案报数并点名持笔会话瘦身：C 表旧行上交线级决策档案 / D 清已了项 / F 编年压缩；历史细节留转录与档案，不留案。
+**拆案提示（只提示、不判负）**：某案 E 行 >30，或近 30 天新增的 C 决议行 >50，就提一句"考虑拆案"。**这两个阈值是经验值、尚未验证**，只当讨论引子，不作判据、不进达成/判负。
 
 ## 5. 退役标记补扫
 收口时自打标的会话前缀是 `✕`。**崩掉或被弃置的会话不会自己打标**，本步补：
