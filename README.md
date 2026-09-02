@@ -62,7 +62,7 @@ It is **not** a cache-tuning tool (in-session hit rate is already >99%, nothing 
 Three steps — two commands, one paste:
 
 ```bash
-claude plugin marketplace add demontunes/ctx-kit
+claude plugin marketplace add bestiaya/ctx-kit
 claude plugin install ctx-kit@ctx-kit
 ```
 

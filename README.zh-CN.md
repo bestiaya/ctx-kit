@@ -84,7 +84,7 @@ ctx-kit 想留下的不是五个 skill，是一套**轻项目管理**：一案�
 装进去的是 5 个 skill、1 段 CLAUDE.md 条文、1 个提醒 hook、1 个查账脚本、1 个 digest 子代理。三步——两条命令加一次粘贴：
 
 ```bash
-claude plugin marketplace add demontunes/ctx-kit
+claude plugin marketplace add bestiaya/ctx-kit
 claude plugin install ctx-kit@ctx-kit
 ```
 
