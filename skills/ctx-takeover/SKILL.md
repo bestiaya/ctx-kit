@@ -1,26 +1,28 @@
 ---
 name: ctx-takeover
-description: 接手在案。开新会话继任时用：用户说"接手 C-07""继续那个案""你来接这个案""接着上个会话的活"，或显式 /ctx-takeover C-NN。只读案文件、禁读旧会话转录，署名后四层复述(总目标→本案→进展→下一步)候抽查。 Take over a case in a fresh session — use on "take over C-07", "continue that case", or /ctx-takeover C-NN; reads only the case file (old transcripts off-limits), signs as pen-holder, recites goal, case, progress and next step for your spot-check.
+description: Take over a case in a fresh session — use on "take over C-07", "continue that case", or /ctx-takeover C-NN; reads only the case file (old transcripts off-limits), signs as pen-holder, recites goal, case, progress and next step for your spot-check. Also triggers on Chinese — 开新会话继任时用：用户说"接手 C-07""继续那个案""你来接这个案""接着上个会话的活"，或显式 /ctx-takeover C-NN。
 ---
 
-# 接手：只读案 → 署名 → 复述
+# Takeover: read the case only → sign → recite
 
-参数 = 案号（如 `C-07`）或案文件路径。
+> **Speak in the user's language, and write the case file / board / inbox rows in the user's language.** Status words and section letters are fixed bilingual, so a case written in either language must be readable by this skill and by the loader below. Section letters A~I never change. Status words used here: **awaiting takeover** (候接手) / **in discussion** (讨论中) / **awaiting decision** (候拍) / **closing (do not take)** (收口中(勿接)) / **closed** (已收口) / **running** (在跑) / **awaiting acceptance** (待验收) / **queued** (排队) / **to dispatch** (待派) / **delivered** (已交货) / **done** (已完); header-line fields `status` (状态) / `pen-holder` (持笔) / `updated` (更新), and `predecessor retired` (前任已退役); roles `lead` (导师) / `exec` (执行).
 
-## 1. 定位
-给了路径就用路径；给了案号就在**当前项目根内**的案库（项目根=有 `.git` 取 git 根、否则 cwd；库位优先 `_ops/CASES/`，否则 `cases/`）里 glob `<案号>*.md`——**不去别的项目的案库找**。
-- 命中 0 个：列出目录里所有案请用户指认，**不要猜**。
-- 命中多个：列出候选请用户选。
+The argument = a case number (`C-07`, say) or a case file path.
 
-## 2. 只读案文件，而且只读该读的那几节
-**禁读任何旧会话转录（jsonl）**，包括 G 节列出的路径——G 是"仅备查"，只有当前问题明确需要取证时才定点取一次。
+## 1. Locate
+Given a path, use the path; given a case number, glob `<case number>*.md` in the case library **inside the current project root** (project root = the git root if there is a `.git`, otherwise cwd; the library is `_ops/CASES/` for preference, otherwise `cases/`) — **never go looking in another project's case library**.
+- 0 hits: list every case in the directory and ask the user to point at one, **do not guess**.
+- more than one hit: list the candidates and ask the user to choose.
 
-**读法：头行 + A~D 全文 + 收件位（§I，或本线线件里的同名节）全文；E 只取表头 + 状态为 在跑 / 待验收 / 排队 / 待派 的行 + 最近一条已交货行的判定；F / G / H 只看节名与行数。禁止 `cat` 整个案文件**——E 台账不限长、老行又常写成段落，整读一个跑久了的案，绝大部分字符花在没人会看的老 E 行上。
+## 2. Read the case file only, and only the sections you should
+**Never read any old session transcript (jsonl)**, including the paths listed in section G — G is "reference only", and you fetch from it once, on target, only when the question in front of you plainly needs the evidence.
 
-填上路径整段运行；它按表头文字定位"状态 / 判定"列（各案列序不同，写死列号必错），末尾报本次加载字符数：
+**How to read it: the header line + all of A~D + all of the inbox (§I, or the section of the same name in this track's track file); from E take only the table header + the rows whose status is running / awaiting acceptance / queued / to dispatch + the verdict of the most recent delivered row; for F / G / H look only at the section names and the line counts. Never `cat` the whole case file** — the E ledger has no length limit and old rows are often written as paragraphs, so reading a long-running case in full spends the great majority of its characters on old E rows nobody will look at.
+
+Fill in the path and run the whole block; it locates the "status / verdict" columns by their header text (the column order differs from case to case, so a hard-coded column number must be wrong) and reports the number of characters loaded at the end:
 
 ```bash
-F=<案文件路径>; python3 - "$F" <<'PY'
+F=<case file path>; python3 - "$F" <<'PY'
 import sys,re
 L=open(sys.argv[1],encoding='utf-8').read().split('\n')
 P=[i for i,l in enumerate(L) if re.match(r'^##\s+[A-Z]\b',l)]+[len(L)]
@@ -31,58 +33,59 @@ for k in 'ABCD':
     if k in S: o+=L[S[k][0]:S[k][1]]
 if 'E' in S:
     a,b=S['E']; R=[l for l in L[a:b] if l.lstrip().startswith('|')]; D=R[2:]
-    h=z(R[0]) if R else []; q=lambda w:next((i for i,x in enumerate(h) if w in x),-1)
-    j,v=q('状态'),q('判定'); g=lambda r,i:(z(r)+['']*9)[i]
-    m=lambda p:[r for r in D if re.search(p,g(r,j))]
-    A=m('在跑|待验收|排队|待派'); F=m('已交货|已完|^完|达成')
+    h=z(R[0]) if R else []; q=lambda w:next((i for i,x in enumerate(h) if re.search(w,x,re.I)),-1)
+    j,v=q('状态|status'),q('判定|verdict'); g=lambda r,i:(z(r)+['']*9)[i]
+    m=lambda p:[r for r in D if re.search(p,g(r,j),re.I)]
+    A=m('在跑|待验收|排队|待派|running|awaiting acceptance|queued|to dispatch')
+    F=m('已交货|已完|^完|达成|delivered|done')
     o+=[L[a],'']+R[:2]+['|'+'|'.join(c[:200] for c in z(r))+'|' for r in A]
     if F:
         y=lambda r:[(1,int(t)) if t.isdigit() else (0,t) for t in re.findall(r'\d+|[a-z]+',g(r,1 if j==0 else 0))]
-        N=max(F,key=y) if any(y(r) for r in F) else F[-1]  # 按 ID 号取最新(E-10b-2 < E-11),不依赖表序:新在上/旧在上都对
-        o+=[f'最新已交货 {g(N,1 if j==0 else 0)[:80]} ｜判定 {(g(N,v) if v>=0 else "见案内该行")[:200]}']
-    if not A+F: o+=D[-3:]+['<!-- 状态列没匹配上(缺列或用词不在词表),留末 3 行,人工扫 E -->']
-    o+=[f'<!-- E {len(D)} 行:活跃 {len(A)} 行全取 + 最新判定 1;余行与超 200 字部分留在案里,定点取 -->']
+        N=max(F,key=y) if any(y(r) for r in F) else F[-1]  # newest by ID (E-10b-2 < E-11), never by table order: newest-first and oldest-first both work
+        o+=[f'latest delivered {g(N,1 if j==0 else 0)[:80]} | verdict {(g(N,v) if v>=0 else "see that row in the case")[:200]}']
+    if not A+F: o+=D[-3:]+['<!-- status column did not match (column missing, or wording outside the vocabulary); last 3 rows kept, scan E by hand -->']
+    o+=[f'<!-- E {len(D)} rows: all {len(A)} active rows + 1 latest verdict; the rest, and anything past 200 chars, stay in the case - fetch on target -->']
 for k in 'FGH':
-    if k in S: o+=['',f'{L[S[k][0]]}  ←未加载({S[k][1]-S[k][0]-1} 行),定点取']
+    if k in S: o+=['',f'{L[S[k][0]]}  <- not loaded ({S[k][1]-S[k][0]-1} lines), fetch on target']
 if 'I' in S: o+=['']+L[S['I'][0]:S['I'][1]]
-t='\n'.join(o);print(t);print(f'\n=== 本次加载字符数: {len(t)} ===')
+t='\n'.join(o);print(t);print(f'\n=== characters loaded this time: {len(t)} ===')
 PY
 ```
 
-**收件位必读，不许略过**——跨线来话与前任留给继任的待办都在那儿，处置栏空着的就是等你办的。漏读实测栽过一次：前任写进 6 条（含 3 条 ★），继任按旧条文没读收件位，当场全丢。**别为"更全面"去通读交货件**——要用时再定点读；读转录既贵又会把已被否决的死分支拖回来。
+**The inbox must be read, never skipped** — cross-track messages and the to-dos your predecessor left you both live there, and anything with an empty disposition cell is waiting on you. Skipping it has gone wrong once in practice: the predecessor wrote in 6 items (3 of them starred), the successor followed an older rule and never read the inbox, and the lot was lost on the spot. **Do not read deliverables end to end for the sake of being "more thorough"** — fetch them on target when you need them; reading transcripts is both expensive and liable to drag back dead branches that were already rejected.
 
-**尺寸线**：末行那个字符数 = 入场税基，**≤10,000 为绿、>15,000 必瘦**（瘦法见 ctx-handoff）。
+**Size limit**: the character count on the last line = the entry tax base, **≤10,000 is green, >15,000 must be slimmed** (how to slim: see ctx-handoff).
 
-## 3. 署名（交接完成的唯一信号）
-- 头行状态若是**『已收口』**（关案终态）：**不署名、不复述**，回复"该案已关；要重开请说'重开 C-NN'"。**重开** = 头行状态改回 `候接手`、F 编年志记一行"重开：<为什么重开>"，然后照下面走正常接手。
-- 头行状态若是**『收口中(勿接)』**：不署名、不复述，回复"该案正在收口，稍候再接"。仅当其『更新』时间戳过旧（>1 天）或用户确认收口会话已死，才可强接——强接须声明"接的是半收口案"，复述前先对 B~H 查漏一遍。
-- 先看头行"持笔"栏：**已有名字且不是本会话 → 先警告**："该案持笔为 X，可能有另一会话正在接手，双接会撕账"，用户确认后再改（状态已是"候接手"且持笔标"前任已退役"的不算双接，直接署名）。
-- 标题：现标题若是负责人手设的（非系统自动生成的摘要形）→ **沿用现名**并以它署名；否则 `set_session_title` 设为 **`NN-<案号紧凑形>-这一任在做啥[-线简称]-角色`**（例 `07-C07-异步还是流式定型-导师`）：**NN 在本项目内自增、兼做时间序**——侧栏按号排就是本项目的工作流水，同时天然防同案重名，不必另设"第几任"（会话清单是全部项目混排的，先按工作目录筛出本项目的再取最大 +1；取不到则省略，撞号=后开者改）；**案号紧凑形**=案号去横杠（`C-03`→`C03`），让会话一眼归案，**散活无案号、中间段空着**；**第三段写这一任在做的活、不写案名**——案号已代表案，写案名是重复，且一个案跨多任、每任做的不是同一件事；线简称只在任务名看不出线时才写，用线文件的短名不用代号；角色=`导师`|`执行`；**项目前缀默认不加**，跨项目真撞号才加短前缀（`ck-04-C07-…`）。工具不存在或调用失败时跳过，并在回复里说明"UI 标题未同步"，持笔照改。
-- 头行"持笔"改成这个名字（能拿到 UUID 就写 `名字 @UUID前8`），"更新"改成今天。
-- **线主槽**：本案所属线若有线件，看它的"线主"栏——**空着或标着已退役就顺手签上自己**（跨线投递的第一查查的就是这个槽，挂着死名字等于把路由架空）；**槽里已有别的活会话就不动**，一线一主同一案一笔。
+## 3. Sign (the only signal that the handover is complete)
+- If the header-line status is **『closed』** (the end state of a closed case): **do not sign, do not recite**; reply "this case is closed; to reopen it say 'reopen C-NN'". **Reopening** = set the header-line status back to `awaiting takeover`, add one line to the F chronicle — "reopened: <why>" — then take over normally as below.
+- If the header-line status is **『closing (do not take)』**: do not sign, do not recite; reply "this case is being closed out, take it later". Only when its 『updated』 timestamp is stale (>1 day), or the user confirms the closing session is dead, may you force the takeover — a forced takeover must state "what I am taking is a half-closed case", and must sweep B~H for gaps before reciting.
+- Look at the header line's "pen-holder" first: **a name already there that is not this session → warn before anything else**: "the pen-holder of this case is X, another session may be taking it over, and two takers will tear the books apart"; change it only once the user confirms (a status already at "awaiting takeover" with the pen-holder marked "predecessor retired" is not a double takeover — sign straight away).
+- Title: if the current title was set by hand by the owner (rather than the system's auto-generated summary form) → **keep the current name** and sign with it; otherwise `set_session_title` to **`NN-<compact case number>-what-this-stint-does[-track]-role`** (e.g. `07-C07-async-vs-streaming-decision-lead`): **NN increments inside this project and doubles as the time order** — sorting the sidebar by number gives this project's workflow in sequence, and it also prevents same-case name clashes for free, so there is no need for a separate "nth successor" (the session list is every project mixed together, so filter it down to this project by working directory first, then take the largest and add 1; if you cannot get it, leave it out — on a collision the later session renames); **compact case number** = the case number with the hyphen removed (`C-07`→`C07`), so a session is visibly filed to its case, and **a one-off has no case number, so the middle segment stays empty**; **the third segment says what this stint is doing, not the case name** — the case number already stands for the case, so the case name is a repeat, and one case spans several stints that are not doing the same thing; the track short name is written only when the job name does not reveal the track, and it is the short name of the track file, not a code; role = `lead` | `exec`; **no project prefix by default**, add a short one only on a genuine cross-project collision (`ck-04-C07-…`). If the tool does not exist or the call fails, skip it, say "the UI title is not in sync" in the reply, and change the pen-holder anyway.
+- Change the header line's "pen-holder" to that name (write `name @first-8-of-UUID` if you can get the UUID), and "updated" to today.
+- **The track-owner slot**: if the track this case belongs to has a track file, look at its "track owner" cell — **if it is empty or marked retired, sign yourself in while you are there** (the first thing a cross-track delivery checks is this slot, and a dead name in it hollows out the routing); **if a different live session already holds the slot, leave it alone** — one owner per track, one pen per case.
 
-## 4. 四章复述（证明接住了，且目标链在手）
+## 4. Recite in four chapters (proof that you caught it, and that the goal chain is in hand)
 
-**四章一层一节、每章三五行**，判据 = 当事人一眼从记忆里找回来。
+**Four chapters, one layer to a section, three to five lines each**; the criterion = the person involved recognises it from memory at a glance.
 
-1. **总目标与本案位置**：产品总目标一句 / 挂哪个节点与线目标一句 / 上游牵引——读总览件（任务板头部）；无总览件则用案 A 节 R 栏，并提示补建。
-2. **本案目标与路线**：立案初衷 → 现在在答什么 / 负责人已拍方向 / **路线步骤表**：步 · 干什么 · 对应目标 · 状态。
-3. **当前进展**：台账「**在跑 / 待验收**」行**先查盘上实况再报**——发车记录、进程、产物时间戳（按前任收口时留在 E 行 / H 节的查活命令与产物落点跑一遍）；**禁照抄案上时点状态**。实证栽过一次：前任 20:38 发车六个会话、20:51 退役，案面如实写"在跑"；继任次日 09:20 照案面报"在跑、零读数"，负责人追问才查盘——六个当晚就全跑完了，已完 12 小时。
-   **最近实验一张表**：回答什么问题 / 考法 / 验证指标与决策规则 / 预算与闸 / 状态与结果读数。
-   再加**台账读数一行**（E 活跃行几条、各什么状态 + 最近一条已交货行的判定或 M 指标现值；有数报数，无数明说）+ **收件位一行**。
-4. **下一步**：**有序表**——序 · 做什么 · 对应目标 · 候谁；候拍 / 挂起项单列。
+1. **The top-level goal and where this case sits**: the product top-level goal in one sentence / the pain in the scenario and the assets it needs / which milestone it hangs off, and the track goal in one sentence / what pulls it from upstream — read the overview (the board header); with no overview, use the R field of the case's section A and suggest building one. **The last sentence must answer this: which link of the top-level goal the work in this case is pushing forward right now, and whether it is still aligned.**
+2. **This case's goal and route**: why it was opened → what it is answering now / the directions the owner has already decided / a **route step table**: step · what it does · which goal it serves · status.
+3. **Current progress**: for the ledger's 「**running / awaiting acceptance**」 rows, **check the real state on the ground before reporting** — dispatch records, processes, artifact timestamps (run the liveness command and artifact locations your predecessor left on the E row / in section H at close-out); **never copy the point-in-time status straight off the case file**. It has gone wrong once in practice: the predecessor dispatched six sessions at 20:38 and retired at 20:51, and the case honestly said "running"; the successor reported "running, no readings" off the case file at 09:20 the next morning, and only checked when the owner pressed — all six had finished that same night, twelve hours earlier.
+   **One table for the most recent experiment**: what question it answers / how it is tested / what counts as a pass / expected vs actual and the verdict / **conclusion: what it means for the goal** ("budget and gate" may stay as an optional column).
+   Then a **one-line ledger reading** (how many active E rows and in what statuses + the verdict of the most recent delivered row, or the current value of the M metric; report the number where there is one, say so plainly where there is none) + **one line for the inbox**.
+4. **Next step (derived from the conclusion)**: an **ordered table** — order · what to do · **which conclusion it rests on** · which goal it serves · who it waits on; items awaiting decision or on hold are listed separately.
 
-不复述全案，**不在这一步提改进建议**。
+Do not recite the whole case, and **do not raise improvement suggestions at this step**.
 
-**收件位若有未处置行**：第 3 章那行必须报出——待处置 N 条、最要紧的一条是什么。有就必须报，没有就说"收件位无待处置"。
+**If the inbox has undisposed rows**: that line in chapter 3 must report them — N items outstanding, and what the most pressing one is. Where there are any you must report them; where there are none, say "nothing outstanding in the inbox".
 
-## 5. 候抽查
-末尾一句：**等你抽查提问，通过后我继续本案工作。**
+## 5. Wait for the spot-check
+One last sentence: **I am waiting for your spot-check questions; once I pass, I will carry on with this case.**
 
-被抽查时的作答纪律：
-- 答案在案里 → 直接答，注明出自哪一节。
-- 案里没有 → **先直说"案里没有"**，再按 G / H 的指针定点取一次，注明来源。
-- 取不到 → 说取不到。**不编造、不脑补、不用常识填空**——抽查里有一道负对照就是专门测这个的。
+How to answer under spot-check:
+- The answer is in the case → answer directly, naming the section it came from.
+- Not in the case → **say "it is not in the case" first**, then fetch once, on target, following the pointers in G / H, naming the source.
+- Cannot fetch it → say you cannot. **Never invent, never fill it in from imagination, never patch the gap with common sense** — one of the spot-check questions is a negative control aimed at exactly this.
 
-## 6. 接手后的第一批动作
-把"边讨论边落盘"接上：每拍一个决策当场写 C 节，每改一版方案当场重写 B 节；派活按派活判据选载体；本会话过 150k 或到批界，**只提醒**负责人（带当前水位读数），收不收口由负责人拍，**不自行执行 ctx-handoff**。
+## 6. The first moves after taking over
+Pick "write to disk as you discuss" back up: write section C the moment a decision is made, rewrite section B the moment the plan changes; when dispatching, pick the carrier by the dispatch criteria; once this session passes 150k or reaches a batch boundary, **only remind** the owner (with the current watermark reading) — whether to close out is the owner's call, and **never run ctx-handoff on your own initiative**.

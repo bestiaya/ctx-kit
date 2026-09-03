@@ -8,7 +8,7 @@
     {
       "name": "ctx-kit",
       "source": "./",
-      "description": "Session lifecycle toolkit for Claude Code: state lives on disk, sessions are disposable. Close out fat sessions into takeover-ready case files; a fresh session (or a different agent) picks up from the file alone."
+      "description": "Session lifecycle toolkit for Claude Code: state lives on disk, sessions are disposable. Close out long, expensive sessions into takeover-ready case files; a fresh session (or a different agent) picks up from the file alone."
     }
   ]
 }

@@ -1,46 +1,48 @@
 ---
 name: ctx-handoff
-description: 会话收口交接。用户说"收口""关案""这个案完了""交接一下""这会话太肥了""换个新会话继续""退役这个会话"，或显式 /ctx-handoff 时用。把讨论沉淀成可接手的案文件，落盘未落盘的产物，然后本会话退役。 Close out and hand off — use on "close out", "wrap this up", "this session is too full", or /ctx-handoff; distills the discussion into a takeover-ready case file, persists unsaved artifacts, then retires this session.
+description: Close out and hand off — use on "close out", "wrap this up", "this session is too full", or /ctx-handoff; distills the discussion into a takeover-ready case file, persists unsaved artifacts, then retires this session. Also triggers on Chinese — 用户说"收口""关案""这个案完了""交接一下""这会话太肥了""换个新会话继续""退役这个会话"，或显式 /ctx-handoff 时用。
 ---
 
-# 收口：沉淀成案 → 退役
+# Close-out: settle it into a case → retire
 
-> **触发线**：本 skill **只由负责人触发、或负责人明确同意后**才执行。会话过线（水位高、到批界）**只提醒，不强制**——报一句当前水位读数、问一句要不要收口，**不自行收口**。收口要改头行、清线主槽、打退役标、提交推送；自作主张收掉一个还在用的会话，用户得再花一次接手的钱。
+> **Speak in the user's language, and write the case file / board / inbox rows in the user's language.** Status words and section letters are fixed bilingual, so a case written in either language must be readable by every skill here. Section letters A~I never change. Status words used here: **closing (do not take)** (收口中(勿接)) / **awaiting takeover** (候接手) / **closed** (已收口) / **predecessor retired** (前任已退役) / **running** (在跑) / **awaiting acceptance** (待验收) / **queued** (排队) / **to dispatch** (待派) / **delivered** (已交货); header-line fields `status` (状态) / `pen-holder` (持笔) / `updated` (更新).
 
-## 1. 先认领：我持有哪个案？
-依次查：① 本会话标题（`set_session_title` 设过的名字）；② 案库里各案头行"持笔"栏是否写着本会话的名字或 UUID 前 8 位。**案库只在当前项目根内找**（项目根=有 `.git` 就取 git 根、否则 cwd；库位优先 `_ops/CASES/`，否则 `cases/`）——**不许去别的项目的案库认领,也不许把件写过去**。
+> **Trigger line**: this skill runs **only when the owner triggers it, or after the owner has explicitly agreed**. A session over the line (high watermark, batch boundary) gets **a reminder only, never a forced close-out** — report the current watermark reading in one line, ask in one line whether to close out, and **do not close out on your own initiative**. Closing out changes the header line, clears the track-owner slot, sets the retirement mark, commits and pushes; close out a session that is still in use and the user pays for a takeover all over again.
 
-- 命中 → **更新模式**（2A）；未命中 → **首建模式**（2B）。
-- **两种模式的第一动作**：头行改『状态:收口中(勿接)』，持笔保留（你还在写，一案一笔不破）；首建模式建案时头行直接以此状态写。
+## 1. Claim first: which case do I hold?
+Check in order: ① this session's title (the name set through `set_session_title`); ② whether the "pen-holder" cell in any case's header line in the case library carries this session's name or the first 8 of its UUID. **The case library is only ever looked for inside the current project root** (project root = the git root if there is a `.git`, otherwise cwd; the library is `_ops/CASES/` for preference, otherwise `cases/`) — **never claim a case out of another project's library, and never write files across into one**.
 
-## 2A 更新模式（案已存在）
-- **B 节整段重写**成当前终态（被替换的旧版滚进 F 一行），不做增量补丁。
-- **C / E / F 只追加**，不改历史行——被否决的决策也留着。
-- **D 重排**：已拍的挪进 C，新的未决补上，每项带建议。
-- **H 重列**（不是追加）：上一版 H 里已落盘的删掉，只留此刻仍未落盘的。
+- A hit → **update mode** (2A); no hit → **first-build mode** (2B).
+- **The first move in both modes**: change the header line to 『status: closing (do not take)』 and keep the pen-holder (you are still writing, and one pen per case still holds); in first-build mode write the header line with that status from the start.
 
-## 2B 首建模式（无案文件）
-提名 `<前缀>-NN_案名.md`：前缀按项目定（主项目沿用既有字母，别的项目取项目名首字母），**NN 在本项目案库内自增——绝不接着别的项目的号往下编**（实测栽过：临时项目的会话接着主项目的号编，件也落进了主项目）。**先把目标绝对路径连同名字一起说出来再建**，一次确认即可。按 A~I 九节建齐（A 目标 / B 当前方案快照 / C 已拍决策 / D 未决与候拍 / E 实验台账 / F 编年志 / G 档案指针 / H 未落盘清单 / I 收件位——I 在本线已有线件时可省，来话投线件）。
+## 2A Update mode (the case already exists)
+- **Rewrite section B whole** into the current end state (the old version it replaces rolls into one line of F); do not patch it incrementally.
+- **C / E / F are append-only**; never edit historical rows — rejected decisions stay too.
+- **Re-sort D**: move what has been decided into C, add the new open items, each with a recommendation.
+- **Re-list H** (not append): drop whatever from the previous H has since gone to disk, and keep only what is still unsaved right now.
 
-## 2C 关案模式（收口的终态，不是另一套流程）
-**关案 = 收口的一种**：照 2A / 2B 正常收口写完 B~H，再多做这四步。
+## 2B First-build mode (no case file)
+Propose `<prefix>-NN_case-name.md`: the prefix is per project (the main project keeps its existing letter, another project takes the initials of the project name), and **NN increments inside this project's case library — never carry on from another project's numbering** (measured, and it went wrong: a throwaway project's session carried on from the main project's numbers, and its files landed in the main project too). **Say the target absolute path aloud together with the name before creating it**; one confirmation is enough. Build all nine sections A~I (A Goal (目标) / B Current plan snapshot (当前方案快照) / C Decisions (已拍决策) / D Open items & pending decisions (未决与候拍) / E Experiment ledger (实验台账) / F Chronicle (编年志) / G Archive pointers (档案指针; reference only) / H Unsaved items (未落盘清单) / I Inbox (收件位) — I may be dropped when this track already has a track file, in which case incoming messages go to the track file).
 
-**触发**：负责人说"关案""这个案完了"；或收口时你判断案 **A 节目标已达成**——**后者先问一句、负责人点头才关**，不自行关案。
+## 2C Closing a case (the end state of a close-out, not a second procedure)
+**Closing a case is one kind of close-out**: write B~H the normal way per 2A / 2B, then do these four extra steps.
 
-1. **头行**：`状态: 已收口   持笔: (已关 <今日>)   更新: <今日>`——不走"候接手 / 前任已退役"那套，关了就没有继任。
-2. **决议上交**：本案所属线**有线文件**时，把案 **C 表全部行逐字**追加进线文件的「决策档案」节（该线另有决策档案文件的就追加到那个文件），零删改；**案内 C 表原样保留**——上交是复制，不是搬走。**无线文件就不动**，决议留在案里。
-3. **任务板**：「在册案」表里本案那行状态改 `已关`，整行**移到表末**。**不许新建"已关案"之类的新节**——下游 skill 按节名读板，多一个节它们就漏读。
-4. **F 编年志**加一行：`<日期> 关案：<一句为什么关——目标达成 / 停做 / 并入某案>`。
+**Trigger**: the owner says "close the case" or "this case is finished"; or, at close-out, you judge that the case's **section A goal has been met** — **in the second case ask first, and close only once the owner nods**; never close a case on your own initiative.
 
-关完即止：**之后不再 takeover 这个案，就是关案的全部含义**——不删文件、不移目录，历史留着可查。
+1. **Header line**: `status: closed   pen-holder: (closed <today>)   updated: <today>` — this does not use the "awaiting takeover / predecessor retired" pattern; once it is closed there is no successor.
+2. **Hand the decisions up**: when the track this case belongs to **has a track file**, append **every row of table C verbatim** into that track file's 「decision archive」 section (or into that track's separate decision-archive file, if it has one), with nothing deleted or altered; **table C stays in the case exactly as it is** — handing up is copying, not moving. **With no track file, do nothing** and the decisions stay in the case.
+3. **The board**: change this case's row in the 「cases on the books」 table to status `closed` and **move the whole row to the end of the table**. **Never create a new section such as "closed cases"** — the downstream skills read the board by section name, and one extra section makes them miss things.
+4. Add one line to the **F chronicle**: `<date> case closed: <one sentence on why — goal met / dropped / merged into another case>`.
 
-## 3. 硬线
-- **接手实际加载量 ≤10,000 字符为绿、>15,000 必瘦**——口径是"接一次要读进去多少"，不是"到 E 为止"：跑 `ctx-takeover` 第 2 节那段提取命令，读它末行报的数。首选瘦法=**C 表旧行整体上交本线的决策档案**（逐字迁存、案里只留当前批次 + 指针）；其次 E 老行滚动归档（下一条）、D 清已了项、F 编年压缩；再不够就把方案正文升格成独立编号文档，B 节只留顶图 + 指针。
-- **E 滚动归档**：E 超过 5,000 字符或 30 行时，把状态=已交货、且"对方案的影响"已写进 B / C 的行**逐字**迁进 `<案文件名去 .md>_实验档案_<日期>.md`（格式同决策附录，头注"逐字迁存零删改，案内留存根"），案里每条只留一行存根：`ID | 问题 | 判定一句（≤80 字）| 档案指针`。**在跑 / 待验收 / 排队 / 待派 的行一律留在案里**，已交货但影响还没写回 B/C 的也留着——那笔账还欠着。
-- **E 行长度检查（只报不改）**：判定与"对方案的影响"两格各 ≤200 字，细节只放交货件的结果节。收口前跑一遍，超长行是自己写的就当场瘦，别人写的照报不改：
+Stop there: **closing a case means only this, that nobody takes it over again** — do not delete the file, do not move the directory; the history stays where it can be looked up.
+
+## 3. Hard rules
+- **What a takeover actually loads: ≤10,000 characters is green, >15,000 must be slimmed** — the measure is "how much has to be read in to take it over once", not "up to E": run the extraction command in `ctx-takeover` §2 and read the number it reports on its last line. First choice for slimming = **hand the old rows of table C up to this track's decision archive as a block** (moved verbatim, with only the current batch + a pointer left in the case); then rolling old E rows into an archive (next rule), clearing settled items out of D, compressing the chronicle in F; if that is still not enough, promote the plan body into its own numbered document and leave only the top-level diagram + a pointer in section B.
+- **Rolling E into an archive**: once E passes 5,000 characters or 30 rows, move the rows whose status is delivered and whose "what it changes in the plan" has already been written into B / C **verbatim** into `<case file name without .md>_experiment-archive_<date>.md` (same format as the decision appendix, headed "moved verbatim, nothing deleted or altered, stub kept in the case"), leaving one stub row each in the case: `ID | question | verdict in one sentence (≤80 characters) | archive pointer`. **Rows at running / awaiting acceptance / queued / to dispatch always stay in the case**, and so do delivered rows whose impact has not been written back into B / C — that account is still owed.
+- **E row length check (report, do not fix)**: the verdict cell and the "what it changes in the plan" cell are each ≤200 characters, and the detail belongs only in the results section of the deliverable. Run it once before closing out; slim an over-long row on the spot if you wrote it, and report without touching it if somebody else did:
 
 ```bash
-python3 - <本案文件路径> <<'PY'
+python3 - <path to this case file> <<'PY'
 import sys,re
 w=[]
 for p in sys.argv[1:]:
@@ -50,41 +52,54 @@ for p in sys.argv[1:]:
         if L[i].split()[1]!='E': continue
         R=[(k+1,l) for k,l in enumerate(L[i:P[n+1]],i) if l.lstrip().startswith('|')]
         h=[c.strip() for c in R[0][1].strip().strip('|').split('|')] if R else []
-        C=[x for x,c in enumerate(h) if '判定' in c or '影响' in c]
+        C=[x for x,c in enumerate(h) if re.search(r'判定|verdict|影响|impact',c,re.I)]
         for ln,l in R[2:]:
             c=[x.strip() for x in l.strip().strip('|').split('|')]
-            w+=[(len(c[x]),f'{p}:{ln} 「{h[x]}」{len(c[x])} 字') for x in C if x<len(c) and len(c[x])>200]
+            w+=[(len(c[x]),f'{p}:{ln} [{h[x]}] {len(c[x])} chars') for x in C if x<len(c) and len(c[x])>200]
 for n,s in sorted(w,reverse=True): print(s)
-print(f'--- 超 200 字的格 {len(w)} 处（只报不改，请写的人自己瘦）---')
+print(f'--- {len(w)} cells over 200 characters (reported, not fixed — the author slims their own) ---')
 PY
 ```
 
-- **未落盘的产物先落盘**（草稿、脚本、表格、算到一半的账），路径写进 E 或 H。
-- **有在跑实验必写查活方法（必填）**：退役前若有状态=在跑 / 待验收的实验，**E 行与 H 节写清查活命令与产物落点**（例：`确认六个发车 json 都落齐 + pgrep -f <跑批脚本> 为 0`）。继任按此查盘上实况再报，不照抄案面状态。实证栽过一次：20:38 发车六个会话、20:51 退役，案面如实写"在跑"；继任次日 09:20 照案面报"在跑、零读数"，其实当晚就全跑完了，白晾 12 小时。
-- **G 节里本会话的 jsonl 路径写 `(待回填)`**——禁止用 `ls -t` 自查，实测会指错文件（由验收方按账单时间戳配对回填）。其它已知档案与产物目录照列，标"仅备查勿整读"。
-- **H 节必须写进案文件本身**，不能只留在回复里（关窗即丢）。每条一行、带细节所在路径；如实列，不许静默丢——**包括自己没跑完的、算错的、不可复现的数字**。
+- **Put unsaved artifacts on disk first** (drafts, scripts, tables, half-finished sums), and write the paths into E or H.
+- **A running experiment must carry a liveness check (required)**: if any experiment is at status running / awaiting acceptance when you retire, **spell out the liveness command and where the artifacts land, both on the E row and in section H** (e.g. `check all six dispatch json files landed + pgrep -f <batch script> returns 0`). The successor checks the real state that way before reporting, instead of copying the status off the case. It has gone wrong once in practice: six sessions dispatched at 20:38, retirement at 20:51, and the case honestly said "running"; at 09:20 the next morning the successor reported "running, no readings" off the case, when in fact all of it had finished that same night — twelve hours wasted.
+- **Write this session's jsonl path in section G as `(to be backfilled)`** — never use `ls -t` to look yourself up, which has been measured pointing at the wrong file (whoever accepts the work pairs it by billing timestamp and backfills it). List the other known archives and artifact directories as usual, marked "reference only, do not read in full".
+- **Section H must be written into the case file itself**, not left only in the reply (close the window and it is gone). One line each, with the path to the detail; list them honestly and never drop one silently — **including what you did not finish, what you got wrong, and numbers that will not reproduce**.
 
-## 4. 收尾最后动作（写完 B~H 才做，四步）
-1. 头行改：`状态:候接手 | 持笔:(待继任填;前任 <本会话名 @UUID前8> 已退役) | 更新:<今天>`。**顺序不许倒**——先清笔 = 让继任接走半收口的案。
-2. **清线主槽**：本案所属线若有线件、且"线主"栏是本会话，改成 `(待继任填;前任 <本会话名> 已退役)`。漏清=跨线投递第一查查到死人，路由被架空。
-3. **给自己打退役标**：`set_session_title` 把本会话标题改成 `✕ <原标题>`（前缀，不是后缀——后缀会被列表截断看不见）。这是唯一"会话已死"的肉眼信号，也是跨线投递查地址时的第一道拦。工具不可用就在回复里明说未打标。
-4. **提交并推送**：**必 commit 且必 push**——实测离机断档 15 天、一批 commit 在本地压了 3 天，**只治 commit 治不住**。
-   先 `git status`：**别的会话可能正开着改别的文件，`git add -A` 会把人家写到一半的活一起提交**（本条首次执行就撞上——两个在跑的会话各有一个改到一半的案文件）。**只 `git add` 本轮自己动过的路径**，再 `commit && push`。
-   非 git 项目、或推送失败（无远端/无权限/有冲突）：**在回复里明写"未推送 + 原因"**，不许静默跳过。
+## 4. The last four moves (only after B~H are written)
+1. Change the header line: `status: awaiting takeover | pen-holder: (successor to fill in; predecessor <this session's name @first-8-of-UUID> retired) | updated: <today>`. **Never do it in the other order** — clearing the pen first hands the successor a half-closed case.
+2. **Clear the track-owner slot**: if the track this case belongs to has a track file and the "track owner" cell is this session, change it to `(successor to fill in; predecessor <this session's name> retired)`. Leave it and a cross-track delivery finds a dead name on its first check, hollowing out the routing.
+3. **Mark yourself retired**: `set_session_title` this session's title to `✕ <original title>` (a prefix, not a suffix — a suffix gets truncated out of sight in the list). This is the only naked-eye signal that a session is dead, and the first gate a cross-track delivery hits when it checks the address. If the tool is unavailable, say plainly in the reply that the mark was not set.
+4. **Commit and push**: **you must commit and you must push** — measured: 15 days away from the machine, and a batch of commits sat on the local disk for 3 days, so **fixing only the commit does not fix it**.
+   Run `git status` first: **another session may be open and editing other files, and `git add -A` will commit their half-written work along with yours** (this rule was hit the very first time it ran — two running sessions each had a half-edited case file). **`git add` only the paths you touched this round**, then `commit && push`.
+   A non-git project, or a failed push (no remote / no permission / a conflict): **write "not pushed + why" plainly in the reply**; never skip it silently.
 
-## 5. 回复只要四样
-1. 案文件路径；
-2. H 节条数 + 其中最重要的一条；
-3. 一句话状态；
-4. **继任开题 prompt**——单独一个代码块，可整段复制到新会话：
+## 5. Reply: five sections for people first, then four items
+
+**The five sections for people first** — one or two lines each, written for the owner:
+
+- ① **Position and reason**: how far this case has pushed the top-level goal, and what this stint did;
+- ② **What was verified, how it was tested, what counts as a pass**;
+- ③ **Result**: the verdict first, expected vs actual;
+- ④ **Conclusion**: what it means for the goal, which premise was confirmed or refuted, what is still unproven;
+- ⑤ **The next step, derived from the conclusion** (every item awaiting decision carries a recommendation).
+
+Numbers, station ids and reading codes stay out of the sections written for people; if you must hand something to the execution layer, put it on one line at the end.
+
+**Then four items** (for the successor to take over with):
+
+1. the case file path;
+2. how many items are in section H + the most important one among them;
+3. the status in one sentence;
+4. **the successor's opening prompt** — its own code block, copyable whole into a new session:
 ```
 /ctx-takeover C-NN
 ```
-（裸装无 skill 的环境，改贴案模板里的继任开题段。）
+(In a bare environment with no skills installed, paste the successor's opening paragraph from the case template instead.)
 
-不要在收口回复里附方案全文——那正是案文件的活。
+Do not attach the full plan to the close-out reply — that is exactly what the case file is for.
 
-## 6. 声明退役
-末尾明写：**本会话已退役；后续请开新会话，用 ctx-takeover 接手 C-NN。**
+## 6. Declare the retirement
+Write it plainly at the end: **this session has retired; open a new session and take over C-NN with ctx-takeover.**
 
-此后本会话不再接新活。用户如果继续在这里提问，先提醒他换会话——在这条肥上下文上继续聊，等于把刚省下的钱再付一遍。
+This session takes no new work after that. If the user keeps asking questions here, remind them to switch sessions first — carrying on inside this expensive context means paying again the money you just saved.

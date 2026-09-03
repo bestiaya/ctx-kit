@@ -1,23 +1,27 @@
 #!/usr/bin/env python3
-"""cache-audit.py — claude CLI 会话缓存周检（ctx-kit 配套）
+"""cache-audit.py — weekly cache checkup for claude CLI sessions (ships with ctx-kit)
 
-预注册判据（周检口径，判负照报）：
-  - 讨论/导师会话：重写占比 <10% 且 水位 p50 <150k
-  - 执行会话：compact 次数 = 0 且 水位峰值 <200k
-  - 任何越线行尾标 ⚠️
+Pre-registered criteria (the checkup measure; a fail is reported as a fail):
+  - discussion / lead session: rewrite share <10% and p50 watermark <150k
+  - exec session: compact count = 0 and peak watermark <200k
+  - any row over the line is flagged with a trailing warning sign
 
-口径：
-  - 当量 = input×1 + cache_read×0.1 + cache_write×2 + output×5（写按 1h 桶 2× 实测价）
-  - 重写事件 = 非首条请求 且 单次 cache_write >150k 且 读量塌缩到既有上下文一半以下
-    （读量仍≈既有上下文的是"大块新料首次入场"，不是整段冷重写，不计）
-  - 已知盲区：compact 摘要请求不落账在 jsonl，本表不含其成本
-  - jsonl 时间戳为 UTC，与本地钟表比对前先按本地时区换算
+Measures:
+  - equivalent = input x1 + cache_read x0.1 + cache_write x2 + output x5
+    (writes priced at the measured 2x for the 1h bucket)
+  - a rewrite event = not the first request, a single cache_write >150k, and the read collapsing
+    to under half the existing context (a read still close to the existing context is "a big new
+    block entering for the first time", not a cold rewrite of the whole thing, and does not count)
+  - known blind spot: the compact summary request is not billed into the jsonl, so its cost is
+    absent from this table
+  - jsonl timestamps are UTC; convert to the local timezone before comparing with a local clock
 
-用法：
-  python3 cache-audit.py <jsonl路径...>              # 指定会话
-  python3 cache-audit.py --all [最小MB]              # 扫当前项目（默认 >2MB）
-  python3 cache-audit.py --project <目录> --all      # 指定项目目录
-项目目录默认从 cwd 推导：~/.claude/projects/ + cwd 中非字母数字字符全部替换为 '-'。
+Usage:
+  python3 cache-audit.py <jsonl path...>            # named sessions
+  python3 cache-audit.py --all [min MB]             # sweep the current project (default >2MB)
+  python3 cache-audit.py --project <dir> --all      # a named project directory
+The project directory is derived from cwd by default: ~/.claude/projects/ + cwd with every
+non-alphanumeric character replaced by '-'.
 """
 import json, sys, glob, os, re, datetime, statistics
 
@@ -62,8 +66,9 @@ def audit(fp):
     if not rows:
         return None
     ctx = [r["it"] + r["cr"] + r["cc"] for r in rows]
-    # 重写 = 大额写入 且 读量塌缩到既有上下文一半以下（只剩共享头部）。
-    # 若读量仍≈既有上下文，是"大块新料首次入场"，不算重写。
+    # A rewrite = a large write with the read collapsing to under half the existing context
+    # (only the shared header is left). A read still close to the existing context is
+    # "a big new block entering for the first time" and does not count as a rewrite.
     rewrites = [
         r
         for i, r in enumerate(rows)
@@ -94,10 +99,10 @@ def main():
     if not args or args[0] == "--all":
         minmb = float(args[1]) if len(args) > 1 else 2.0
         files = [f for f in glob.glob(proj + "*.jsonl") if os.path.getsize(f) > minmb * 1e6]
-        print(f"# 项目目录: {proj}")
+        print(f"# project directory: {proj}")
     else:
         files = args
-    hdr = f"{'会话':34} {'请求':>5} {'天':>3} {'p50水位':>9} {'峰值':>9} {'花费M':>7} {'重写':>4} {'重写占比':>7} {'压缩':>4}"
+    hdr = f"{'session':34} {'reqs':>5} {'day':>3} {'p50 ctx':>9} {'peak':>9} {'costM':>7} {'rw':>4} {'rw%':>7} {'cmp':>4}"
     print(hdr)
     for fp in sorted(files, key=os.path.getmtime, reverse=True):
         r = audit(fp)

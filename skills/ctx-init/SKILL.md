@@ -1,81 +1,83 @@
 ---
 name: ctx-init
-description: 项目开工立总览。用户说"新项目开工""这项目开始了""先把项目定下来""项目是干啥的先写下来"，或显式 /ctx-init 时用。先读项目已有文档再提议总目标与大事清单，每格标出处候你确认；确认前零写入，确认后才写任务板头部。 Initialize a project board — use on "new project", "set this project up", "what is this project for", or /ctx-init; reads the project's own docs first, proposes goal and milestones with a source cited per cell, writes nothing until you confirm, then lays down the board header.
+description: Initialize a project board — use on "new project", "set this project up", "what is this project for", or /ctx-init; reads the project's own docs first, proposes goal and milestones with a source cited per cell, writes nothing until you confirm, then lays down the board header. Also triggers on Chinese — 用户说"新项目开工""这项目开始了""先把项目定下来""项目是干啥的先写下来"，或显式 /ctx-init 时用。
 ---
 
-# 开工：读料 → 提议 → 确认 → 落盘
+# Kick-off: read → propose → confirm → write
 
-总览 = 案库内 `TASKBOARD.md` 的头部（总目标 + 全局计划）。之后每个案的 A 节 R 栏、每条散活的"服务节点"都挂在它上面——没有它，后面所有活都没有挂靠点。
+> **Speak in the user's language, and write the board / case files / inbox rows in the user's language.** Status words and section letters are fixed bilingual, so a board written in either language must be readable by this skill. Board section names: `## Goal` (总目标) / `## Global plan` (全局计划) / `## Cases on the books` (在册案) / `## One-offs` (散活); header-line fields `status` (状态) / `pen-holder` (持笔) / `updated` (更新); status word used here: **running** (在跑).
 
-## 0. 定位（不落盘）
-规则与 `ctx-kickoff` §0 一致：**项目根** = 有 `.git` 取 git 根，否则 cwd；**案库**只在项目根内找，优先已存在的 `<项目根>/_ops/CASES/`，否则 `<项目根>/cases/`。
+The overview = the header of `TASKBOARD.md` inside the case library (top-level goal + global plan). Every case's R field in section A and every one-off's "serves which milestone" hangs off it — without it, nothing that comes later has anything to hang on.
 
-默认两处都不存在时，**先在项目根内 glob 一次 `*/TASKBOARD.md` 与 `*/*/TASKBOARD.md`**——项目可能把案库设在别处；找到已有的板就用它，别在旁边另起一个。
+## 0. Locate (nothing written)
+Same rules as `ctx-kickoff` §0: **project root** = the git root if there is a `.git`, otherwise cwd; **the case library is only ever looked for inside the project root**, preferring an existing `<project root>/_ops/CASES/`, otherwise `<project root>/cases/`.
 
-**已有 `TASKBOARD.md` → 复核模式**：读它并当基线，**只提差异**（哪格与文档对不上、哪格空着、哪件大事状态过期），不推倒重来、不重写没变的格。没有 → 新建模式，走下面全程。
+When neither of the two defaults exists, **glob `*/TASKBOARD.md` and `*/*/TASKBOARD.md` once inside the project root first** — the project may keep its case library elsewhere; if you find an existing board, use it, do not start a second one beside it.
 
-## 1. 读料（先量后读）
-候选只有这些：项目根的 `README*` / `CLAUDE.md` / `docs/` 与根目录一层内的 `*.md`；包清单（`package.json`、`pyproject.toml`、`Cargo.toml` 等）**只读 name + description**；`git log --oneline | head -30`；目录树两层。
+**An existing `TASKBOARD.md` → review mode**: read it and take it as the baseline, and **raise only the differences** (which cell disagrees with the docs, which cell is empty, which milestone's status is stale); do not tear it down and rebuild, do not rewrite cells that have not changed. No board → new-build mode, run everything below.
 
-**每个文件先 `wc -c` 再决定读不读**：单文件 >30k 字符，或总量 >60k（分母 = 候选全集的 `wc -c` 之和，先量完全部再决定读哪些，不许先挑几份再算），**派 `ctx-kit:digest` 子代理消化，主上下文只收摘要**（手工装时子代理名为 `digest`）。量都没量就整读，是这一步最容易犯的错。
+## 1. Read the material (measure first, then read)
+The candidates are only these: `README*` / `CLAUDE.md` / `docs/` at the project root plus the `*.md` files one level inside the root; package manifests (`package.json`, `pyproject.toml`, `Cargo.toml` and the like) — **read name + description only**; `git log --oneline | head -30`; two levels of the directory tree.
 
-不读：会话转录（`*.jsonl`）、案库以外的私人目录、`.env` 与任何凭证文件。
+**Run `wc -c` on every file before deciding whether to read it**: any single file >30k characters, or >60k in total (the denominator = the sum of `wc -c` over the whole candidate set — measure them all before deciding what to read; you may not pick a few first and add up only those) → **dispatch the `ctx-kit:digest` subagent to digest them and let the main context take the summary only** (under a manual install the subagent is named `digest`). Reading everything without measuring first is the easiest mistake to make at this step.
 
-## 2. 提议（一个字都不落盘）
-给用户一张表，四块。**复核模式下四块照给**，每格首字标「一致 / 差异 / 空着」：标「一致」的只写现值与出处、不展开；第 3 步只问标了「差异」「空着」「待你答」的格。
-1. **总目标三问**：最终要拿到什么 / 给谁 / 什么算完；
-2. **大事清单**：在推 / 已完成 / 候开工各几件，每件一行状态（大事 = 总览"全局计划"上的一行）；
-3. **案库位置与前缀**：公开仓建议 `_internal/` + `.gitignore` 或私有嵌套仓，私有项目 `_ops/CASES/`；附案号前缀（取项目名首字母）与会话标题前缀；
-4. **读不出来的项**。
+Do not read: session transcripts (`*.jsonl`), private directories outside the case library, `.env` or any credential file.
 
-**每一格标出处**：写清来自哪份文件哪一节（如 `README.md §2`），或明写"我的推断"。读不出的写 **"待你答"**——**禁止编造**：猜错一格总目标，后面所有案都挂错节点。
+## 2. Propose (not one character on disk)
+Give the user one table, four blocks. **In review mode all four blocks are given anyway**, with each cell prefixed 「matches / differs / empty」: cells marked 「matches」 carry only the current value and its source and are not expanded; step 3 only asks about cells marked 「differs」, 「empty」 or 「you tell me」.
+1. **Three questions about the top-level goal**: what is the final thing to get / who is it for / what counts as done;
+2. **Milestone list**: how many are in flight / done / waiting to start, one status line each (a milestone = one row of the overview's "global plan");
+3. **Case library location and prefix**: for a public repo suggest `_internal/` + `.gitignore`, or a private nested repo; for a private project `_ops/CASES/`; add the case-number prefix (initials of the project name) and the session-title prefix;
+4. **The items you cannot read out.**
 
-## 3. 只问一轮
-> **这张表逐格看一眼：哪格对、哪格改、"待你答"的补一下。**
+**Cite a source in every cell**: name the file and the section it came from (e.g. `README.md §2`), or say plainly "my inference". For anything you cannot read out, write **"you tell me"** — **never make it up**: get one cell of the top-level goal wrong and every case after it hangs off the wrong milestone.
 
-别问别的（不问要不要建、不问格式、不问优先级）。**用户确认前零写入**：不建目录、不 touch 文件、不写半版草稿。等的是一次确认，不是分步授权。
+## 3. Ask one round only
+> **Run your eye down this table cell by cell — which is right, which to change, and fill in the "you tell me" ones.**
 
-## 4. 确认后落盘
-案库目录不存在则建；写 / 更新 `<案库>/TASKBOARD.md` 头部。**落盘前把目标绝对路径念给用户看一眼**（kickoff §0 铁律：案文件绝不写到别的项目去）。
+Ask nothing else (do not ask whether to create it, do not ask about the format, do not ask about priority). **Nothing is written before the user confirms**: no directory created, no file touched, no half-written draft. What you are waiting for is one confirmation, not step-by-step authorisation.
 
-格式照抄下面，`ctx-status` / `ctx-kickoff` / `ctx-takeover` 就按这个读：
+## 4. Write once confirmed
+Create the case library directory if it does not exist; write / update the header of `<case library>/TASKBOARD.md`. **Read the target absolute path back to the user before writing** (the hard rule in kickoff §0: a case file must never be written into a different project).
+
+Copy the format below exactly — `ctx-status` / `ctx-kickoff` / `ctx-takeover` read precisely this:
 
 ```markdown
-# <项目名> 任务板
+# <project name> board
 
-更新: <今日>
+updated: <today>
 
-## 总目标
+## Goal
 
-**<一句话总目标>。**<给谁、什么算完，两三句>
+**<top-level goal in one sentence>.** <who it is for and what counts as done, two or three sentences>
 
-## 全局计划
+## Global plan
 
-| # | 节点 | 状态 | 谁在推 |
+| # | Milestone | Status | Who is pushing it |
 |---|---|---|---|
-| 1 | <大事一句> | **在跑**——<一句现状> | (待立案) |
+| 1 | <milestone in one sentence> | **running** — <current state in one sentence> | (no case yet) |
 
-**当前站位**：<哪几个节点拿下了、现在卡哪>
+**Where we stand**: <which milestones are taken, where it is stuck now>
 
-## 在册案
+## Cases on the books
 
-| 案号 | 名 | 状态 | 持笔 | 当前位置 | 下一步 |
+| Case | Name | Status | Pen-holder | Where it is | Next step |
 |---|---|---|---|---|---|
 
-（暂无。第一件事用 ctx-kickoff 立案。）
+(None yet. Open the first one with ctx-kickoff.)
 
-## 散活
+## One-offs
 
-（暂无。散活上板必填"服务节点"——挂上面全局计划的哪个节点；挂不上就单列候检讨，不开工。）
+(None yet. A one-off on the board must state "serves which milestone" — which milestone of the global plan above it hangs off; if it hangs off nothing, list it separately for review and do not start it.)
 ```
 
-节名与表头**一字不改**（`## 总目标` / `## 全局计划` 的 `# | 节点 | 状态 | 谁在推` / `## 在册案` / `## 散活`），改了下游三个 skill 读不到。复核模式只改差异那几格，不动其余行。
+The section names and table headers are **not to be changed by one character** (`## Goal` / `## Global plan` with `# | Milestone | Status | Who is pushing it` / `## Cases on the books` / `## One-offs`) — change them and the three downstream skills cannot read the board. For a Chinese-speaking user write the Chinese names given in the note at the top of this skill; either language is fine, mixing them is not. Review mode only edits the cells that differ and leaves every other line alone.
 
-案库位置若非默认（如公开仓用 `_internal/`），**提醒用户自己在项目 `CLAUDE.md` 加一行说明**——不替用户改 `CLAUDE.md`。
+If the case library is somewhere other than the default (a public repo using `_internal/`, say), **tell the user to add a line about it to the project `CLAUDE.md` themselves** — do not edit `CLAUDE.md` for them.
 
-## 5. 收尾三行
-1. 总目标一句；
-2. 大事几件（在推 / 已完成 / 候开工）；
-3. 总览绝对路径。
+## 5. Closing three lines
+1. the top-level goal in one sentence;
+2. how many milestones (in flight / done / waiting to start);
+3. the absolute path of the overview.
 
-末尾一句：**现在可以说第一件事了（ctx-kickoff）。**
+One last sentence: **you can name the first job now (ctx-kickoff).**

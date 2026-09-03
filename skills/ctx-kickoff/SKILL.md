@@ -1,74 +1,76 @@
 ---
 name: ctx-kickoff
-description: 说事分诊与立案。用户说"我要做 X""帮我规划 X""开个新活""这事怎么搞"，说"记一下""先存着""保存这个任务""回头再做"要存待办，或显式 /ctx-kickoff 时用。分诊成立案/散活/顺手改三条路，当场建案文件；待办按归属落进案或任务板并回一句存到哪了，然后只问一个问题：在这儿聊还是派出去。 Triage and open a case — use on "I want to do X", "plan this", "start a new job", "note this down", "save this for later", or /ctx-kickoff; routes to case / one-off / quick-fix, creates the case file on the spot, parks to-dos where they belong, then asks one question — discuss here or dispatch.
+description: Triage and open a case — use on "I want to do X", "plan this", "start a new job", "note this down", "save this for later", or /ctx-kickoff; routes to case / one-off / quick-fix, creates the case file on the spot, parks to-dos where they belong, then asks one question — discuss here or dispatch. Also triggers on Chinese — 用户说"我要做 X""帮我规划 X""开个新活""这事怎么搞"，说"记一下""先存着""保存这个任务""回头再做"要存待办，或显式 /ctx-kickoff 时用。
 ---
 
-# 说事：分诊 → 立案 → 定载体
+# A new job: triage → open a case → pick the carrier
 
-## 0. 案库（先定项目根，再定案库）
-**项目根** = 当前工作目录所在的仓库根（有 `.git` 就取 git 根，否则就是 cwd）。案库**只在项目根内找**：优先已存在的 `<项目根>/_ops/CASES/`，否则 `<项目根>/cases/`（不存在则创建）。任务板 = 案库内 `TASKBOARD.md`（无则建：头部=产品总目标+全局计划+各线一行，下接案索引与散活区）。
+> **Speak in the user's language, and write the case file / board / inbox rows in the user's language.** Status words and section letters are fixed bilingual, so a case written in either language must be readable by every skill here. Header-line fields: `status` (状态) / `pen-holder` (持笔) / `updated` (更新). Status words used here: **in discussion** (讨论中) / **queued** (排队) / **running** (在跑) / **awaiting acceptance** (待验收). Section letters A~I never change; the section names are bilingual and given in §2.
 
-**铁律：案文件绝不写到别的项目去**——落盘前把目标**绝对路径**念给用户看一眼。实测栽过一次：一个临时项目的会话把三份个人事务件写进了主项目案库、顺着主项目的号编了案号，还跟着提交进了主项目的 git。
+## 0. The case library (fix the project root first, then the library)
+**Project root** = the repository root the current working directory sits in (the git root if there is a `.git`, otherwise cwd). **The case library is only ever looked for inside the project root**: an existing `<project root>/_ops/CASES/` for preference, otherwise `<project root>/cases/` (create it if absent). The board = `TASKBOARD.md` inside the case library (create it if absent: header = product top-level goal + global plan + one line per track, followed by the case index and the one-off area).
 
-**案号 = `<前缀>-NN`**：前缀按项目定（主项目沿用既有字母；别的项目取项目名首字母，不与已有前缀撞即可），**NN 在本项目案库内独立自增，不看别的项目**。
+**Hard rule: a case file must never be written into a different project** — read the target **absolute path** back to the user before writing. Measured, and it went wrong once: a session in a throwaway project wrote three personal-admin files into the main project's case library, numbered them off the main project's sequence, and rode along into the main project's git.
 
-## 1. 分诊（自己判，别问用户）
-| 特征 | 走法 |
+**Case number = `<prefix>-NN`**: the prefix is per project (the main project keeps its existing letter; another project takes the initials of the project name, and only has to avoid clashing with an existing prefix), and **NN increments independently inside this project's case library, never looking at another project's numbers**.
+
+## 1. Triage (decide it yourself, do not ask the user)
+| Signal | Route |
 |---|---|
-| 要讨论、要多轮实验、要裁决 | **立案**（第 2 步） |
-| 一次能执行完、判据明确 | **散活**：不立案；任务板立一行（**必填"服务节点"**=挂目标链哪个节点，挂不上→单列候检讨不开工），写自足任务书 |
-| 顺手小改（改配置、改一行、答个问题） | **直接干**，不立案不写任务书 |
+| Needs discussion, needs several rounds of experiment, needs a ruling | **Open a case** (step 2) |
+| Executable in one pass, criteria are clear | **One-off**: no case; one row on the board (**"serves which milestone" is required** = which milestone of the goal chain it hangs off; if it hangs off nothing → list it separately for review and do not start it), plus a self-contained task brief |
+| A quick fix (change a setting, change one line, answer a question) | **Just do it**, no case and no task brief |
 
-拿不准按立案走：立案成本约两分钟，漏立案的代价是状态烂在会话里。
+When in doubt, open a case: opening one costs about two minutes, whereas the cost of not opening one is state rotting inside the session.
 
-**三条路都要回一句分诊结果**——判完就走，但得留一个纠偏口：立案回第 2 步的三行摘要；**散活**回"我判成散活，理由：<一句>；已上板第 N 行，服务节点 <X>；不对你改"；**顺手改**回"我判成顺手改，理由：<一句>；这就干；不对你改"。沉默地把一件该立案的活当顺手改干掉，用户连拦的机会都没有。
+**All three routes owe one line of triage result** — decide and move on, but leave a hatch for correction: opening a case returns the three-line summary from step 2; a **one-off** returns "I triaged this as a one-off, because <one sentence>; it is on the board at row N, serving milestone <X>; say so if that is wrong"; a **quick fix** returns "I triaged this as a quick fix, because <one sentence>; doing it now; say so if that is wrong". Silently dispatching as a quick fix something that deserved a case leaves the user no chance to stop it.
 
-## 2. 立案（当场建文件，不要先问后建）
-- 头行：`状态: 讨论中   持笔: (待定)   更新: <今日>`
-- **A 目标**：按你当前对上下文的理解先写死 SMART 五要素（具体/可衡量/可达成/相关性/时限），措辞标明"我的理解"，**不要空着等用户填**。相关性写两句：服务哪个产品总目标（指向任务板头部的目标链节点）+ 在全局计划中的位置。
-- **B 当前方案快照**：有想法就写终态描述，没有写"待讨论"。
-- **C 已拍决策**：空。**D 未决与候拍**：把你判断需要用户拍的挂上，每项带建议。
-- **E 实验台账**：能预见的实验先挂条目（状态=排队）。**F 编年志、G 档案指针、H 未落盘清单**：建空节（节名照此，不许自造；**I 收件位**可选，跨线协作才建）。
+## 2. Open the case (create the file on the spot, do not ask first and create later)
+- Header line: `status: in discussion   pen-holder: (TBD)   updated: <today>`
+- **A Goal (目标)**: write the five SMART elements (specific / measurable / achievable / relevant / time-bound) down hard, from your current understanding of the context, wording them as "my reading"; **do not leave it blank for the user to fill in**. Write relevance as two sentences: which product top-level goal it serves (pointing at the goal-chain milestone in the board header) + where it sits in the global plan.
+- **B Current plan snapshot (当前方案快照)**: if you have an idea, describe the end state; if not, write "to be discussed".
+- **C Decisions (已拍决策)**: empty. **D Open items & pending decisions (未决与候拍)**: hang up whatever you judge the user has to decide, each with a recommendation.
+- **E Experiment ledger (实验台账)**: hang up the experiments you can already foresee (status = queued). **F Chronicle (编年志), G Archive pointers (档案指针; reference only), H Unsaved items (未落盘清单)**: create them empty (use exactly these section names, do not invent your own; **I Inbox (收件位)** is optional, create it only for cross-track collaboration).
 
-建完回复**三行摘要**：目标一句 / 我判断的关键未决一句 / 案文件路径。请用户纠偏——用户改的是 A 和 D，不是格式。
+Once it is built, reply with a **three-line summary**: the goal in one sentence / the key open item as you judge it in one sentence / the case file path. Ask the user to correct you — what the user changes is A and D, not the format.
 
-## 3. 只问一个问题
-> **在这儿聊，还是派出去？**
+## 3. Ask one question
+> **Discuss it here, or dispatch it?**
 
-别问别的（不问要不要立案、不问命名、不问优先级）。
+Ask nothing else (do not ask whether to open a case, do not ask about naming, do not ask about priority).
 
-### 分支 A：在这儿聊
-1. `set_session_title` 设为 `NN-<案号紧凑形>-这一任在做啥[-线简称]-角色`（例 `07-C07-异步还是流式定型-导师`）：**NN 在本项目内自增、兼做时间序**——侧栏按号排就是本项目的工作流水，同时天然防同案重名，不必另设"第几任"（拉会话清单拿到的是**全部项目混排**的列表，先按工作目录筛出本项目的会话再取最大 +1；取不到则省略，撞号=后开者改）；**案号紧凑形**=案号去横杠（`C-03`→`C03`），让会话一眼归案，**散活无案号、中间段空着**；**第三段写这一任在做的活、不写案名**——案号已代表案，写案名是重复，且一个案跨多任、每任做的不是同一件事；**线简称只在任务名看不出线时才写**，写线文件的短名，不写代号；角色=`导师`|`执行`；**项目前缀默认不加**，跨项目真撞号才加短前缀（`ck-04-C07-…`）；退役后由收口加 `✕ ` 前缀。工具不可用则跳过并说明；
-2. 头行"持笔"填这个名字；
-3. 开聊，并遵守：**每拍一个决策当场写 C 节，每改一版方案当场重写 B 节**，不等收口。
+### Branch A: discuss it here
+1. `set_session_title` to `NN-<compact case number>-what-this-stint-does[-track]-role` (e.g. `07-C07-async-vs-streaming-decision-lead`): **NN increments inside this project and doubles as the time order** — sorting the sidebar by number gives this project's workflow in sequence, and it also prevents same-case name clashes for free, so there is no need for a separate "nth successor" (the session list you pull back is **every project mixed together**, so filter it down to this project by working directory first, then take the largest and add 1; if you cannot get it, leave it out — on a collision the later session renames); **compact case number** = the case number with the hyphen removed (`C-07`→`C07`), so a session is visibly filed to its case, and **a one-off has no case number, so the middle segment stays empty**; **the third segment says what this stint is doing, not the case name** — the case number already stands for the case, so the case name is a repeat, and one case spans several stints that are not doing the same thing; **the track short name is written only when the job name does not reveal the track**, and it is the short name of the track file, not a code; role = `lead` | `exec`; **no project prefix by default**, add a short one only on a genuine cross-project collision (`ck-04-C07-…`); after retirement close-out adds the `✕ ` prefix. If the tool is unavailable, skip this and say so;
+2. put that name in the header line's "pen-holder";
+3. start talking, and hold to this: **write section C the moment a decision is made, rewrite section B the moment the plan changes** — do not wait for close-out.
 
-### 分支 B：派出去
-写自足任务书（案 A 一句 + B 相关段**抄入** + 预注册判据：改前读数 / 预期读数 / 判负条件 + 交货路径），落盘后挂进 E 行（状态=排队）。再给用户一段可直接复制的开题 prompt：
+### Branch B: dispatch it
+Write a self-contained task brief (the case's A in one sentence + the relevant paragraphs of B **copied in** + pre-registered criteria: reading before / expected reading / what counts as a fail + the delivery path), put it on disk and hang it on an E row (status = queued). Then give the user an opening prompt they can copy straight across:
 
 ```
-读 <任务书路径>——只读它，禁读任何旧会话转录。
-开工第一动作：set_session_title 设为 "<父号>.<子序号>-<案号紧凑形>-<这一任在做啥>-执行"（如 `61.1-C03-判决实验跑批-执行`；散活无案号、中间段空着；子序号在派发者内自增，读会话清单里已有的 `<父号>.x` 取最大 +1；板上已派名则用派名）。**开工第二动作：把这个名字填回板上那件活的「载体」栏（散活行）或案 E 行的载体列**——只填自己那一格。漏填=盘上认不出你归谁，你会以"孤儿"身份出现在登记簿里，周检的退役补扫可能把正在干活的你标成死的（实测险情一次，只因当时是热的才躲过）。
-**派生一律用父号带子号，不要另取全局号**——只有派发者会发自己的子号，撞号从结构上不可能；旧的"全局最大 +1"在两个导师同时派活时必撞（已实证撞过两次）。
-并把 <案文件路径> E 表中你那一行状态改成"在跑"。
-按任务书的预注册判据执行，边干边落盘；判负照报不美化。
-交货 = 机读台账 + 给人看的汇总，双层写进 <交货路径>；
-回填 E 行（状态=待验收 / 交货路径 / 判定 / 对方案的影响一句）——**判定与"对方案的影响"两格各 ≤200 字**，E 是索引不是报告，细节只放交货件的结果节。完成即停，不开新话题。
+Read <task brief path> — read only that, and never read any old session transcript.
+First action on starting: set_session_title to "<parent number>.<child index>-<compact case number>-<what this stint does>-exec" (e.g. `07.1-C07-load-test-batch-exec`; a one-off has no case number, so the middle segment stays empty; the child index increments inside the dispatcher — take the largest `<parent number>.x` already in the session list and add 1; if the board already names the dispatch, use that name). **Second action on starting: write that name back into the 「carrier」 cell of that job's row on the board (one-off row) or the carrier column of the case's E row** — fill in only your own cell. Leave it out and the board cannot tell whose you are; you appear in the register as an "orphan", and the retirement sweep at checkup may mark you dead while you are still working (one measured near-miss, survived only because that session happened to be warm).
+**A dispatched session always uses the parent number plus a child index, never a fresh global number** — only the dispatcher hands out its own child numbers, so a collision is structurally impossible; the old "global max + 1" collides whenever two leads dispatch at the same time (it has collided twice in practice).
+And change your row in the E table of <case file path> to status "running".
+Execute against the pre-registered criteria in the task brief, writing to disk as you go; report a fail as a fail, do not dress it up.
+Delivery = a machine-readable ledger + a summary for people, written into <delivery path> as both layers;
+write back the E row (status = awaiting acceptance / delivery path / verdict / one sentence on what it changes in the plan) — **the verdict cell and the "what it changes in the plan" cell are each ≤200 characters**; E is an index, not a report, and detail belongs only in the results section of the deliverable. Stop when done, do not open a new topic.
 ```
 
-派完不等（>15 分钟的活一律异步）。**本会话已肥（>150k）时不要在这里派子代理**——等待的冷税 = 本会话水位 × 2。
+Once dispatched, do not wait (anything over 15 minutes goes async). **Do not dispatch a subagent from here once this session is expensive (>150k)** — the cold tax of waiting = this session's watermark × 2.
 
-## 4. 记待办（另一条入口）
-**触发**：用户说"记一下""先存着""保存这个任务""回头再做"；或你自己提了个待办、用户说"存"。
+## 4. Park a to-do (the other entry point)
+**Trigger**: the user says "note this down", "save this for later", "save this task", "come back to it"; or you raised a to-do yourself and the user said "save it".
 
-不立案、不开工、不追问优先级——**先判归属，再落盘，落点只有这四条**：
+Do not open a case, do not start work, do not chase priority — **decide where it belongs first, then write it down, and there are only these four landing spots**:
 
-| 待办是什么 | 落点 |
+| What the to-do is | Where it lands |
 |---|---|
-| ① 属当前持笔案的待办（要拍的、要想清楚的） | 该案 **D 节**加一行，带**一句你的建议** |
-| ② 属当前案、是要跑的执行 | 该案 **E 行**，状态=`排队`，任务书路径写`待写` |
-| ③ 本案外的独立小活 | **任务板散活行**（**必填"服务节点"**=挂目标链哪个节点；挂不上→单列候检讨，不开工） |
-| ④ 属别的案 | **那个案的收件位（I 节）**，**只追加**，不动人家正文 |
+| ① A to-do belonging to the case you hold the pen on (something to decide, something to think through) | one row added to that case's **section D**, with **one sentence of your recommendation** |
+| ② Belongs to the current case, and is something to execute | an **E row** of that case, status = `queued`, task brief path = `to be written` |
+| ③ A standalone small job outside this case | a **one-off row on the board** (**"serves which milestone" is required** = which milestone of the goal chain it hangs off; if it hangs off nothing → list it separately for review and do not start it) |
+| ④ Belongs to another case | **that case's inbox (section I)**, **append only**, never touch their body text |
 
-归属判不准就问一句（这是唯一允许追问的），别自己塞。
+If you cannot tell where it belongs, ask one question (this is the only follow-up allowed); do not stuff it somewhere yourself.
 
-落完**回一句"存到哪了"**：文件路径 + 落在哪节 / 哪行号（如 `_ops/CASES/C-07_xx.md:42（D 节）`）。**只回"记下了"不算落盘**——用户回头找不到，等于没记。
+Once it has landed, **reply with one line saying where it went**: file path + which section / which row number (e.g. `_ops/CASES/C-07_xx.md:42 (section D)`). **Replying "noted" is not writing it down** — if the user cannot find it later, it was never noted.

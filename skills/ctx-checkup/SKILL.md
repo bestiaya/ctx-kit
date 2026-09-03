@@ -1,49 +1,51 @@
 ---
 name: ctx-checkup
-description: 会话缓存周检与案文件回填。用户说"周检""查一下会话花费""哪些会话该收口了""跑一下缓存审计""这周 token 都花哪了"，或显式 /ctx-checkup 时用。跑 cache-audit 判读越线会话，并回填案 G 节的待填档案路径。 Weekly cache audit — use on "weekly checkup", "where did the tokens go", "audit session costs", or /ctx-checkup; runs cache-audit, flags sessions over the pre-registered lines, backfills archive pointers in case files.
+description: Weekly cache audit — use on "weekly checkup", "where did the tokens go", "audit session costs", or /ctx-checkup; runs cache-audit, flags sessions over the pre-registered lines, backfills archive pointers in case files. Also triggers on Chinese — 用户说"周检""查一下会话花费""哪些会话该收口了""跑一下缓存审计""这周 token 都花哪了"，或显式 /ctx-checkup 时用。
 ---
 
-# 周检：查账 → 判读 → 回填
+# Weekly checkup: audit → read the numbers → backfill
 
-**开跑前两件，缺一必错**（都实测栽过）：①`date` 查真实时钟——**不许从文件时间戳或账单推日期**，推错会把整批记录盖上错日期；②重新拉一次活会话清单——**会话死活以案/线件头行为准**，登记簿是投影、可能已过期，据它判会把已退役的当活的。
+> **Speak in the user's language, and write the case files / board / inbox rows in the user's language.** Status words and section letters are fixed bilingual, so a case written in either language must be readable by this skill. Section letters A~I never change. Status words used here: **delivered** (已交货) / **awaiting decision** (候拍); header-line fields `status` (状态) / `pen-holder` (持笔) / `updated` (更新); roles `lead` (导师) / `exec` (执行); the placeholder in section G is `(to be backfilled)` / `(待回填)`.
 
-## 1. 跑账
+**Two things before you start; miss either and you will be wrong** (both have gone wrong in practice): ① run `date` for the real clock — **never infer the date from file timestamps or from the bill**, because a wrong inference stamps the whole batch of records with the wrong date; ② pull the live session list again — **whether a session is alive or dead is settled by the header line of the case / track file**; the register is only a projection and may be stale, and judging from it will treat retired sessions as live.
+
+## 1. Run the audit
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cache-audit.py" --all
 ```
 
-脚本纯标准库、零依赖。报 `xcodebuild` 之类的错是解释器被解析到了别处（如 macOS 的 Xcode 垫片）——换一个真实的 python3 再跑，不是脚本坏。非 plugin 方式安装时，把路径换成脚本实际所在位置。
-脚本从 cwd 推导项目档案目录；目录对不上就加 `--project <目录>`。
+The script is pure standard library, zero dependencies. An error mentioning `xcodebuild` or similar means the interpreter resolved somewhere else (the macOS Xcode shim, for instance) — run it again with a real python3; the script is not broken. Under a non-plugin install, replace the path with wherever the script actually lives.
+The script derives the project archive directory from cwd; if the directory does not match, add `--project <directory>`.
 
-## 2. 判读（预注册判据，判负照报）
+## 2. Reading the numbers (pre-registered criteria; a fail is reported as a fail)
 
-| 会话类型 | 判据 | 越线的含义 |
+| Session type | Criterion | What crossing the line means |
 |---|---|---|
-| 讨论 / 导师 | 重写占比 **<10%** 且 p50 水位 **<150k** | 钱漏在反复重读上 |
-| 执行 | compact 次数 **= 0** 且 峰值水位 **<200k** | 该落盘的没落盘 |
+| Discussion / lead | rewrite share **<10%** and p50 watermark **<150k** | the money is leaking into re-reading the same thing |
+| Exec | compact count **= 0** and peak watermark **<200k** | what should have gone to disk did not |
 
-脚本会给越线行打 ⚠️，但**别只转述表格**，逐条给动作：
-- 重写占比高 + 水位肥 → **"该 ctx-handoff 了"**；顺手估买断价 `水位×(2+0.1×(N−1))+输出×5`，与"再冷回访一次要付 水位×2"对照，用户一眼就能拍。
-- 执行会话 compact >0 → 指出它当时该落盘换生，不是压缩。
-- 已收口的老会话本期**新增请求 = 0** → 退役终验通过；>0 就点名"退役未落实"。
+The script flags every row over the line with ⚠️, but **do not just recite the table** — give an action for each one:
+- High rewrite share + high watermark → **"time for ctx-handoff"**; while you are there, estimate the buy-out price `watermark×(2+0.1×(N−1))+output×5` and set it against "one more cold re-entry costs watermark×2", so the user can decide at a glance.
+- An exec session with compact >0 → point out that it should have written to disk and started fresh instead of compacting.
+- An already closed old session with **0 new requests** this period → the retirement check passes; >0 and you name it: "retirement not honoured".
 
-## 3. 回填案 G 节
-扫案目录（优先 `_ops/CASES/`，否则 `cases/`）里 G 节写着 `(待回填)` 的案，逐个配对：
-1. 从案文件的"更新"日期与文件 mtime 取收口时点；
-2. 在项目档案目录里找该时点前后有**收口轮账单特征**的会话——单次 `cache_creation` ≈ 该会话水位、且此后再无请求；
-3. 配上了就把 jsonl 路径填进 G 节，标"仅备查勿整读"。
+## 3. Backfill section G
+Sweep the case directory (`_ops/CASES/` for preference, otherwise `cases/`) for cases whose section G says `(to be backfilled)` / `(待回填)`, and pair them up one at a time:
+1. take the close-out moment from the case file's "updated" date and the file mtime;
+2. in the project archive directory find the session around that moment carrying the **billing signature of a close-out round** — a single `cache_creation` ≈ that session's watermark, with no request after it;
+3. once paired, write the jsonl path into section G, marked "reference only, do not read in full".
 
-两条纪律：
-- **jsonl 时间戳是 UTC**，与本地时钟比对前先按本地时区换算（差一个时区就会配错会话）。
-- **配不上就留着 `(待回填)` 并说明**。宁可空着，也不许填一个"看起来像"的路径——`ls -t` 自指实测会指到两周前的旧文件。
+Two rules:
+- **jsonl timestamps are UTC** — convert to the local timezone before comparing them with the local clock (one timezone out and you pair the wrong session).
+- **If it does not pair, leave `(to be backfilled)` in place and say so.** Better empty than a path that merely "looks right" — using `ls -t` to point at yourself has been measured pointing at a file two weeks old.
 
-## 4. 案尺寸检查
-口径 = **接手时的实际加载量**（头行 + A~D + E 的活跃行与最新判定 + I），不是"文件多大"，也不是旧口径的"量到 E 为止"。逐案跑 `ctx-takeover` 第 2 节那段提取命令（`F=` 换成各案路径）、`| tail -1` 只取末行那个字符数——**别把提取出来的正文读进上下文**，周检只要数；决策附录 / 实验档案 / TASKBOARD 跳过。
+## 4. Case size check
+The measure = **what a takeover actually loads** (header line + A~D + E's active rows and latest verdict + I), not "how big the file is", and not the old measure of "count up to E". Run the extraction command from `ctx-takeover` §2 on each case (swap `F=` for each case path) and `| tail -1` to take only the character count on the last line — **do not read the extracted body into context**; the checkup only needs the number. Skip decision appendices, experiment archives and TASKBOARD.
 
-判据（2026-08-24 负责人放宽，原 7,000）：每案 **≤10,000 为绿**，**>15,000 必瘦**。超线逐案报数并点名持笔会话瘦身：C 表旧行上交线级决策档案 / E 的已交货老行滚动归档（见 `ctx-handoff`）/ D 清已了项 / F 编年压缩；历史细节留转录与档案，不留案。
+Criterion (relaxed by the owner on 2026-08-24, previously 7,000): **≤10,000 per case is green**, **>15,000 must be slimmed**. For every case over the line, report the number and name the pen-holding session to do the slimming: hand the old rows of table C up to the track-level decision archive / roll the old delivered rows of E into an archive (see `ctx-handoff`) / clear the settled items out of D / compress the chronicle in F; historical detail belongs in the transcript and the archives, not in the case.
 
-**E 行长度检查（只报不改）**：判定与"对方案的影响"两格各 ≤200 字。全案库跑一遍，超长行按字数倒序列出（案文件 / 行号 / 哪一格 / 字数），报给该案持笔会话自己瘦——**周检不改别人的案**：
+**E row length check (report, do not fix)**: the verdict cell and the "what it changes in the plan" cell are each ≤200 characters. Run it over the whole case library and list the over-long rows in descending order of length (case file / row number / which cell / character count), reporting them to that case's pen-holding session to slim down themselves — **the checkup never edits somebody else's case**:
 
 ```bash
 D=_ops/CASES; [ -d "$D" ] || D=cases; python3 - "$D"/*.md <<'PY'
@@ -56,22 +58,22 @@ for p in sys.argv[1:]:
         if L[i].split()[1]!='E': continue
         R=[(k+1,l) for k,l in enumerate(L[i:P[n+1]],i) if l.lstrip().startswith('|')]
         h=[c.strip() for c in R[0][1].strip().strip('|').split('|')] if R else []
-        C=[x for x,c in enumerate(h) if '判定' in c or '影响' in c]
+        C=[x for x,c in enumerate(h) if re.search(r'判定|verdict|影响|impact',c,re.I)]
         for ln,l in R[2:]:
             c=[x.strip() for x in l.strip().strip('|').split('|')]
-            w+=[(len(c[x]),f'{p}:{ln} 「{h[x]}」{len(c[x])} 字') for x in C if x<len(c) and len(c[x])>200]
+            w+=[(len(c[x]),f'{p}:{ln} [{h[x]}] {len(c[x])} chars') for x in C if x<len(c) and len(c[x])>200]
 for n,s in sorted(w,reverse=True): print(s)
-print(f'--- 超 200 字的格 {len(w)} 处（只报不改，请写的人自己瘦）---')
+print(f'--- {len(w)} cells over 200 characters (reported, not fixed — the author slims their own) ---')
 PY
 ```
 
-**拆案提示（只提示、不判负）**：某案 E 行 >30，或近 30 天新增的 C 决议行 >50，就提一句"考虑拆案"。**这两个阈值是经验值、尚未验证**，只当讨论引子，不作判据、不进达成/判负。
+**Split-the-case hint (a hint only, never a fail)**: if a case has >30 E rows, or >50 C decision rows added in the last 30 days, say one line — "consider splitting this case". **Both thresholds are rules of thumb and have not been verified**, so treat them only as a conversation opener; they are not criteria and they never count towards pass or fail.
 
-## 5. 退役标记补扫
-收口时自打标的会话前缀是 `✕`。**崩掉或被弃置的会话不会自己打标**，本步补：
-- 列出**既不是任何线的线主、也不是任何案的持笔、也不是任何散活的载体**，且 >1 天没动过、标题又没有 `✕` 前缀的会话；
-- 逐个 `set_session_title` 改成 `✕ <原标题>`。**存疑的不动**——宁可漏标，不许把活会话标死。标题工具不可用（纯终端）则本步跳过，并在回复里说明。
-- 报数：本期补标 N 个、存疑跳过 M 个（点名）。
+## 5. Retirement-mark sweep
+A session that marks itself at close-out carries the `✕` prefix. **A session that crashed or was abandoned never marks itself**, so this step catches up:
+- list every session that is **neither the track owner of any track, nor the pen-holder of any case, nor the carrier of any one-off**, has not moved for >1 day, and has no `✕` prefix in its title;
+- `set_session_title` each of them to `✕ <original title>`. **Leave the doubtful ones alone** — better to miss one than to mark a live session dead. If the title tool is unavailable (a bare terminal), skip this step and say so in the reply.
+- Report the numbers: N newly marked this period, M skipped as doubtful (named).
 
-## 6. 回复
-一张表（会话 / 判据 / 实际读数 / 达成或判负 / 建议动作）+ 一句话总账：本期几个越线、几个建议收口、案尺寸超线几例、G 节回填 x/y、退役终验几例通过。
+## 6. Reply
+One table (session / criterion / actual reading / pass or fail / recommended action) + one line of overall account: how many over the line this period, how many recommended for close-out, how many cases over the size limit, section G backfilled x/y, how many retirement checks passed.

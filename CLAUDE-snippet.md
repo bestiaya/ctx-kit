@@ -1,43 +1,59 @@
-# 可拷贝条文：上下文与工作流
+# A rule block to copy: context and workflow
 
-把下面代码块里的内容整段拷进项目的 `CLAUDE.md`，或拷进用户级 `~/.claude/CLAUDE.md`（想让所有项目都吃这套纪律就放用户级）。
+Paste the whole code block below into your project `CLAUDE.md`, or into the user-level `~/.claude/CLAUDE.md` (put it at user level if you want every project to run under this discipline).
 
-条文只写"做什么"，怎么做在六个 skill 里——**skill 正文只在被调用时才进上下文，条文本身常驻**，所以条文越短越好，别把 skill 内容抄进来。
+The rules only say *what* to do; *how* lives in the six skills — **a skill's body enters the context only when it is invoked, whereas the rule block is resident**, so the shorter the rules the better. Do not copy skill content into them.
 
 ```markdown
-## 上下文与工作流
-- 状态在盘上，会话可抛弃：结论当场落盘（拍板→案 C 节、方案改版→案 B 节），不等收口才写。
-- 所有任务目标导向：先对目标链（总目标→线/案→本动作，读任务板头部）再动手；挂不上节点的活单列检讨。
-- 接到"做 X"先分诊：要讨论/多轮实验→立案（ctx-kickoff；案目录优先 `_ops/CASES/`，否则 `cases/`）；
-  一次执行→任务板立一行（挂目标节点） + 派新会话；顺手小改→直接干。
-- 派活判据（核心变量=**方向不确定性**，不是时长）：①有方向叉口（设计/探索，中途可能要负责人定向）→独立会话
-  + 自足任务书，书里显式标"负责人停等点"；②确定性实验（预注册闭合无候拍点 + 只读或只写实验区 + 简单一次性）
-  →本会话内联子代理，只报结果；③N 臂横比→一次性瘦编排会话；④重而确定（长时间机械放量）→独立会话，
-  不设停等点，拉模式交货。子代理中途无法与任何人对话，凡可能要负责人介入的活不得内联。
-  **肥会话不当爹**（等子代理的冷税 = 派发者水位 × 2）。
-- 跨线/跨会话投递：发信前先查地址——目标线/案**没有活持笔**（候接手／收口中／前任已退役）就**不发信**，
-  改往目标件的**收件位追加一行**（只追加、不改正文，防两支笔对写），急事另报负责人开会话；有活持笔且 1 小时内活跃过才直接发。
-  要死会话里的知识就**读它的档案，别叫醒它**（读档只花读者的钱，唤醒付水位 × 2）。
-  派活后不催进度：对执行会话订阅 notify_when_idle（零 token 空闲门铃，CLI ≥2.1.236），通知到了只读交货件；
-  高水位讨论会话可把 crossSessionInbound 设 hold，防外来消息唤醒计费。
-- >30k 的一次性只读材料派 digest 子代理消化，只收 ≤5k 摘要；工作集（本批反复咀嚼的交付件）不受此限。
-- 执行会话开工先 set_session_title 自报板上名；交货 = 双层交货件（机读 + 给人看）+ 回填案 E 行；
-  执行体只写自己那行 E，不读案全文。
-- 会话过 150–200k 或到批界：**只提醒收口**（把当前水位读数一起报出来），收不收由负责人拍，不自行执行（ctx-handoff）；
-  继任开题只读案文件、禁读旧会话转录（ctx-takeover）。
-  讨论/导师会话永不 compact；compact 仅限执行会话逼近窗口顶时的急救。
-- 被问"进展"：读板 + 案，人话汇报，不让负责人翻文件。
-- 负责人只有三个动作：说事 / 问进展 / 拍板；其余不请示，做完报告。
+## Context and workflow
+- State lives on disk, sessions are disposable: write a conclusion down as it happens (a decision → the case's
+  section C, a change of plan → the case's section B); do not wait for close-out to write it.
+- Every job is goal-directed: line the goal chain up first (top-level goal → track / case → this action, read the
+  board header), then act; a job that hangs off no milestone is listed separately for review.
+- On hearing "do X", triage first: needs discussion or several rounds of experiment → open a case (ctx-kickoff;
+  case directory `_ops/CASES/` for preference, otherwise `cases/`); one pass of execution → one row on the board
+  (hung off a goal milestone) + dispatch a new session; a quick small change → just do it.
+- Dispatch criteria (the core variable is **directional uncertainty**, not duration): ① a fork in direction
+  (design / exploration, the owner may have to steer mid-way) → its own session + a self-contained task brief that
+  explicitly marks the "owner stop-and-wait point"; ② a deterministic experiment (pre-registered, closed, nothing
+  awaiting decision + read-only or writing only to the experiment area + simple and one-shot) → an inline subagent
+  in this session, reporting the result only; ③ an N-arm comparison → one throwaway thin orchestration session;
+  ④ heavy but certain (long mechanical volume) → its own session, no stop-and-wait point, delivery pulled rather
+  than pushed. A subagent cannot talk to anybody mid-run, so any job that might need the owner must never be inline.
+  **A high-watermark session is nobody's parent** (the cold tax of waiting on a subagent = the dispatcher's watermark × 2).
+- Cross-track / cross-session delivery: check the address before sending — if the target track or case has
+  **no live pen-holder** (awaiting takeover / closing / predecessor retired), **do not send**; append a row to the
+  target file's **inbox** instead (append only, never touch the body, so two pens never write over each other),
+  and for something urgent tell the owner to open a session. Send directly only when there is a live pen-holder
+  that has been active within the hour. To get at what a dead session knows, **read its archive, do not wake it**
+  (reading the archive costs only the reader; waking it costs watermark × 2).
+  Do not chase progress after dispatching: subscribe to notify_when_idle on the exec session (a zero-token idle
+  bell, CLI ≥2.1.236) and read only the deliverable when the notification arrives; a high-watermark discussion
+  session can set crossSessionInbound to hold so an incoming message does not wake it and start billing.
+- Read-once material over 30k goes to the digest subagent, and you take back a ≤5k summary only; the working set
+  (the deliverables this batch chews on repeatedly) is not subject to this.
+- An exec session calls set_session_title first thing, naming itself as it appears on the board; delivery = a
+  two-layer deliverable (machine-readable + written for people) + writing back the case's E row; an exec writes
+  only its own E row and never reads the whole case.
+- Past 150-200k, or at a batch boundary: **only remind that it is time to close out** (with the current watermark
+  reading), the owner decides whether to do it, never act unasked (ctx-handoff); a successor opens by reading the
+  case file only, and never reads old session transcripts (ctx-takeover).
+  A discussion / lead session is never compacted; compact is first aid for an exec session nearing the top of the
+  window, and nothing else.
+- When asked "where do things stand": read the board + the cases and report in plain language, so the owner never
+  has to open a file.
+- The owner has only three moves: name a job / ask where things stand / decide. Everything else you do without
+  asking, and report once it is done.
 ```
 
-## 装完自查三条
+## Three self-checks after installing
 
-1. 新开一个会话说"我要做 X"，看它是否**先分诊再动手**（而不是直接开干或反问一串问题）。
-2. 让它读一份 >30k 的材料，看它是否**派 digest 子代理**而不是自己通读。
-3. 把会话养到 150k 以上，看它过线时是否**提醒你收口**（不提就是条文没吃进去，检查 CLAUDE.md 是否被加载）。
+1. In a fresh session, say "I want to do X" and see whether it **triages before acting** (rather than starting work or firing back a string of questions).
+2. Give it a >30k read and see whether it **dispatches the digest subagent** instead of reading it all itself.
+3. Grow a session past 150k and see whether it **offers to close out** when it crosses the line (if it does not, the rules were not taken in — check that `CLAUDE.md` is being loaded).
 
-## 按项目裁剪
+## Trimming it per project
 
-- 案目录名不同：把条文里的 `_ops/CASES/` 换成你的实际目录（六个 skill 会自动优先用已存在的目录，条文改不改都能跑）。
-- 没有"负责人"角色（自己一个人用）：最后一条删掉，其余照留。
-- 团队协作场景：给"持笔"一栏加上人名约定（如 `名字 @UUID前8`），避免两个人同时接一个案。
+- A differently named case directory: replace `_ops/CASES/` in the rules with your actual directory (the six skills already prefer whichever directory exists, so the rules work either way).
+- No "owner" role (you are working alone): delete the last rule and keep the rest.
+- Team settings: add a name convention to the "pen-holder" cell (`name @first-8-of-UUID`, say) so two people never take the same case at once.

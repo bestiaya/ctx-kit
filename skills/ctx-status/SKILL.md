@@ -1,22 +1,24 @@
 ---
 name: ctx-status
-description: 查看现状。用户说"现在什么情况""进展如何""有哪些案""资产都在哪""看一下板"，或显式 /ctx-status 时用。读任务板与案文件，人话汇报目标链、各案状态、待拍板项与散活，不让用户翻文件。 Report status — use on "what's the status", "where do things stand", "show the board", or /ctx-status; reads the board and case files, reports goal chain, case states, pending decisions and one-offs in plain language.
+description: Report status — use on "what's the status", "where do things stand", "show the board", or /ctx-status; reads the board and case files, reports goal chain, case states, pending decisions and one-offs in plain language. Also triggers on Chinese — 用户说"现在什么情况""进展如何""有哪些案""资产都在哪""看一下板"，或显式 /ctx-status 时用。
 ---
 
-# 查看：板 → 案 → 人话汇报
+# Status: board → cases → a plain-language report
 
-## 1. 读什么（只读这些，不翻转录、不翻交货件正文）
-- **任务板**（案目录内的 `TASKBOARD.md`，如 `_ops/CASES/TASKBOARD.md`；旧位 `_ops/TASKBOARD.md` 为后备）：头部目标链 + 案索引 + 散活区。无板 → 改读案目录文件列表，并提示"建议建板"。
-- **每个活跃案**的：头行（状态/持笔/更新日期）+ A 节 M 读数 + D 节前三项。案多时只展开用户点名的，其余一行带过。
+> **Speak in the user's language, and write the board / case files / inbox rows in the user's language.** Status words and section letters are fixed bilingual, so a board or case written in either language must be readable by this skill. Section letters A~I never change. Status words used here: **running** (在跑) / **awaiting acceptance** (待验收) / **awaiting decision** (候拍); header-line fields `status` (状态) / `pen-holder` (持笔) / `updated` (更新).
 
-## 2. 汇报格式（固定四段，人话）
-1. **目标链**：产品总目标一句 + 各线一行（节点 / 目标 / 状态）；
-2. **各案现状**：案号+人话名 | 持笔在谁 | 最新读数 | 头号未决（候谁）；
-3. **等负责人的**：各案 D 节"候拍/候校订"项汇总，每项一句 + 建议；
-4. **散活与在跑**：板散活区 + 各案 E 台账里"在跑/待验收"的行。
+## 1. What to read (only these — no transcripts, no bodies of deliverables)
+- **The board** (`TASKBOARD.md` inside the case directory, e.g. `_ops/CASES/TASKBOARD.md`; the old location `_ops/TASKBOARD.md` is the fallback): the goal chain in the header + the case index + the one-off area. No board → read the file list of the case directory instead, and suggest "a board would help".
+- **For every active case**: the header line (status / pen-holder / updated date) + the M reading in section A + the first three items of section D. When there are many cases, expand only the ones the user names and give the rest one line each.
 
-## 3. 纪律
-- 数字只报盘上有的；无读数明说"无数"，**不猜、不引转录里的旧状态**。
-- 板与案不一致 → 两边都报并标"待对齐"，不悄悄采信一边。
-- 首答不超一屏；用户点名某案/某件才往深处读。
-- 汇报完即停，不追加建议清单（用户要建议会问）。
+## 2. Report format (four fixed sections, plain language)
+1. **Goal chain**: the product top-level goal in one sentence + one line per track (milestone / goal / status);
+2. **Where each case stands**: case number + plain-language name | who holds the pen | latest reading | the top open item (waiting on whom);
+3. **Waiting on the owner**: everything under "awaiting decision / awaiting revision" in each case's section D, one sentence each plus a recommendation;
+4. **One-offs and what is running**: the board's one-off area + the rows in each case's E ledger whose status is running / awaiting acceptance.
+
+## 3. Discipline
+- Report only numbers that are on the board. Where there is no reading, say "no reading" — **never guess, and never quote a stale status out of a transcript**.
+- Board and case disagree → report both sides and mark it "needs reconciling"; do not quietly side with one of them.
+- The first answer must not run past one screen; read deeper only when the user names a case or an item.
+- Stop when the report is done, do not append a list of suggestions (the user will ask if they want them).
