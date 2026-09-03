@@ -1,7 +1,7 @@
 {
   "name": "ctx-kit",
   "displayName": "ctx-kit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Session lifecycle toolkit for Claude Code: state lives on disk, sessions are disposable. 6 skills (ctx-init / ctx-kickoff / ctx-handoff / ctx-takeover / ctx-status / ctx-checkup) + a PreCompact warning hook + a cache-audit script + a digest subagent. The hook only shows a notification before auto-compact; the script only reads local session logs. 会话生命周期工具包：状态在盘上，会话可抛弃。",
   "author": {
     "name": "ctx-kit contributors"
