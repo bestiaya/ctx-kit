@@ -25,8 +25,8 @@ Fill in the path and run the whole block; it locates the "status / verdict" colu
 F=<case file path>; python3 - "$F" <<'PY'
 import sys,re
 L=open(sys.argv[1],encoding='utf-8').read().split('\n')
-P=[i for i,l in enumerate(L) if re.match(r'^##\s+[A-Z]\b',l)]+[len(L)]
-S={L[i].split()[1]:(i,P[n+1]) for n,i in enumerate(P[:-1])}
+P=[i for i,l in enumerate(L) if re.match(r'^##\s+[A-Z]\.?(\s|$)',l)]+[len(L)]
+S={L[i].split()[1].rstrip('.'):(i,P[n+1]) for n,i in enumerate(P[:-1])}
 z=lambda r:[c.strip() for c in r.strip().strip('|').split('|')]
 o=L[:P[0]]
 for k in 'ABCD':

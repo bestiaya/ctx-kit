@@ -47,9 +47,9 @@ import sys,re
 w=[]
 for p in sys.argv[1:]:
     L=open(p,encoding='utf-8').read().split('\n')
-    P=[i for i,l in enumerate(L) if re.match(r'^##\s+[A-Z]\b',l)]+[len(L)]
+    P=[i for i,l in enumerate(L) if re.match(r'^##\s+[A-Z]\.?(\s|$)',l)]+[len(L)]
     for n,i in enumerate(P[:-1]):
-        if L[i].split()[1]!='E': continue
+        if L[i].split()[1].rstrip('.')!='E': continue
         R=[(k+1,l) for k,l in enumerate(L[i:P[n+1]],i) if l.lstrip().startswith('|')]
         h=[c.strip() for c in R[0][1].strip().strip('|').split('|')] if R else []
         C=[x for x,c in enumerate(h) if re.search(r'判定|verdict|影响|impact',c,re.I)]

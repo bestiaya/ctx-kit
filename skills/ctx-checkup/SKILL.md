@@ -15,8 +15,10 @@ description: Weekly cache audit — use on "weekly checkup", "where did the toke
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/cache-audit.py" --all
 ```
 
-The script is pure standard library, zero dependencies. An error mentioning `xcodebuild` or similar means the interpreter resolved somewhere else (the macOS Xcode shim, for instance) — run it again with a real python3; the script is not broken. Under a non-plugin install, replace the path with wherever the script actually lives.
+The script is pure standard library, zero dependencies. An error mentioning `xcodebuild` or similar means the interpreter resolved somewhere else (the macOS Xcode shim, for instance) — run it again with a real python3; the script is not broken.
+**`${CLAUDE_PLUGIN_ROOT}` is set only under a plugin install.** On a manual install it is empty, the command above resolves to `/scripts/cache-audit.py`, and you get "no such file" — **use the path you copied the script to instead** (`python3 ~/.claude/scripts/cache-audit.py --all`, say). Do not guess at a plugin directory that is not there.
 The script derives the project archive directory from cwd; if the directory does not match, add `--project <directory>`.
+**A table with zero rows is not a pass.** When nothing comes back but the header (the script says `(no sessions found under <directory>)`), report it in those words — **"no session logs found for this project directory — nothing to judge"** — and never dress it up as a clean checkup: a checkup with nothing to read has checked nothing. Before concluding, confirm the directory on the script's first line is the project you meant (`--project <directory>`) and re-run with `--all 0` to drop the 2MB floor, in case the logs are simply small.
 
 ## 2. Reading the numbers (pre-registered criteria; a fail is reported as a fail)
 
@@ -53,9 +55,9 @@ import sys,re
 w=[]
 for p in sys.argv[1:]:
     L=open(p,encoding='utf-8').read().split('\n')
-    P=[i for i,l in enumerate(L) if re.match(r'^##\s+[A-Z]\b',l)]+[len(L)]
+    P=[i for i,l in enumerate(L) if re.match(r'^##\s+[A-Z]\.?(\s|$)',l)]+[len(L)]
     for n,i in enumerate(P[:-1]):
-        if L[i].split()[1]!='E': continue
+        if L[i].split()[1].rstrip('.')!='E': continue
         R=[(k+1,l) for k,l in enumerate(L[i:P[n+1]],i) if l.lstrip().startswith('|')]
         h=[c.strip() for c in R[0][1].strip().strip('|').split('|')] if R else []
         C=[x for x,c in enumerate(h) if re.search(r'判定|verdict|影响|impact',c,re.I)]

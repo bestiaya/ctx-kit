@@ -5,7 +5,7 @@ description: Initialize a project board — use on "new project", "set this proj
 
 # Kick-off: read → propose → confirm → write
 
-> **Speak in the user's language, and write the board / case files / inbox rows in the user's language.** Status words and section letters are fixed bilingual, so a board written in either language must be readable by this skill. Board section names: `## Goal` (总目标) / `## Global plan` (全局计划) / `## Cases on the books` (在册案) / `## One-offs` (散活); header-line fields `status` (状态) / `pen-holder` (持笔) / `updated` (更新); status word used here: **running** (在跑).
+> **Speak in the user's language, and write the board / case files / inbox rows in the user's language.** Status words and section letters are fixed bilingual, so a board written in either language must be readable by this skill. Board section names: `## Goal` (总目标) / `## Global plan` (全局计划) / `## Cases on the books` (在册案) / `## One-offs` (散活); header-line fields `status` (状态) / `pen-holder` (持笔) / `updated` (更新). **The board's own status vocabulary is four words and only four**: **done** (已完) / **running** (在跑) / **not started** (未开始) / **on hold** (挂起) — they belong in the Status column of the global plan. A case row on the board carries that case's own header-line status instead, and those status words are listed at the top of `ctx-kickoff`.
 
 The overview = the header of `TASKBOARD.md` inside the case library (top-level goal + global plan). Every case's R field in section A and every one-off's "serves which milestone" hangs off it — without it, nothing that comes later has anything to hang on.
 
@@ -26,7 +26,7 @@ Do not read: session transcripts (`*.jsonl`), private directories outside the ca
 ## 2. Propose (not one character on disk)
 Give the user one table, four blocks. **In review mode all four blocks are given anyway**, with each cell prefixed 「matches / differs / empty」: cells marked 「matches」 carry only the current value and its source and are not expanded; step 3 only asks about cells marked 「differs」, 「empty」 or 「you tell me」.
 1. **Three questions about the top-level goal**: what is the final thing to get / who is it for / what counts as done;
-2. **Milestone list**: how many are in flight / done / waiting to start, one status line each (a milestone = one row of the overview's "global plan");
+2. **Milestone list**: how many are running / done / not started / on hold, one status line each (a milestone = one row of the overview's "global plan");
 3. **Case library location and prefix**: for a public repo suggest `_internal/` + `.gitignore`, or a private nested repo; for a private project `_ops/CASES/`; add the case-number prefix (initials of the project name) and the session-title prefix;
 4. **The items you cannot read out.**
 
@@ -55,7 +55,7 @@ updated: <today>
 
 | # | Milestone | Status | Who is pushing it |
 |---|---|---|---|
-| 1 | <milestone in one sentence> | **running** — <current state in one sentence> | (no case yet) |
+| 1 | <milestone in one sentence> | **<done / running / not started / on hold>** — <current state in one sentence> | (no case yet) |
 
 **Where we stand**: <which milestones are taken, where it is stuck now>
 
@@ -71,13 +71,15 @@ updated: <today>
 (None yet. A one-off on the board must state "serves which milestone" — which milestone of the global plan above it hangs off; if it hangs off nothing, list it separately for review and do not start it.)
 ```
 
+**The Status column of the global plan takes one of the four board status words** — `done` / `running` / `not started` / `on hold` — followed by a dash and one sentence of current state; nothing else goes in that cell, because `ctx-status` counts the milestones by these words. The Status column of 「Cases on the books」 is a different vocabulary: it mirrors that case's own header-line status (`in discussion`, `awaiting decision`, `closed` …), listed at the top of `ctx-kickoff`.
+
 The section names and table headers are **not to be changed by one character** (`## Goal` / `## Global plan` with `# | Milestone | Status | Who is pushing it` / `## Cases on the books` / `## One-offs`) — change them and the three downstream skills cannot read the board. For a Chinese-speaking user write the Chinese names given in the note at the top of this skill; either language is fine, mixing them is not. Review mode only edits the cells that differ and leaves every other line alone.
 
 If the case library is somewhere other than the default (a public repo using `_internal/`, say), **tell the user to add a line about it to the project `CLAUDE.md` themselves** — do not edit `CLAUDE.md` for them.
 
 ## 5. Closing three lines
 1. the top-level goal in one sentence;
-2. how many milestones (in flight / done / waiting to start);
+2. how many milestones (running / done / not started / on hold);
 3. the absolute path of the overview.
 
 One last sentence: **you can name the first job now (ctx-kickoff).**

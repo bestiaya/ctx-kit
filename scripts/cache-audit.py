@@ -20,6 +20,7 @@ Usage:
   python3 cache-audit.py <jsonl path...>            # named sessions
   python3 cache-audit.py --all [min MB]             # sweep the current project (default >2MB)
   python3 cache-audit.py --project <dir> --all      # a named project directory
+  python3 cache-audit.py -h                         # one-line usage
 The project directory is derived from cwd by default: ~/.claude/projects/ + cwd with every
 non-alphanumeric character replaced by '-'.
 """
@@ -91,12 +92,19 @@ def audit(fp):
 
 def main():
     args = sys.argv[1:]
+    if "-h" in args or "--help" in args:
+        print(
+            "usage: cache-audit.py [--project <dir>] [--all [min MB] | <jsonl path...>]"
+            "  — weekly cache checkup; --all sweeps the current project (default floor 2MB)"
+        )
+        return
     proj = PROJ
     if "--project" in args:
         i = args.index("--project")
         proj = os.path.expanduser(args[i + 1]).rstrip("/") + "/"
         args = args[:i] + args[i + 2:]
-    if not args or args[0] == "--all":
+    allmode = not args or args[0] == "--all"
+    if allmode:
         minmb = float(args[1]) if len(args) > 1 else 2.0
         files = [f for f in glob.glob(proj + "*.jsonl") if os.path.getsize(f) > minmb * 1e6]
         print(f"# project directory: {proj}")
@@ -104,14 +112,24 @@ def main():
         files = args
     hdr = f"{'session':34} {'reqs':>5} {'day':>3} {'p50 ctx':>9} {'peak':>9} {'costM':>7} {'rw':>4} {'rw%':>7} {'cmp':>4}"
     print(hdr)
+    shown = 0
     for fp in sorted(files, key=os.path.getmtime, reverse=True):
         r = audit(fp)
         if not r:
             continue
+        shown += 1
         flag = " ⚠️" if (r["rw_share"] >= 10 or r["p50"] >= 150_000 or r["compacts"] > 0) else ""
         print(
             f"{r['file'][:34]:34} {r['n']:>5} {r['days']:>3} {r['p50']:>9,} {r['peak']:>9,}"
             f" {r['eq_m']:>7.1f} {r['rewrites']:>4} {r['rw_share']:>6.0f}% {r['compacts']:>4}{flag}"
+        )
+    if not shown:
+        # zero rows is not a pass: say so plainly, so the checkup cannot read an empty
+        # table as a clean bill of health
+        print(
+            f"(no sessions found under {proj})"
+            if allmode
+            else "(no sessions found in the files given)"
         )
 
 
