@@ -167,16 +167,18 @@ claude plugin install ctx-kit@ctx-kit
 
 <details><summary>手动安装（不走 plugin）</summary>
 
-把 `skills/ctx-*` 拷进 `.claude/skills/`、`agents/digest.md` 拷进 `.claude/agents/`、`hooks/hooks.json` 的 `hooks` 段并进 `.claude/settings.json`（macOS 弹通知，其它平台回落 stderr）；条文照上面粘贴；审计脚本留在原地，`python3 <路径>/cache-audit.py --all`。
+把 `skills/ctx-*` 拷进 `.claude/skills/`、`agents/digest.md` 拷进 `.claude/agents/`、`scripts/cache-audit.py` 拷进 `~/.claude/scripts/`（目录没有就建；没有插件根时，`ctx-checkup` 只到这里找脚本）、`hooks/hooks.json` 的 `hooks` 段并进 `.claude/settings.json`（macOS 弹通知，其它平台回落 stderr）；条文照上面粘贴。
+
+每次 `git pull` 之后：`scripts/sync-installed.sh --check` 列出安装态与仓库源码的差异，`--apply` 把仓库源码同步过去——覆盖前先把旧件备份到 `~/.claude/ctx-kit-backup-<时间戳>/`，只加不删。（维护者另有 `scripts/release-check.py`：发版前查版本号、skill 件数与 skill 名在插件清单、两份 README 与文档里是否一致。）
 </details>
 
 装完自查三条：
 
 1. 新开一个会话说"我要做 X"，看它是否先分诊再动手。
-2. 让它读一份 >30k 的材料，看它是否派 digest 子代理而不是自己通读。
+2. 让它读一份 >30k 字符（`LC_ALL=en_US.UTF-8 wc -m`）的材料，看它是否派 digest 子代理而不是自己通读。
 3. 把会话养到黄灯线以上，看它过线时是否提醒你收口——不提就是条文没加载。
 
-**卸载**：plugin 在 `/plugin` 里移除，手动装的 `rm -rf .claude/skills/ctx-* .claude/agents/digest.md`；再从 `CLAUDE.md` 与 `.claude/settings.json` 删掉对应段落，不留痕迹。
+**卸载**：plugin 在 `/plugin` 里移除，手动装的 `rm -rf .claude/skills/ctx-* .claude/agents/digest.md ~/.claude/scripts/cache-audit.py`；再从 `CLAUDE.md` 与 `.claude/settings.json` 删掉对应段落，不留痕迹。
 
 ## 六条命令
 
@@ -191,7 +193,7 @@ claude plugin install ctx-kit@ctx-kit
 | 想知道现在什么情况 | "现在什么情况"，或 `/ctx-status` |
 | 一周查一次账 | "周检"，或 `/ctx-checkup` |
 
-案文件放哪：优先已存在的 `_ops/CASES/`，否则 `cases/`。
+案文件放哪：优先已存在的 `_ops/CASES/`，否则 `cases/`；想放别处就在项目 `CLAUDE.md` 里写一行 `ctx-kit case library: docs/cases`，六个 skill 都照这行找。
 
 ## 阅读顺序
 

@@ -167,16 +167,18 @@ Third step (manual, required): paste the whole code block from [CLAUDE-snippet.m
 
 <details><summary>Manual install (no plugin)</summary>
 
-Copy `skills/ctx-*` into `.claude/skills/` and `agents/digest.md` into `.claude/agents/`, then merge the `hooks` object from `hooks/hooks.json` into `.claude/settings.json` (macOS shows a notification; elsewhere it falls back to stderr). Paste the rule block as above. Leave the audit script where it is and run it from there: `python3 <path>/cache-audit.py --all`.
+Copy `skills/ctx-*` into `.claude/skills/`, `agents/digest.md` into `.claude/agents/` and `scripts/cache-audit.py` into `~/.claude/scripts/` (create the directory if it is not there — with no plugin root, that is the one place `ctx-checkup` looks for the script), then merge the `hooks` object from `hooks/hooks.json` into `.claude/settings.json` (macOS shows a notification; elsewhere it falls back to stderr). Paste the rule block as above.
+
+After every `git pull`, `scripts/sync-installed.sh --check` lists where the installed copies have drifted from the repository, and `--apply` copies the repository over them — backing up whatever it overwrites into `~/.claude/ctx-kit-backup-<timestamp>/` first, and never deleting anything. (For maintainers, `scripts/release-check.py` checks that the version number, the skill count and the skill names agree across the plugin manifest, both READMEs and the docs before a release.)
 </details>
 
 Three self-checks afterwards:
 
 1. In a fresh session, say "I want to do X" and watch whether it triages before it starts working.
-2. Hand it a >30k read and watch whether it dispatches the `digest` subagent instead of reading it inline.
+2. Hand it a >30k-character read (`LC_ALL=en_US.UTF-8 wc -m`) and watch whether it dispatches the `digest` subagent instead of reading it inline.
 3. Grow a session past the yellow line and watch whether it offers to close out — if it doesn't, the rule block isn't loaded.
 
-**Uninstall**: remove ctx-kit in `/plugin`, or for a manual install `rm -rf .claude/skills/ctx-* .claude/agents/digest.md`. Then delete the blocks you pasted into `CLAUDE.md` and `.claude/settings.json`. Nothing is left behind.
+**Uninstall**: remove ctx-kit in `/plugin`, or for a manual install `rm -rf .claude/skills/ctx-* .claude/agents/digest.md ~/.claude/scripts/cache-audit.py`. Then delete the blocks you pasted into `CLAUDE.md` and `.claude/settings.json`. Nothing is left behind.
 
 ## The six commands
 
@@ -191,7 +193,7 @@ Six skills, six commands. Saying it in plain words and typing the command are th
 | You want to know where things stand | "what's the status", or `/ctx-status` | Reads the board and the case files, reports the goal chain, case states, pending decisions and one-offs in plain language |
 | Once a week, checking the bill | "weekly checkup", or `/ctx-checkup` | Runs the cache audit, flags the sessions over the pre-registered lines, backfills archive pointers in the case files |
 
-Case files live in `_ops/CASES/` when that directory already exists, otherwise in `cases/`.
+Case files live in `_ops/CASES/` when that directory already exists, otherwise in `cases/` — or anywhere you like: put one line, `ctx-kit case library: docs/cases`, in your project `CLAUDE.md` and all six skills read it from there.
 
 ## Reading order
 

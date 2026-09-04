@@ -10,16 +10,16 @@ description: Initialize a project board — use on "new project", "set this proj
 The overview = the header of `TASKBOARD.md` inside the case library (top-level goal + global plan). Every case's R field in section A and every one-off's "serves which milestone" hangs off it — without it, nothing that comes later has anything to hang on.
 
 ## 0. Locate (nothing written)
-Same rules as `ctx-kickoff` §0: **project root** = the git root if there is a `.git`, otherwise cwd; **the case library is only ever looked for inside the project root**, preferring an existing `<project root>/_ops/CASES/`, otherwise `<project root>/cases/`.
+Same rules as `ctx-kickoff` §0: **project root** = the git root if there is a `.git`, otherwise cwd; **the case library is only ever looked for inside the project root**, **resolved in this order: the path on the line `ctx-kit case library: <path relative to the project root>` in the project root's `CLAUDE.md` if there is one, otherwise an existing `_ops/CASES/`, otherwise `cases/`**.
 
-When neither of the two defaults exists, **glob `*/TASKBOARD.md` and `*/*/TASKBOARD.md` once inside the project root first** — the project may keep its case library elsewhere; if you find an existing board, use it, do not start a second one beside it.
+When there is no such line and neither default exists, **glob `*/TASKBOARD.md` and `*/*/TASKBOARD.md` once inside the project root first** — the project may keep its case library elsewhere; if you find an existing board, use it, do not start a second one beside it.
 
 **An existing `TASKBOARD.md` → review mode**: read it and take it as the baseline, and **raise only the differences** (which cell disagrees with the docs, which cell is empty, which milestone's status is stale); do not tear it down and rebuild, do not rewrite cells that have not changed. No board → new-build mode, run everything below.
 
 ## 1. Read the material (measure first, then read)
 The candidates are only these: `README*` / `CLAUDE.md` / `docs/` at the project root plus the `*.md` files one level inside the root; package manifests (`package.json`, `pyproject.toml`, `Cargo.toml` and the like) — **read name + description only**; `git log --oneline | head -30`; two levels of the directory tree.
 
-**Run `wc -c` on every file before deciding whether to read it**: any single file >30k characters, or >60k in total (the denominator = the sum of `wc -c` over the whole candidate set — measure them all before deciding what to read; you may not pick a few first and add up only those) → **dispatch the `ctx-kit:digest` subagent to digest them and let the main context take the summary only** (under a manual install the subagent is named `digest`). Reading everything without measuring first is the easiest mistake to make at this step.
+**Run `LC_ALL=en_US.UTF-8 wc -m` on every file before deciding whether to read it**: any single file >30k characters, or >60k characters in total (`wc -m` counts characters and `wc -c` counts bytes — a Chinese document runs about twice its character count in bytes, and counting the bytes is what made this check fire on the wrong side once; run it in a UTF-8 locale, because under `LC_ALL=C` even `wc -m` counts bytes; the denominator = the sum of `wc -m` over the whole candidate set — measure them all before deciding what to read; you may not pick a few first and add up only those) → **dispatch the `ctx-kit:digest` subagent to digest them and let the main context take the summary only** (under a manual install the subagent is named `digest`). Reading everything without measuring first is the easiest mistake to make at this step.
 
 Do not read: session transcripts (`*.jsonl`), private directories outside the case library, `.env` or any credential file.
 
@@ -75,7 +75,7 @@ updated: <today>
 
 The section names and table headers are **not to be changed by one character** (`## Goal` / `## Global plan` with `# | Milestone | Status | Who is pushing it` / `## Cases on the books` / `## One-offs`) — change them and the three downstream skills cannot read the board. For a Chinese-speaking user write the Chinese names given in the note at the top of this skill; either language is fine, mixing them is not. Review mode only edits the cells that differ and leaves every other line alone.
 
-If the case library is somewhere other than the default (a public repo using `_internal/`, say), **tell the user to add a line about it to the project `CLAUDE.md` themselves** — do not edit `CLAUDE.md` for them.
+If the case library is somewhere other than the default (a public repo that keeps its cases outside the published tree, say), **tell the user to add one line to the project root's `CLAUDE.md` themselves, in exactly this format** — `ctx-kit case library: docs/cases` — the marker `ctx-kit case library:` written character for character, then the path **relative to the project root**, one line of its own, nothing else on it. That line is what all six skills read to find the library (§0), so without it every session has to be handed the path by hand. **Do not edit `CLAUDE.md` for them** — quote the line and let them paste it.
 
 ## 5. Closing three lines
 1. the top-level goal in one sentence;

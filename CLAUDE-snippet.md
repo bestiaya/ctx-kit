@@ -11,8 +11,9 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
 - Every job is goal-directed: line the goal chain up first (top-level goal → track / case → this action, read the
   board header), then act; a job that hangs off no milestone is listed separately for review.
 - On hearing "do X", triage first: needs discussion or several rounds of experiment → open a case (ctx-kickoff;
-  case directory `_ops/CASES/` for preference, otherwise `cases/`); one pass of execution → one row on the board
-  (hung off a goal milestone) + dispatch a new session; a quick small change → just do it.
+  case directory = the `ctx-kit case library:` line in this file if there is one, else `_ops/CASES/`, else
+  `cases/`); one pass of execution → one row on the board (hung off a goal milestone) + dispatch a new session;
+  a quick small change → just do it.
 - Dispatch criteria (the core variable is **directional uncertainty**, not duration): ① a fork in direction
   (design / exploration, the owner may have to steer mid-way) → its own session + a self-contained task brief that
   explicitly marks the "owner stop-and-wait point"; ② a deterministic experiment (pre-registered, closed, nothing
@@ -30,8 +31,8 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
   Do not chase progress after dispatching: subscribe to notify_when_idle on the exec session (a zero-token idle
   bell, CLI ≥2.1.236) and read only the deliverable when the notification arrives; a high-watermark discussion
   session can set crossSessionInbound to hold so an incoming message does not wake it and start billing.
-- Read-once material over 30k goes to the digest subagent, and you take back a ≤5k summary only; the working set
-  (the deliverables this batch chews on repeatedly) is not subject to this.
+- Read-once material over 30k characters (`LC_ALL=en_US.UTF-8 wc -m`) goes to the digest subagent, and you take back a ≤5k-character
+  summary only; the working set (the deliverables this batch chews on repeatedly) is not subject to this.
 - An exec session calls set_session_title first thing, naming itself as it appears on the board; delivery = a
   two-layer deliverable (machine-readable + written for people) + writing back the case's E row; an exec writes
   only its own E row and never reads the whole case.
@@ -49,11 +50,11 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
 ## Three self-checks after installing
 
 1. In a fresh session, say "I want to do X" and see whether it **triages before acting** (rather than starting work or firing back a string of questions).
-2. Give it a >30k read and see whether it **dispatches the digest subagent** instead of reading it all itself.
+2. Give it a >30k-character read (`LC_ALL=en_US.UTF-8 wc -m`, not `wc -c`) and see whether it **dispatches the digest subagent** instead of reading it all itself.
 3. Grow a session past 150k and see whether it **offers to close out** when it crosses the line (if it does not, the rules were not taken in — check that `CLAUDE.md` is being loaded).
 
 ## Trimming it per project
 
-- A differently named case directory: replace `_ops/CASES/` in the rules with your actual directory (the six skills already prefer whichever directory exists, so the rules work either way).
+- A differently named case directory: add one line of its own to this `CLAUDE.md` — `ctx-kit case library: docs/cases`, the path relative to the project root — which is what all six skills read; the rules above need no editing.
 - No "owner" role (you are working alone): delete the last rule and keep the rest.
 - Team settings: add a name convention to the "pen-holder" cell (`name @first-8-of-UUID`, say) so two people never take the same case at once.
