@@ -1,6 +1,6 @@
 # ctx-kit
 
-中文 / Chinese: [README.zh-CN.md](README.zh-CN.md) · The six skill prompts are English (a frozen Chinese reference copy, `SKILL.zh-CN.md`, sits beside each — a snapshot that lags the English original, and its first line says which release it was frozen at); docs 01–06 are in Chinese for now.
+中文 / Chinese: [README.zh-CN.md](README.zh-CN.md) · The six skill prompts are English (a frozen Chinese reference copy, `SKILL.zh-CN.md`, sits beside each — a snapshot that lags the English original, and its first line says which release it was frozen at, so `git diff <that tag> -- skills/` shows what has changed since); docs 01–06 are in Chinese for now.
 
 **ctx-kit is for work that doesn't fit in one session. If your work ships inside one session, you don't need it.**
 
@@ -127,7 +127,7 @@ It believes five things:
 - **Two roots, one direction** — cost says "keep the watermark low, work in one stretch, then throw it away"; continuity says "the state has to be on disk". Both point at the same move.
 - **Discipline before tooling** — every practice here holds without installing anything, and by hand it works just as well; the kit only removes "remembering to do it" and "remembering how".
 - **Verifiable beats describable** — numbers carry a source, the wording stays within what the evidence supports, and a handoff has to survive a spot-check.
-- **You do three things only** — say what you want, ask where things stand, make the calls; the model judges the rest. And it says up front when you don't need it.
+- **You do three things only** — say what you want, ask where things stand, make the calls — plus two housekeeping calls, close out and the weekly check; the model judges the rest. And it says up front when you don't need it.
 
 The concept model is one sentence: state lives in three things — the board, the case, the artifact — and the session can be thrown away at any time (each of those words is explained in the glossary at the end).
 
@@ -183,7 +183,7 @@ Third step (manual, required): paste the whole code block from [CLAUDE-snippet.m
 
 <details><summary>Manual install (no plugin)</summary>
 
-Copy `skills/ctx-*` into `.claude/skills/`, `agents/digest.md` into `.claude/agents/` and `scripts/cache-audit.py` into `~/.claude/scripts/` (create the directory if it is not there — with no plugin root, that is the one place `ctx-checkup` looks for the script), then merge the `hooks` object from `hooks/hooks.json` into `.claude/settings.json` (macOS shows a notification; elsewhere it falls back to stderr). Paste the rule block as above.
+Copy `skills/ctx-*` into `~/.claude/skills/`, `agents/digest.md` into `~/.claude/agents/` and `scripts/cache-audit.py` into `~/.claude/scripts/` (create the directory if it is not there — with no plugin root, that is the one place `ctx-checkup` looks for the script), then merge the `hooks` object from `hooks/hooks.json` into `~/.claude/settings.json` (macOS shows a notification; elsewhere it falls back to stderr). Paste the rule block as above.
 
 After every `git pull`, `scripts/sync-installed.sh --check` lists where the installed copies have drifted from the repository, and `--apply` copies the repository over them — backing up whatever it overwrites into `~/.claude/ctx-kit-backup-<timestamp>/` first, and never deleting anything. (For maintainers, `scripts/release-check.py` checks that the version number, the skill count and the skill names agree across the plugin manifest, both READMEs and the docs before a release.)
 </details>
@@ -196,7 +196,7 @@ Three self-checks afterwards:
 
 **Upgrading from an earlier version**: this one renames the board's second section from "Global plan" to a **milestone** table plus a **routine** table. An existing board does not have to be rebuilt — run `/ctx-init` again and its review mode proposes the rename, keeping the rows you already have. The manual steps — where the rows of the old "track" layer go, how the case index gains its seventh column — are [recipe 7](06-RECIPES.md#配方-7老板面迁到新板里程碑--例行) in 06.
 
-**Uninstall**: remove ctx-kit in `/plugin`, or for a manual install `rm -rf .claude/skills/ctx-* .claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/ctx-kit-backup-*` (the last one is the backups the sync script keeps). Then delete the blocks you pasted into `CLAUDE.md` and `.claude/settings.json` — that is everything the kit puts on your machine. What stays behind is yours, not the kit's: the board and the case library `/ctx-init` created, and the commits and remote history `/ctx-handoff` pushed. Nothing deletes those for you; keep them or clear them yourself.
+**Uninstall**: remove ctx-kit in `/plugin`, or for a manual install `rm -rf ~/.claude/skills/ctx-* ~/.claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/ctx-kit-backup-*` (the last one is the backups the sync script keeps). Then delete the blocks you pasted into `CLAUDE.md` and `~/.claude/settings.json` — that is everything the kit puts on your machine. What stays behind is yours, not the kit's: the board and the case library `/ctx-init` created, and the commits and remote history `/ctx-handoff` pushed. Nothing deletes those for you; keep them or clear them yourself.
 
 ## The six commands
 

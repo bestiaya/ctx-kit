@@ -1,6 +1,6 @@
 # ctx-kit
 
-English: [README.md](README.md) · 六条命令的 skill 正本是英文，每个旁边的 `SKILL.zh-CN.md` 是中文参考件——它是快照、会滞后于英文正本，头一行写着冻结在哪一版。
+English: [README.md](README.md) · 六条命令的 skill 正本是英文，每个旁边的 `SKILL.zh-CN.md` 是中文参考件——它是快照、会滞后于英文正本，头一行写着冻结在哪一版，差异用 `git diff <那个 tag> -- skills/` 看。
 
 **一次会话装不下的活，才需要 ctx-kit；一次会话能出货的活，用不上。**
 
@@ -127,7 +127,7 @@ English: [README.md](README.md) · 六条命令的 skill 正本是英文，每�
 - **两个根，一个方向** — 钱说"低水位、连续、用完即弃"最省，连续性说"状态得在盘上"，两条指向同一个动作。
 - **纪律先于工具** — 每条做法不装东西也成立，手工照做同样有效；kit 只省掉"想起来要做"和"记得怎么做"。
 - **可验证优先于可描述** — 数字要有出处，措辞跟着证据档位走，交接要能考。
-- **人只做三个动作** — 说事、问进展、拍板，其余模型自己判；对外先说清什么时候用不上。
+- **人只做三个动作** — 说事、问进展、拍板，另有收口与周检两个维护动作、你喊一句即可，其余模型自己判；对外先说清什么时候用不上。
 
 概念只有一句：状态住在三样东西里——任务板、案、件；会话随时可扔（逐个解释见文末词表）。
 
@@ -183,7 +183,7 @@ claude plugin install ctx-kit@ctx-kit
 
 <details><summary>手动安装（不走 plugin）</summary>
 
-把 `skills/ctx-*` 拷进 `.claude/skills/`、`agents/digest.md` 拷进 `.claude/agents/`、`scripts/cache-audit.py` 拷进 `~/.claude/scripts/`（目录没有就建；没有插件根时，`ctx-checkup` 只到这里找脚本）、`hooks/hooks.json` 的 `hooks` 段并进 `.claude/settings.json`（macOS 弹通知，其它平台回落 stderr）；条文照上面粘贴。
+把 `skills/ctx-*` 拷进 `~/.claude/skills/`、`agents/digest.md` 拷进 `~/.claude/agents/`、`scripts/cache-audit.py` 拷进 `~/.claude/scripts/`（目录没有就建；没有插件根时，`ctx-checkup` 只到这里找脚本）、`hooks/hooks.json` 的 `hooks` 段并进 `~/.claude/settings.json`（macOS 弹通知，其它平台回落 stderr）；条文照上面粘贴。
 
 每次 `git pull` 之后：`scripts/sync-installed.sh --check` 列出安装态与仓库源码的差异，`--apply` 把仓库源码同步过去——覆盖前先把旧件备份到 `~/.claude/ctx-kit-backup-<时间戳>/`，只加不删。（维护者另有 `scripts/release-check.py`：发版前查版本号、skill 件数与 skill 名在插件清单、两份 README 与文档里是否一致。）
 </details>
@@ -196,7 +196,7 @@ claude plugin install ctx-kit@ctx-kit
 
 **从旧版升上来**：这一版把板的第二节从"全局计划"换成了**里程碑**表 + **例行**表。老板面不用重建：重跑一次 `/ctx-init` 走复核模式，它提议改名、你原来的行照留。手工那几步（旧"线"那层的行往哪去、案索引怎么补第七列）见 06 的[配方 7](06-RECIPES.md#配方-7老板面迁到新板里程碑--例行)。
 
-**卸载**：plugin 在 `/plugin` 里移除，手动装的 `rm -rf .claude/skills/ctx-* .claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/ctx-kit-backup-*`（最后一项是同步脚本留的备份）；再从 `CLAUDE.md` 与 `.claude/settings.json` 删掉对应段落——装到你机器上的件就这些，删干净了。留下来的是你自己的东西：`/ctx-init` 建的任务板与案库、`/ctx-handoff` 提交并推上去的历史，这两样不会替你删，留着还是清掉你自己定。
+**卸载**：plugin 在 `/plugin` 里移除，手动装的 `rm -rf ~/.claude/skills/ctx-* ~/.claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/ctx-kit-backup-*`（最后一项是同步脚本留的备份）；再从 `CLAUDE.md` 与 `~/.claude/settings.json` 删掉对应段落——装到你机器上的件就这些，删干净了。留下来的是你自己的东西：`/ctx-init` 建的任务板与案库、`/ctx-handoff` 提交并推上去的历史，这两样不会替你删，留着还是清掉你自己定。
 
 ## 六条命令
 

@@ -8,8 +8,8 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
 ## Context and workflow
 - State lives on disk, sessions are disposable: write a conclusion down as it happens (a decision → the case's
   section C, a change of plan → the case's section B); do not wait for close-out to write it.
-- Every job is goal-directed: line the goal chain up first (top-level goal → track / case → this action, read the
-  board header), then act; a job that hangs off no milestone is listed separately for review.
+- Every job is goal-directed: line the goal chain up first (top-level goal → milestone / case → this action, read
+  the board header), then act; a job that hangs off no milestone is listed separately for review.
 - On hearing "do X", triage first: needs discussion or several rounds of experiment → open a case (ctx-kickoff;
   case directory = the `ctx-kit case library:` line in this file if there is one, else `_ops/CASES/`, else
   `cases/`); one pass of execution → one row on the board (hung off a goal milestone) + dispatch a new session;
@@ -22,7 +22,7 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
   ④ heavy but certain (long mechanical volume) → its own session, no stop-and-wait point, delivery pulled rather
   than pushed. A subagent cannot talk to anybody mid-run, so any job that might need the owner must never be inline.
   **A high-watermark session is nobody's parent** (the cold tax of waiting on a subagent = the dispatcher's watermark × 2).
-- Cross-track / cross-session delivery: check the address before sending — if the target track or case has
+- Cross-case / cross-session delivery: check the address before sending — if the target case has
   **no live pen-holder** (awaiting takeover / closing / predecessor retired), **do not send**; append a row to the
   target file's **inbox** instead (append only, never touch the body, so two pens never write over each other),
   and for something urgent tell the owner to open a session. Send directly only when there is a live pen-holder
@@ -43,8 +43,8 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
   window, and nothing else.
 - When asked "where do things stand": read the board + the cases and report in plain language, so the owner never
   has to open a file.
-- The owner has only three moves: name a job / ask where things stand / decide. Everything else you do without
-  asking, and report once it is done.
+- The owner has only three moves: name a job / ask where things stand / decide — plus two housekeeping calls,
+  close out and the weekly check. Everything else you do without asking, and report once it is done.
 ```
 
 ## Three self-checks after installing
