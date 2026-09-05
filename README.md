@@ -166,7 +166,7 @@ What goes in: six skills, one CLAUDE.md rule block, one reminder hook, one audit
 |---|---|---|
 | Skills — the six commands themselves | v2.0.20 ("Added support for Claude Skills") | Nothing here runs; `claude update` first |
 | Installing as a plugin (`claude plugin …`) | v2.0.12, when the plugin system shipped — the changelog doesn't date the `claude plugin` command-line form itself | Use `/plugin` inside a session, or install by hand (below) |
-| Cross-session messaging — `SendMessage` / `ListAgents` | v2.1.224 on macOS and Linux; native Windows v2.1.239 | Only the several-sessions-at-once recipe is affected; everything else runs |
+| Cross-session messaging — `SendMessage` / `ListAgents` | v2.1.224 on macOS and Linux; native Windows v2.1.239 (the changelog entry "Windows: cross-session messaging is now available") | Only the several-sessions-at-once recipe is affected; everything else runs |
 | Idle notice — `notify_when_idle` | v2.1.236, macOS and Linux | You go and ask "done yet?" instead of being told |
 | Session titles in the UI | No version line — the Desktop app has the title tool, a plain terminal doesn't | Titles are skipped and it says so; the pen-holder line in the case file is the real handoff signal |
 
@@ -179,7 +179,7 @@ claude plugin install ctx-kit@ctx-kit
 
 Third step (manual, required): paste the whole code block from [CLAUDE-snippet.md](CLAUDE-snippet.md) into your project `CLAUDE.md` (or `~/.claude/CLAUDE.md`). A plugin can ship skills, a hook, a script and a subagent — it **cannot ship a resident rule block**, and the proactive behaviour — triage before acting, hand big reads to a subagent, offer to close out past the line — depends on those rules being resident.
 
-**One side effect to know before you install**: closing out (`/ctx-handoff`) doesn't only write files — it `git add`s the paths it touched this round, commits and **pushes** them. On a protected or shared branch, decide where you want that to land before you start. If it can't push (no remote, no permission, a conflict, not a git project at all) it says "not pushed + why" in the reply rather than going quiet. And if your case library sits in a git-ignored directory — this repository's own does — the case files are written to disk and never committed: close-out reports that too, it is a legitimate setup rather than a failure, and syncing that directory to another machine is then your job.
+**One side effect to know before you install**: closing out (`/ctx-handoff`) doesn't only write files — it `git add`s the files this session edited, commits them and **pushes** to the current branch's upstream. On a protected or shared branch, decide where you want that to land before you start. If it can't push (no remote, no permission, a conflict, not a git project at all) it says "not pushed + why" in the reply rather than going quiet. And if your case library sits in a git-ignored directory — this repository's own does — the case files are written to disk and never committed: close-out reports that too, it is a legitimate setup rather than a failure, and syncing that directory to another machine is then your job.
 
 <details><summary>Manual install (no plugin)</summary>
 
@@ -196,7 +196,7 @@ Three self-checks afterwards:
 
 **Upgrading from an earlier version**: this one renames the board's second section from "Global plan" to a **milestone** table plus a **routine** table. An existing board does not have to be rebuilt — run `/ctx-init` again and its review mode proposes the rename, keeping the rows you already have. The manual steps — where the rows of the old "track" layer go, how the case index gains its seventh column — are [recipe 7](06-RECIPES.md#配方-7老板面迁到新板里程碑--例行) in 06.
 
-**Uninstall**: remove ctx-kit in `/plugin`, or for a manual install `rm -rf .claude/skills/ctx-* .claude/agents/digest.md ~/.claude/scripts/cache-audit.py`. Then delete the blocks you pasted into `CLAUDE.md` and `.claude/settings.json` — that is everything the kit puts on your machine. What stays behind is yours, not the kit's: the board and the case library `/ctx-init` created, and the commits and remote history `/ctx-handoff` pushed. Nothing deletes those for you; keep them or clear them yourself.
+**Uninstall**: remove ctx-kit in `/plugin`, or for a manual install `rm -rf .claude/skills/ctx-* .claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/ctx-kit-backup-*` (the last one is the backups the sync script keeps). Then delete the blocks you pasted into `CLAUDE.md` and `.claude/settings.json` — that is everything the kit puts on your machine. What stays behind is yours, not the kit's: the board and the case library `/ctx-init` created, and the commits and remote history `/ctx-handoff` pushed. Nothing deletes those for you; keep them or clear them yourself.
 
 ## The six commands
 

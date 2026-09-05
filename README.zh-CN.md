@@ -166,7 +166,7 @@ English: [README.md](README.md) · 六条命令的 skill 正本是英文，每�
 |---|---|---|
 | skill 机制（六条命令的底座） | v2.0.20（"Added support for Claude Skills"） | 整套都不生效，先 `claude update` |
 | 按插件装（`claude plugin …`） | v2.0.12 插件机制上线——更新日志没写 `claude plugin` 这个命令行形式是哪一版加的 | 改用会话里的 `/plugin`，或按下面手动安装 |
-| 跨会话消息 `SendMessage` / `ListAgents` | v2.1.224（macOS / Linux）；原生 Windows 要 v2.1.239 | 只影响"多会话并行"那一套（06 配方 5），其余照跑 |
+| 跨会话消息 `SendMessage` / `ListAgents` | v2.1.224（macOS / Linux）；原生 Windows 要 v2.1.239（官方日志该节写明 Windows 跨会话消息可用）| 只影响"多会话并行"那一套（06 配方 5），其余照跑 |
 | 空闲通知 `notify_when_idle` | v2.1.236（macOS / Linux） | 得你自己去问"跑完没"，没人叫你 |
 | UI 会话标题 | 没有版本门槛：桌面版才有设标题的工具，纯终端没有 | 它跳过设标题并说明一句；案里的"持笔"才是唯一的交接信号 |
 
@@ -179,7 +179,7 @@ claude plugin install ctx-kit@ctx-kit
 
 第三步（手动，必做）：把 [CLAUDE-snippet.md](CLAUDE-snippet.md) 里的代码块整段拷进项目 `CLAUDE.md`（或 `~/.claude/CLAUDE.md`）。plugin 装得进 skill、hook、脚本和子代理，**装不进常驻条文**——而"说事先分诊、大料自动下放、过线提醒收口"这些主动行为全靠条文常驻。
 
-**装之前先知道一个副作用**：收口（`/ctx-handoff`）不只是写文件——它会把这轮动过的路径 `git add` 上、提交，并**推送**。在受保护分支或多人共用分支上干活，先想好你要它推到哪里。推不上去（没远端、没权限、有冲突、压根不是 git 项目），它会在回复里明写"未推送 + 原因"，不会闷着。案库要是落在被 git 忽略的目录里（本仓自己就是这样），案文件只落盘、不入库：收口照样明写这一句，这是合法姿势、不算失败；那个目录想跨电脑接手，得你自己同步过去。
+**装之前先知道一个副作用**：收口（`/ctx-handoff`）不只是写文件——它会把这个会话改过的文件 `git add` 上、提交，并**推送**到当前分支的上游。在受保护分支或多人共用分支上干活，先想好你要它推到哪里。推不上去（没远端、没权限、有冲突、压根不是 git 项目），它会在回复里明写"未推送 + 原因"，不会闷着。案库要是落在被 git 忽略的目录里（本仓自己就是这样），案文件只落盘、不入库：收口照样明写这一句，这是合法姿势、不算失败；那个目录想跨电脑接手，得你自己同步过去。
 
 <details><summary>手动安装（不走 plugin）</summary>
 
@@ -196,7 +196,7 @@ claude plugin install ctx-kit@ctx-kit
 
 **从旧版升上来**：这一版把板的第二节从"全局计划"换成了**里程碑**表 + **例行**表。老板面不用重建：重跑一次 `/ctx-init` 走复核模式，它提议改名、你原来的行照留。手工那几步（旧"线"那层的行往哪去、案索引怎么补第七列）见 06 的[配方 7](06-RECIPES.md#配方-7老板面迁到新板里程碑--例行)。
 
-**卸载**：plugin 在 `/plugin` 里移除，手动装的 `rm -rf .claude/skills/ctx-* .claude/agents/digest.md ~/.claude/scripts/cache-audit.py`；再从 `CLAUDE.md` 与 `.claude/settings.json` 删掉对应段落——装到你机器上的件就这些，删干净了。留下来的是你自己的东西：`/ctx-init` 建的任务板与案库、`/ctx-handoff` 提交并推上去的历史，这两样不会替你删，留着还是清掉你自己定。
+**卸载**：plugin 在 `/plugin` 里移除，手动装的 `rm -rf .claude/skills/ctx-* .claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/ctx-kit-backup-*`（最后一项是同步脚本留的备份）；再从 `CLAUDE.md` 与 `.claude/settings.json` 删掉对应段落——装到你机器上的件就这些，删干净了。留下来的是你自己的东西：`/ctx-init` 建的任务板与案库、`/ctx-handoff` 提交并推上去的历史，这两样不会替你删，留着还是清掉你自己定。
 
 ## 六条命令
 
