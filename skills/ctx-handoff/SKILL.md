@@ -74,6 +74,7 @@ PY
 4. **Commit and push**: **you must commit and you must push** — measured: 15 days away from the machine, and a batch of commits sat on the local disk for 3 days, so **fixing only the commit does not fix it**.
    Run `git status` first: **another session may be open and editing other files, and `git add -A` will commit their half-written work along with yours** (this rule was hit the very first time it ran — two running sessions each had a half-edited case file). **`git add` only the paths you touched this round**, then `commit && push`.
    A non-git project, or a failed push (no remote / no permission / a conflict): **write "not pushed + why" plainly in the reply**; never skip it silently.
+   **A case library that git ignores or has never tracked is a legitimate shape, not a failure**: the case files stay on disk and out of the repository, so commit and push only whatever else this round touched — and if that leaves nothing to commit, nothing is wrong. Say so in one line in the reply — the case file is saved on disk but is not in git, so taking it over on another machine means syncing that directory yourself — and **never report that as a failed push**.
 
 ## 5. Reply: five sections for people first, then four items
 
