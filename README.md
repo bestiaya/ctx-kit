@@ -168,6 +168,7 @@ What goes in: six skills, one CLAUDE.md rule block, one reminder hook, one audit
 | Installing as a plugin (`claude plugin …`) | v2.0.12, when the plugin system shipped — the changelog doesn't date the `claude plugin` command-line form itself | Use `/plugin` inside a session, or install by hand (below) |
 | Cross-session messaging — `SendMessage` / `ListAgents` | v2.1.224 on macOS and Linux; native Windows v2.1.239 (the changelog entry "Windows: cross-session messaging is now available") | Only the several-sessions-at-once recipe is affected; everything else runs |
 | Idle notice — `notify_when_idle` | v2.1.236, macOS and Linux | You go and ask "done yet?" instead of being told |
+| The weekly audit script (`cache-audit.py`) | Any python3 on your PATH — the kit is otherwise plain markdown and shell | The five commands still run; only `/ctx-checkup` has nothing to read |
 | Session titles in the UI | No version line — the Desktop app has the title tool, a plain terminal doesn't | Titles are skipped and it says so; the pen-holder line in the case file is the real handoff signal |
 
 Three steps — two commands and one paste:
@@ -223,7 +224,7 @@ Case files live in `_ops/CASES/` when that directory already exists, otherwise i
 6. [05-FAQ.md](05-FAQ.md), answers — one real question at a time, including "where did this come from" and "does ordinary development need it", plus whether a few popular claims hold up.
 7. [03-PLAYBOOK.md](03-PLAYBOOK.md), the tool-definition template — how this tool got defined, written for people building tools; users can skip it.
 
-Docs 01, 02, 04, 05 and 06 are in Chinese for now.
+Docs 01–06 are all in Chinese for now.
 
 ## Words used here
 

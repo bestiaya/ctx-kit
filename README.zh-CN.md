@@ -168,6 +168,7 @@ English: [README.md](README.md) · 六条命令的 skill 正本是英文，每�
 | 按插件装（`claude plugin …`） | v2.0.12 插件机制上线——更新日志没写 `claude plugin` 这个命令行形式是哪一版加的 | 改用会话里的 `/plugin`，或按下面手动安装 |
 | 跨会话消息 `SendMessage` / `ListAgents` | v2.1.224（macOS / Linux）；原生 Windows 要 v2.1.239（官方日志该节写明 Windows 跨会话消息可用）| 只影响"多会话并行"那一套（06 配方 5），其余照跑 |
 | 空闲通知 `notify_when_idle` | v2.1.236（macOS / Linux） | 得你自己去问"跑完没"，没人叫你 |
+| 周检脚本（`cache-audit.py`） | PATH 上有任一 python3 即可——其余全是 markdown 与 shell | 五条命令照跑，只有 `/ctx-checkup` 没数可读 |
 | UI 会话标题 | 没有版本门槛：桌面版才有设标题的工具，纯终端没有 | 它跳过设标题并说明一句；案里的"持笔"才是唯一的交接信号 |
 
 三步，两条命令加一次粘贴：
