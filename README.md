@@ -88,7 +88,7 @@
 
 **How it goes**:
 
-1. At the start of a project, say "new project" (`/ctx-init`): it reads your own docs first, proposes "what this project is for and which big items it has" on a single screen with a source cited per cell, and writes nothing until you nod.
+1. At the start of a project, say "new project" (`/ctx-init`): it reads your own docs first, proposes what the project is for, which milestones it has and which routines keep running, on a single screen with a source cited per cell, and writes nothing until you nod.
 2. After that you just say what you want (`/ctx-kickoff`): it triages by itself — whatever needs following up gets a file on the spot, whatever one session can finish gets a line.
 3. Park a to-do with "note this down"; it files it where it belongs and tells you where it went.
 4. To find out where things stand, ask (`/ctx-status`): it reads everything on record and reports back in plain language.
@@ -111,7 +111,7 @@ This is what work that doesn't fit looks like:
 - A bug hunt in its third day: hypothesis, experiment, rule out, repeat. The case file is the lab notebook; a fresh session reads it and picks the hunt up.
 - Research and technology selection: the decisions land in one place together with their "why", so nobody has to do archaeology six months later.
 - A large refactor or migration: hundreds of files in batches, several sessions in parallel, with the ledger and the per-wave spot checks in the files.
-- Several things moving at once: a project, a client and a side project each on their own line, with one board to answer "where do things stand".
+- Several things moving at once: a project, a client and a side project all in flight together, with one board to answer "where do things stand".
 
 Three no's — say, a quick job that ships inside one session — and **you don't need ctx-kit; don't install it**. Whichever question is a "yes" switches on that layer: (1) the cost discipline, (2) the case file, (3) the board. Which kind of work needs which layers is in 02-METHOD ch. 5.
 
@@ -130,6 +130,8 @@ It believes five things:
 - **You do three things only** — say what you want, ask where things stand, make the calls; the model judges the rest. And it says up front when you don't need it.
 
 The concept model is one sentence: state lives in three things — the board, the case, the artifact — and the session can be thrown away at any time (each of those words is explained in the glossary at the end).
+
+The board is one file per project, and you keep it by hand: the overall goal, a **milestone** table (one line each — what is true once it lands, plus its status), a **routine** table (rhythm, health reading, last / next), an index of the cases, and the one-offs that aren't worth a case. Milestones are labels, not a layer above the cases: a case or a one-off carries one or more of them, and work that fits none of them is written down as a "candidate milestone" for you to decide on — add a milestone to the plan, or drop the work. `/ctx-init` proposes the header and you confirm it; after that each case edits its own row. Generating the board from a script is optional, and nothing here depends on it.
 
 Along the way you get planning and task management that is good enough — the third scenario above is exactly that. It doesn't schedule dates, doesn't allocate people, doesn't keep a risk register; one case is one markdown file, and there is no system.
 
@@ -186,11 +188,11 @@ Six skills, six commands. Saying it in plain words and typing the command are th
 
 | When | Say | What it does |
 |---|---|---|
-| Starting a project | "new project", or `/ctx-init` | Reads your own docs first, proposes the goal and the milestones with a source cited per cell, writes nothing until you confirm |
+| Starting a project | "new project", or `/ctx-init` | Reads your own docs first, proposes the goal, the milestones and the routines with a source cited per cell, writes nothing until you confirm |
 | Something new to do, or a to-do to park | "I want to do X" / "note this down", or `/ctx-kickoff` | Routes it to case / one-off / quick fix, creates the case file on the spot, then asks one question — discuss here or dispatch |
 | This session is getting expensive, or a batch of work is done | "close out", or `/ctx-handoff` | Distils the discussion into a takeover-ready case file, persists whatever hasn't been saved, then retires the session |
 | A fresh session continuing the last one | "take over C-07", or `/ctx-takeover C-NN` | Reads the case file only, old transcripts off-limits; signs as pen-holder, recites goal, case, progress and next step for your spot-check |
-| You want to know where things stand | "what's the status", or `/ctx-status` | Reads the board and the case files, reports the goal chain, case states, pending decisions and one-offs in plain language |
+| You want to know where things stand | "what's the status", or `/ctx-status` | Reads the board and the case files, reports the goal chain with its milestones and routines, where each case stands, pending decisions and one-offs in plain language |
 | Once a week, checking the bill | "weekly checkup", or `/ctx-checkup` | Runs the cache audit, flags the sessions over the pre-registered lines, backfills archive pointers in the case files |
 
 Case files live in `_ops/CASES/` when that directory already exists, otherwise in `cases/` — or anywhere you like: put one line, `ctx-kit case library: docs/cases`, in your project `CLAUDE.md` and all six skills read it from there.
@@ -209,10 +211,12 @@ Docs 01, 02, 04, 05 and 06 are in Chinese for now.
 
 ## Words used here
 
-- **board** — one per project: what the project is for, and the big items in flight or already done, one to a line.
-- **track** — one big item on the board, with cases hanging under it (not the same "line" as the watermark lines).
-- **case / case file** — one problem area under a big item, one md file each: goal, plan, decisions made, decisions waiting on you, the experiment list, handoff notes.
-- **artifact** — an attachment to a case: task briefs, raw data, deliverables, drafts; one file each, append-only.
+- **board** — one per project, kept by hand: the overall goal, a milestone table, a routine table, an index of the cases, and the one-offs; one line each.
+- **milestone** — one line in the board's milestone table: what is true once it lands, plus its status. It is a label a case or a one-off carries, not a layer above them; work that fits none of them is written down as a "candidate milestone" for you to decide on.
+- **routine** — one line in the board's routine table: something you keep doing to a rhythm, with a health reading and last / next. No finish line and no ledger; when a routine turns up a problem worth converging on, that problem gets a case.
+- **case / case file** — one problem area worth converging on, one md file each: goal, plan, decisions made, decisions waiting on you, the experiment list, handoff notes.
+- **one-off** — a job not worth a case: one line on the board and one deliverable; it carries a milestone like a case does.
+- **artifact** — an attachment to a case or a one-off: task briefs, raw data, deliverables, drafts; one file each, append-only.
 - **experiment row** — one line in a case's experiment list: what it asks, how far it got, the verdict, what it changed in the plan.
 - **session** — one conversation between you and claude CLI; a temporary carrier, not a ledger.
 - **close out** — settle a session's state onto disk; the session retires immediately after.
