@@ -194,7 +194,7 @@ Three self-checks afterwards:
 2. Hand it a >30k-character read (`LC_ALL=en_US.UTF-8 wc -m`) and watch whether it dispatches the `digest` subagent instead of reading it inline.
 3. Grow a session past the yellow line and watch whether it offers to close out — if it doesn't, the rule block isn't loaded.
 
-**Upgrading from an earlier version**: this one renames the board's second section from "Global plan" to a **milestone** table plus a **routine** table. An existing board does not have to be rebuilt — run `/ctx-init` again and its review mode proposes the rename, keeping the rows you already have.
+**Upgrading from an earlier version**: this one renames the board's second section from "Global plan" to a **milestone** table plus a **routine** table. An existing board does not have to be rebuilt — run `/ctx-init` again and its review mode proposes the rename, keeping the rows you already have. The manual steps — where the rows of the old "track" layer go, how the case index gains its seventh column — are [recipe 7](06-RECIPES.md#配方-7老板面迁到新板里程碑--例行) in 06.
 
 **Uninstall**: remove ctx-kit in `/plugin`, or for a manual install `rm -rf .claude/skills/ctx-* .claude/agents/digest.md ~/.claude/scripts/cache-audit.py`. Then delete the blocks you pasted into `CLAUDE.md` and `.claude/settings.json` — that is everything the kit puts on your machine. What stays behind is yours, not the kit's: the board and the case library `/ctx-init` created, and the commits and remote history `/ctx-handoff` pushed. Nothing deletes those for you; keep them or clear them yourself.
 
