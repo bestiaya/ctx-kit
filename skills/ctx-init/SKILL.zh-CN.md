@@ -1,4 +1,4 @@
-> 中文参考版（冻结于 2026-09-03）；以英文 SKILL.md 为准。
+> 中文参考版（冻结于 v0.1.0，cbdb62e）；英文 `SKILL.md` 是活的正本、可能已经往前走了，差异用 `git diff v0.1.0 -- skills/` 看。
 ---
 name: ctx-init
 description: 项目开工立总览。用户说"新项目开工""这项目开始了""先把项目定下来""项目是干啥的先写下来"，或显式 /ctx-init 时用。先读项目已有文档再提议总目标与大事清单，每格标出处候你确认；确认前零写入，确认后才写任务板头部。 Initialize a project board — use on "new project", "set this project up", "what is this project for", or /ctx-init; reads the project's own docs first, proposes goal and milestones with a source cited per cell, writes nothing until you confirm, then lays down the board header.

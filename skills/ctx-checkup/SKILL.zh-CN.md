@@ -1,4 +1,4 @@
-> 中文参考版（冻结于 2026-09-03）；以英文 SKILL.md 为准。
+> 中文参考版（冻结于 v0.1.0，cbdb62e）；英文 `SKILL.md` 是活的正本、可能已经往前走了，差异用 `git diff v0.1.0 -- skills/` 看。
 ---
 name: ctx-checkup
 description: 会话缓存周检与案文件回填。用户说"周检""查一下会话花费""哪些会话该收口了""跑一下缓存审计""这周 token 都花哪了"，或显式 /ctx-checkup 时用。跑 cache-audit 判读越线会话，并回填案 G 节的待填档案路径。 Weekly cache audit — use on "weekly checkup", "where did the tokens go", "audit session costs", or /ctx-checkup; runs cache-audit, flags sessions over the pre-registered lines, backfills archive pointers in case files.

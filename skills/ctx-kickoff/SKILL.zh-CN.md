@@ -1,4 +1,4 @@
-> 中文参考版（冻结于 2026-09-03）；以英文 SKILL.md 为准。
+> 中文参考版（冻结于 v0.1.0，cbdb62e）；英文 `SKILL.md` 是活的正本、可能已经往前走了，差异用 `git diff v0.1.0 -- skills/` 看。
 ---
 name: ctx-kickoff
 description: 说事分诊与立案。用户说"我要做 X""帮我规划 X""开个新活""这事怎么搞"，说"记一下""先存着""保存这个任务""回头再做"要存待办，或显式 /ctx-kickoff 时用。分诊成立案/散活/顺手改三条路，当场建案文件；待办按归属落进案或任务板并回一句存到哪了，然后只问一个问题：在这儿聊还是派出去。 Triage and open a case — use on "I want to do X", "plan this", "start a new job", "note this down", "save this for later", or /ctx-kickoff; routes to case / one-off / quick-fix, creates the case file on the spot, parks to-dos where they belong, then asks one question — discuss here or dispatch.

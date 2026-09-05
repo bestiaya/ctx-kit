@@ -1,4 +1,4 @@
-> 中文参考版（冻结于 2026-09-03）；以英文 SKILL.md 为准。
+> 中文参考版（冻结于 v0.1.0，cbdb62e）；英文 `SKILL.md` 是活的正本、可能已经往前走了，差异用 `git diff v0.1.0 -- skills/` 看。
 ---
 name: ctx-takeover
 description: 接手在案。开新会话继任时用：用户说"接手 C-07""继续那个案""你来接这个案""接着上个会话的活"，或显式 /ctx-takeover C-NN。只读案文件、禁读旧会话转录，署名后四章复述(总目标→本案→进展→下一步)候抽查。 Take over a case in a fresh session — use on "take over C-07", "continue that case", or /ctx-takeover C-NN; reads only the case file (old transcripts off-limits), signs as pen-holder, recites goal, case, progress and next step for your spot-check.
