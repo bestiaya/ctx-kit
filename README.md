@@ -1,6 +1,6 @@
 # ctx-kit
 
-中文 / Chinese: [README.zh-CN.md](README.zh-CN.md) · The six skill prompts are English (a frozen Chinese reference copy, `SKILL.zh-CN.md`, sits beside each); docs 01–06 are in Chinese for now.
+中文 / Chinese: [README.zh-CN.md](README.zh-CN.md) · The six skill prompts are English (a frozen Chinese reference copy, `SKILL.zh-CN.md`, sits beside each — a snapshot that lags the English original, and its first line says which release it was frozen at); docs 01–06 are in Chinese for now.
 
 **ctx-kit is for work that doesn't fit in one session. If your work ships inside one session, you don't need it.**
 
@@ -158,7 +158,19 @@ Every number comes from 01, which also defines "equivalent units" — the one bi
 
 ## What gets installed
 
-What goes in: six skills, one CLAUDE.md rule block, one reminder hook, one audit script and one `digest` subagent. Three steps — two commands and one paste:
+What goes in: six skills, one CLAUDE.md rule block, one reminder hook, one audit script and one `digest` subagent.
+
+**Check your version first** — `claude --version`. What each layer needs (versions from the [claude CLI changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)):
+
+| What it powers | Minimum version | If yours is older |
+|---|---|---|
+| Skills — the six commands themselves | v2.0.20 ("Added support for Claude Skills") | Nothing here runs; `claude update` first |
+| Installing as a plugin (`claude plugin …`) | v2.0.12, when the plugin system shipped — the changelog doesn't date the `claude plugin` command-line form itself | Use `/plugin` inside a session, or install by hand (below) |
+| Cross-session messaging — `SendMessage` / `ListAgents` | v2.1.224 on macOS and Linux; native Windows v2.1.239 | Only the several-sessions-at-once recipe is affected; everything else runs |
+| Idle notice — `notify_when_idle` | v2.1.236, macOS and Linux | You go and ask "done yet?" instead of being told |
+| Session titles in the UI | No version line — the Desktop app has the title tool, a plain terminal doesn't | Titles are skipped and it says so; the pen-holder line in the case file is the real handoff signal |
+
+Three steps — two commands and one paste:
 
 ```bash
 claude plugin marketplace add bestiaya/ctx-kit
@@ -166,6 +178,8 @@ claude plugin install ctx-kit@ctx-kit
 ```
 
 Third step (manual, required): paste the whole code block from [CLAUDE-snippet.md](CLAUDE-snippet.md) into your project `CLAUDE.md` (or `~/.claude/CLAUDE.md`). A plugin can ship skills, a hook, a script and a subagent — it **cannot ship a resident rule block**, and the proactive behaviour — triage before acting, hand big reads to a subagent, offer to close out past the line — depends on those rules being resident.
+
+**One side effect to know before you install**: closing out (`/ctx-handoff`) doesn't only write files — it `git add`s the paths it touched this round, commits and **pushes** them. On a protected or shared branch, decide where you want that to land before you start. If it can't push (no remote, no permission, a conflict, not a git project at all) it says "not pushed + why" in the reply rather than going quiet. And if your case library sits in a git-ignored directory — this repository's own does — the case files are written to disk and never committed: close-out reports that too, it is a legitimate setup rather than a failure, and syncing that directory to another machine is then your job.
 
 <details><summary>Manual install (no plugin)</summary>
 
@@ -180,7 +194,9 @@ Three self-checks afterwards:
 2. Hand it a >30k-character read (`LC_ALL=en_US.UTF-8 wc -m`) and watch whether it dispatches the `digest` subagent instead of reading it inline.
 3. Grow a session past the yellow line and watch whether it offers to close out — if it doesn't, the rule block isn't loaded.
 
-**Uninstall**: remove ctx-kit in `/plugin`, or for a manual install `rm -rf .claude/skills/ctx-* .claude/agents/digest.md ~/.claude/scripts/cache-audit.py`. Then delete the blocks you pasted into `CLAUDE.md` and `.claude/settings.json`. Nothing is left behind.
+**Upgrading from an earlier version**: this one renames the board's second section from "Global plan" to a **milestone** table plus a **routine** table. An existing board does not have to be rebuilt — run `/ctx-init` again and its review mode proposes the rename, keeping the rows you already have.
+
+**Uninstall**: remove ctx-kit in `/plugin`, or for a manual install `rm -rf .claude/skills/ctx-* .claude/agents/digest.md ~/.claude/scripts/cache-audit.py`. Then delete the blocks you pasted into `CLAUDE.md` and `.claude/settings.json` — that is everything the kit puts on your machine. What stays behind is yours, not the kit's: the board and the case library `/ctx-init` created, and the commits and remote history `/ctx-handoff` pushed. Nothing deletes those for you; keep them or clear them yourself.
 
 ## The six commands
 
@@ -190,7 +206,7 @@ Six skills, six commands. Saying it in plain words and typing the command are th
 |---|---|---|
 | Starting a project | "new project", or `/ctx-init` | Reads your own docs first, proposes the goal, the milestones and the routines with a source cited per cell, writes nothing until you confirm |
 | Something new to do, or a to-do to park | "I want to do X" / "note this down", or `/ctx-kickoff` | Routes it to case / one-off / quick fix, creates the case file on the spot, then asks one question — discuss here or dispatch |
-| This session is getting expensive, or a batch of work is done | "close out", or `/ctx-handoff` | Distils the discussion into a takeover-ready case file, persists whatever hasn't been saved, then retires the session |
+| This session is getting expensive, or a batch of work is done | "close out", or `/ctx-handoff` | Distils the discussion into a takeover-ready case file, persists whatever hasn't been saved, **commits and pushes the files it touched this round**, then retires the session |
 | A fresh session continuing the last one | "take over C-07", or `/ctx-takeover C-NN` | Reads the case file only, old transcripts off-limits; signs as pen-holder, recites goal, case, progress and next step for your spot-check |
 | You want to know where things stand | "what's the status", or `/ctx-status` | Reads the board and the case files, reports the goal chain with its milestones and routines, where each case stands, pending decisions and one-offs in plain language |
 | Once a week, checking the bill | "weekly checkup", or `/ctx-checkup` | Runs the cache audit, flags the sessions over the pre-registered lines, backfills archive pointers in the case files |

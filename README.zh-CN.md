@@ -1,6 +1,6 @@
 # ctx-kit
 
-English: [README.md](README.md)
+English: [README.md](README.md) · 六条命令的 skill 正本是英文，每个旁边的 `SKILL.zh-CN.md` 是中文参考件——它是快照、会滞后于英文正本，头一行写着冻结在哪一版。
 
 **一次会话装不下的活，才需要 ctx-kit；一次会话能出货的活，用不上。**
 
@@ -158,7 +158,19 @@ English: [README.md](README.md)
 
 ## 装什么
 
-装进去的是 6 个 skill、1 段 CLAUDE.md 条文、1 个提醒 hook、1 个查账脚本、1 个 digest 子代理。三步，两条命令加一次粘贴：
+装进去的是 6 个 skill、1 段 CLAUDE.md 条文、1 个提醒 hook、1 个查账脚本、1 个 digest 子代理。
+
+**先看版本**：`claude --version`。哪一层要什么版本（版本出自 [claude CLI 更新日志](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)）：
+
+| 这一层 | 最低版本 | 版本不够会怎样 |
+|---|---|---|
+| skill 机制（六条命令的底座） | v2.0.20（"Added support for Claude Skills"） | 整套都不生效，先 `claude update` |
+| 按插件装（`claude plugin …`） | v2.0.12 插件机制上线——更新日志没写 `claude plugin` 这个命令行形式是哪一版加的 | 改用会话里的 `/plugin`，或按下面手动安装 |
+| 跨会话消息 `SendMessage` / `ListAgents` | v2.1.224（macOS / Linux）；原生 Windows 要 v2.1.239 | 只影响"多会话并行"那一套（06 配方 5），其余照跑 |
+| 空闲通知 `notify_when_idle` | v2.1.236（macOS / Linux） | 得你自己去问"跑完没"，没人叫你 |
+| UI 会话标题 | 没有版本门槛：桌面版才有设标题的工具，纯终端没有 | 它跳过设标题并说明一句；案里的"持笔"才是唯一的交接信号 |
+
+三步，两条命令加一次粘贴：
 
 ```bash
 claude plugin marketplace add bestiaya/ctx-kit
@@ -166,6 +178,8 @@ claude plugin install ctx-kit@ctx-kit
 ```
 
 第三步（手动，必做）：把 [CLAUDE-snippet.md](CLAUDE-snippet.md) 里的代码块整段拷进项目 `CLAUDE.md`（或 `~/.claude/CLAUDE.md`）。plugin 装得进 skill、hook、脚本和子代理，**装不进常驻条文**——而"说事先分诊、大料自动下放、过线提醒收口"这些主动行为全靠条文常驻。
+
+**装之前先知道一个副作用**：收口（`/ctx-handoff`）不只是写文件——它会把这轮动过的路径 `git add` 上、提交，并**推送**。在受保护分支或多人共用分支上干活，先想好你要它推到哪里。推不上去（没远端、没权限、有冲突、压根不是 git 项目），它会在回复里明写"未推送 + 原因"，不会闷着。案库要是落在被 git 忽略的目录里（本仓自己就是这样），案文件只落盘、不入库：收口照样明写这一句，这是合法姿势、不算失败；那个目录想跨电脑接手，得你自己同步过去。
 
 <details><summary>手动安装（不走 plugin）</summary>
 
@@ -180,7 +194,9 @@ claude plugin install ctx-kit@ctx-kit
 2. 让它读一份 >30k 字符（`LC_ALL=en_US.UTF-8 wc -m`）的材料，看它是否派 digest 子代理而不是自己通读。
 3. 把会话养到黄灯线以上，看它过线时是否提醒你收口——不提就是条文没加载。
 
-**卸载**：plugin 在 `/plugin` 里移除，手动装的 `rm -rf .claude/skills/ctx-* .claude/agents/digest.md ~/.claude/scripts/cache-audit.py`；再从 `CLAUDE.md` 与 `.claude/settings.json` 删掉对应段落，不留痕迹。
+**从旧版升上来**：这一版把板的第二节从"全局计划"换成了**里程碑**表 + **例行**表。老板面不用重建：重跑一次 `/ctx-init` 走复核模式，它提议改名、你原来的行照留。
+
+**卸载**：plugin 在 `/plugin` 里移除，手动装的 `rm -rf .claude/skills/ctx-* .claude/agents/digest.md ~/.claude/scripts/cache-audit.py`；再从 `CLAUDE.md` 与 `.claude/settings.json` 删掉对应段落——装到你机器上的件就这些，删干净了。留下来的是你自己的东西：`/ctx-init` 建的任务板与案库、`/ctx-handoff` 提交并推上去的历史，这两样不会替你删，留着还是清掉你自己定。
 
 ## 六条命令
 
@@ -194,6 +210,8 @@ claude plugin install ctx-kit@ctx-kit
 | 新会话接着上个会话干 | "接手 C-07"，或 `/ctx-takeover C-NN` |
 | 想知道现在什么情况 | "现在什么情况"，或 `/ctx-status` |
 | 一周查一次账 | "周检"，或 `/ctx-checkup` |
+
+六条里只有"收口"会动你的仓库：它把这轮动过的文件提交并推送，推不上去会在回复里明写"未推送 + 原因"。
 
 案文件放哪：优先已存在的 `_ops/CASES/`，否则 `cases/`；想放别处就在项目 `CLAUDE.md` 里写一行 `ctx-kit case library: docs/cases`，六个 skill 都照这行找。
 
