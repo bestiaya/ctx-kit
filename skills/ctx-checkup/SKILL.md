@@ -7,7 +7,7 @@ description: Weekly cache audit — use on "weekly checkup", "where did the toke
 
 > **Speak in the user's language, and write the case files / board / inbox rows in the user's language.** Status words and section letters are fixed bilingual, so a case written in either language must be readable by this skill. Section letters A~I never change. Status words used here: **delivered** (已交货) / **awaiting decision** (候拍); header-line fields `status` (状态) / `pen-holder` (持笔) / `updated` (更新); roles `lead` (导师) / `exec` (执行); the placeholder in section G is `(to be backfilled)` / `(待回填)`.
 
-**Two things before you start; miss either and you will be wrong** (both have gone wrong in practice): ① run `date` for the real clock — **never infer the date from file timestamps or from the bill**, because a wrong inference stamps the whole batch of records with the wrong date; ② pull the live session list again — **whether a session is alive or dead is settled by the header line of the case / track file**; the register is only a projection and may be stale, and judging from it will treat retired sessions as live.
+**Two things before you start; miss either and you will be wrong** (both have gone wrong in practice): ① run `date` for the real clock — **never infer the date from file timestamps or from the bill**, because a wrong inference stamps the whole batch of records with the wrong date; ② pull the live session list again — **whether a session is alive or dead is settled by the pen-holder cell on the case's header line, or by the carrier cell of a one-off row on the board**; the session register is only a projection and may be stale, and judging from it will treat retired sessions as live.
 
 ## 1. Run the audit
 
@@ -46,7 +46,7 @@ Two rules:
 ## 4. Case size check
 The measure = **what a takeover actually loads** (header line + A~D + E's active rows and latest verdict + I), not "how big the file is", and not the old measure of "count up to E". Run the extraction command from `ctx-takeover` §2 on each case (swap `F=` for each case path) and `| tail -1` to take only the character count on the last line — **do not read the extracted body into context**; the checkup only needs the number. Skip decision appendices, experiment archives and TASKBOARD.
 
-Criterion (relaxed by the owner on 2026-08-24, previously 7,000), in three bands: **≤10,000 characters per case is green**; **>10,000 and ≤15,000 is yellow** — name it and say it gets slimmed at that case's next close-out, it is not over the line; **>15,000 must be slimmed before the case changes hands**. The reading is characters, not bytes and not file size (a case written in Chinese runs about twice its character count in bytes). For every case over the line, report the number and name the pen-holding session to do the slimming: hand the old rows of table C up to the track-level decision archive / roll the old delivered rows of E into an archive (see `ctx-handoff`) / clear the settled items out of D / compress the chronicle in F; historical detail belongs in the transcript and the archives, not in the case.
+Criterion (relaxed by the owner on 2026-08-24, previously 7,000), in three bands: **≤10,000 characters per case is green**; **>10,000 and ≤15,000 is yellow** — name it and say it gets slimmed at that case's next close-out, it is not over the line; **>15,000 must be slimmed before the case changes hands**. The reading is characters, not bytes and not file size (a case written in Chinese runs about twice its character count in bytes). For every case over the line, report the number and name the pen-holding session to do the slimming: move the old rows of table C out into that case's decision appendix / roll the old delivered rows of E into an archive (see `ctx-handoff`) / clear the settled items out of D / compress the chronicle in F; historical detail belongs in the transcript and the archives, not in the case.
 
 **E row length check (report, do not fix)**: the Verdict cell and the Impact-on-plan cell are each ≤200 characters. Run it over the whole case library and list the over-long rows in descending order of length (case file / row number / which cell / character count), reporting them to that case's pen-holding session to slim down themselves — **the checkup never edits somebody else's case**:
 
@@ -78,7 +78,7 @@ If that last line reports **0 files read**, the library is not where the rule po
 
 ## 5. Retirement-mark sweep
 A session that marks itself at close-out carries the `✕` prefix. **A session that crashed or was abandoned never marks itself**, so this step catches up:
-- list every session that is **neither the track owner of any track, nor the pen-holder of any case, nor the carrier of any one-off**, has not moved for >1 day, and has no `✕` prefix in its title;
+- list every session that is **neither the pen-holder of any case nor the carrier of any one-off**, has not moved for >1 day, and has no `✕` prefix in its title;
 - `set_session_title` each of them to `✕ <original title>`. **Leave the doubtful ones alone** — better to miss one than to mark a live session dead. If the title tool is unavailable (a bare terminal), skip this step and say so in the reply.
 - Report the numbers: N newly marked this period, M skipped as doubtful (named).
 
