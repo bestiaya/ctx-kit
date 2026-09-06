@@ -66,4 +66,4 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
 
 - A differently named case directory: add one line of its own to this `CLAUDE.md` — `ctx-kit case library: docs/cases`, the path relative to the project root — which is what all six skills read; the rules above need no editing.
 - No "owner" role (you are working alone): delete the last rule and keep the rest.
-- Team settings: add a name convention to the "pen-holder" cell (`name @first-8-of-UUID`, say) so two people never take the same case at once.
+- Team settings: add a name convention to the "pen-holder" cell (`name @<first 8 of the session id>`, say — the `sessionId` the session tools hand back, never the name of the transcript file, which is a different id) so two people never take the same case at once.
