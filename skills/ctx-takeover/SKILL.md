@@ -121,4 +121,6 @@ How to answer under spot-check:
 - Cannot fetch it → say you cannot. **Never invent, never fill it in from imagination, never patch the gap with common sense** — one of the spot-check questions is a negative control aimed at exactly this.
 
 ## 6. The first moves after taking over
+**First look at whether your predecessor's changes actually got committed** — the case file, the board, the artefacts the case points at — and where they did not, find out whether that work is still in flight or was simply forgotten before you build on top of it (measured on a real takeover: every case-file and board edit was sitting uncommitted in the working tree, and two archive files the case cited had never been committed at all).
+
 Pick "write to disk as you discuss" back up: write section C the moment a decision is made, rewrite section B the moment the plan changes; when dispatching, pick the carrier by the dispatch criteria; once this session is **both** past the yellow line (300k by default) and at a batch boundary — or the moment it is past red — **only remind** the owner (with the current watermark reading), and only the first time you cross into a band; whether to close out is the owner's call, and **never run ctx-handoff on your own initiative**.
