@@ -41,7 +41,7 @@ if 'E' in S:
     h=z(R[0]) if R else []
     j,v=q('状态|status'),q('判定|verdict')
     m=lambda p:[r for r in D if re.search(p,g(r,j),re.I)]
-    A=m('在跑|待验收|排队|待派|running|awaiting acceptance|queued|to dispatch')  # the six status words and nothing else (ctx-kickoff §2): 达成 used to be matched here too,
+    A=m(r'^\W*(在跑|待验收|排队|待派|running|awaiting acceptance|queued|to dispatch)')  # the six status words and nothing else (ctx-kickoff §2), both sides anchored: unanchored, 不在跑 / 未在跑 / "not running" all read as still running, and 达成 used to be matched below too,
     F=m(r'^\W*(已交货|已完|delivered|done)')                                 # and it matches 未达成 as happily as 部分达成, so a row that failed read as delivered. Anchored at the cell start for the same reason on the English side: loose, done matches "not done" and delivered matches "not delivered" (leading punctuation or ** allowed, as in the inbox rule below)
     o+=[L[a],'']+R[:2]+[T(r) for r in A]
     if F:
