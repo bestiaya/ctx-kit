@@ -1,4 +1,4 @@
-> 中文参考版（冻结于 v0.1.0，cbdb62e）；英文 `SKILL.md` 是活的正本、可能已经往前走了，差异用 `git diff v0.1.0 -- skills/` 看。
+> 中文参考版（冻结于 v0.1.0，cbdb62e）；英文 `SKILL.md` 是活的正本、可能已经往前走了，差异用 `git diff v0.1.0 -- skills/` 看。 本文件里的数字（例如水位线）可能已过期，一律以英文正本为准。
 ---
 name: ctx-handoff
 description: 会话收口交接。用户说"收口""关案""这个案完了""交接一下""这会话太肥了""换个新会话继续""退役这个会话"，或显式 /ctx-handoff 时用。把讨论沉淀成可接手的案文件，落盘未落盘的产物，然后本会话退役。 Close out and hand off — use on "close out", "wrap this up", "this session is too full", or /ctx-handoff; distills the discussion into a takeover-ready case file, persists unsaved artifacts, then retires this session.

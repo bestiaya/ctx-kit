@@ -127,7 +127,7 @@ class Ringing(unittest.TestCase):
         return payload
 
     def test_over_the_red_line_rings_red(self):
-        path = write_transcript("over-red.jsonl", [
+        path = write_transcript("over-red.ndjson", [
             {"type": "user", "message": {"role": "user", "content": "synthetic prompt"}},
             assistant(UNDER_BOTH, mid="msg_older"),
             assistant(OVER_RED, mid="msg_newest"),
@@ -136,11 +136,11 @@ class Ringing(unittest.TestCase):
         self.assertIn("413k", payload["systemMessage"])  # the newest record, not the older one
 
     def test_between_the_lines_rings_yellow(self):
-        path = write_transcript("yellow.jsonl", [assistant(IN_YELLOW)])
+        path = write_transcript("yellow.ndjson", [assistant(IN_YELLOW)])
         self.assert_rings(run(path), IN_YELLOW, "yellow", YELLOW_DEFAULT)
 
     def test_under_the_line_prints_nothing(self):
-        path = write_transcript("under.jsonl", [assistant(UNDER_BOTH)])
+        path = write_transcript("under.ndjson", [assistant(UNDER_BOTH)])
         result = run(path)
         self.assertEqual("", result.stdout)  # zero bytes, not an empty line
         self.assertEqual(0, result.returncode, result.stderr)
@@ -148,7 +148,7 @@ class Ringing(unittest.TestCase):
     def test_a_half_written_tail_does_not_hide_the_last_full_record(self):
         # The transcript is written asynchronously, so the last line can be half there.
         path = write_transcript(
-            "torn-tail.jsonl", [assistant(OVER_RED)], tail='{"type":"assistant","mess'
+            "torn-tail.ndjson", [assistant(OVER_RED)], tail='{"type":"assistant","mess'
         )
         self.assert_rings(run(path), OVER_RED, "red", RED_DEFAULT)
 
@@ -164,17 +164,17 @@ class Silence(unittest.TestCase):
 
     def test_bad_material_is_survived_silently(self):
         cases = {
-            "empty file": write_transcript("empty.jsonl", []),
+            "empty file": write_transcript("empty.ndjson", []),
             "half a line and nothing else": write_transcript(
-                "truncated.jsonl", [], tail='{"type":"assistant","message":{"usa'
+                "truncated.ndjson", [], tail='{"type":"assistant","message":{"usa'
             ),
-            "assistant records with no usage": write_transcript("no-usage.jsonl", [
+            "assistant records with no usage": write_transcript("no-usage.ndjson", [
                 {"type": "assistant", "isSidechain": False,
                  "message": {"id": "msg_x", "role": "assistant"}},
                 {"type": "assistant", "isSidechain": False,
                  "message": {"id": "msg_y", "role": "assistant", "usage": {"output_tokens": 12}}},
             ]),
-            "path that is not there": os.path.join(FIXTURES, "no-such-transcript.jsonl"),
+            "path that is not there": os.path.join(FIXTURES, "no-such-transcript.ndjson"),
         }
         for label, path in cases.items():
             with self.subTest(material=label):
@@ -195,7 +195,7 @@ class MainThreadOnly(unittest.TestCase):
     """A subagent's bill is not this session's watermark."""
 
     def test_a_bigger_sidechain_record_at_the_tail_is_ignored(self):
-        path = write_transcript("sidechain.jsonl", [
+        path = write_transcript("sidechain.ndjson", [
             assistant(OVER_RED, mid="msg_main"),
             assistant((900000, 900000, 900000), sidechain=True, mid="msg_sub_a"),
             assistant((800000, 800000, 800000), sidechain=True, mid="msg_sub_b"),
@@ -206,7 +206,7 @@ class MainThreadOnly(unittest.TestCase):
         self.assertNotIn("2700k", message)
 
     def test_only_sidechain_records_means_no_reading(self):
-        path = write_transcript("sidechain-only.jsonl", [
+        path = write_transcript("sidechain-only.ndjson", [
             assistant(OVER_RED, sidechain=True, mid="msg_sub_only"),
         ])
         self.assertEqual("", run(path).stdout)
@@ -216,7 +216,7 @@ class Thresholds(unittest.TestCase):
     """The lines move with the environment, and never crash on a typo."""
 
     def setUp(self):
-        self.path = write_transcript("thresholds.jsonl", [assistant(IN_YELLOW)])  # 318000
+        self.path = write_transcript("thresholds.ndjson", [assistant(IN_YELLOW)])  # 318000
 
     def test_lowering_red_to_30k_changes_the_band(self):
         result = run(self.path, CTXKIT_WATERMARK_RED="30k")
@@ -261,7 +261,7 @@ class Thresholds(unittest.TestCase):
             ((1000, 398000, 1000), "400k / red 400k"),     # 400,000 — exactly on red
         ):
             with self.subTest(watermark=sum(numbers)):
-                path = write_transcript("default-%d.jsonl" % sum(numbers), [assistant(numbers)])
+                path = write_transcript("default-%d.ndjson" % sum(numbers), [assistant(numbers)])
                 result = run(path)
                 self.assertEqual(0, result.returncode, result.stderr)
                 if expected:
@@ -270,7 +270,7 @@ class Thresholds(unittest.TestCase):
                     self.assertEqual("", result.stdout)
 
     def test_a_junk_threshold_still_leaves_a_quiet_session_quiet(self):
-        quiet = write_transcript("quiet.jsonl", [assistant(UNDER_BOTH)])
+        quiet = write_transcript("quiet.ndjson", [assistant(UNDER_BOTH)])
         result = run(quiet, CTXKIT_WATERMARK_YELLOW="abc", CTXKIT_WATERMARK_RED="abc")
         self.assertEqual("", result.stdout)
         self.assertEqual(0, result.returncode)
@@ -283,7 +283,7 @@ class TailRead(unittest.TestCase):
     # between runs, and the reuse check below only looks at the size. Without the number in the
     # name, a fixture built under an earlier pair of default lines would be reused after those
     # lines moved, and the suite would fail on a stale /tmp rather than on the code.
-    BIG = os.path.join(FIXTURES, "big-30mb-%d.jsonl" % sum(OVER_RED))
+    BIG = os.path.join(FIXTURES, "big-30mb-%d.ndjson" % sum(OVER_RED))
     TARGET_BYTES = 30 * 1024 * 1024
 
     @classmethod
@@ -327,7 +327,7 @@ class TailRead(unittest.TestCase):
     def test_a_record_beyond_the_first_windows_is_still_found(self):
         # 600KB of tail noise: past the 64KB and 256KB windows, so the widening has to work,
         # and the second window must not re-parse or skip the lines the first one saw.
-        path = self.padded("beyond-window-%d.jsonl" % sum(OVER_RED),
+        path = self.padded("beyond-window-%d.ndjson" % sum(OVER_RED),
                            assistant(OVER_RED, mid="msg_buried"), 600 * 1024)
         result = run(path)
         self.assertEqual(0, result.returncode, result.stderr)
@@ -336,7 +336,7 @@ class TailRead(unittest.TestCase):
     def test_a_record_past_the_8mb_cap_is_left_alone(self):
         # The cap is deliberate: past 8MB of tail the answer is "no reading", not "read the
         # whole file". Silence, not a wrong number and not a slow turn.
-        path = self.padded("past-cap-%d.jsonl" % sum(OVER_RED),
+        path = self.padded("past-cap-%d.ndjson" % sum(OVER_RED),
                            assistant(OVER_RED, mid="msg_too_far"), 9 * 1024 * 1024)
         started = time.perf_counter()
         result = run(path)
