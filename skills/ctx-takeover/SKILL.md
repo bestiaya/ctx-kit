@@ -50,7 +50,8 @@ if 'E' in S:
         o+=[f'latest delivered {M(g(N,1 if j==0 else 0),80)} | verdict {M(g(N,v) if v>=0 else "see that row in the case")}']
     if not A+F: o+=D[-3:]+['<!-- status column did not match (column missing, or wording outside the vocabulary); last 3 rows kept, scan E by hand -->']
     O=[r for r in D if r not in A+F]  # a status outside the six words is read as neither live nor finished, so say how many went unread rather than letting them vanish
-    o+=[f'<!-- E {len(D)} rows: all {len(A)} active rows + 1 latest verdict; the rest, and anything past 200 chars, stay in the case - fetch on target{f'. Status outside the six words on {len(O)} row{"s" if len(O)>1 else ""}, read as neither live nor finished - scan those by hand' if O and A+F else ""} -->']
+    e=f'. Status outside the six words on {len(O)} row{"s" if len(O)>1 else ""}, read as neither live nor finished - scan those by hand' if O and A+F else ''
+    o+=[f'<!-- E {len(D)} rows: all {len(A)} active rows + 1 latest verdict; the rest, and anything past 200 chars, stay in the case - fetch on target{e} -->']
 for k in 'FGH':
     if k in S: o+=['',f'{L[S[k][0]]}  <- not loaded ({S[k][1]-S[k][0]-1} lines), fetch on target']
 if 'I' in S:
