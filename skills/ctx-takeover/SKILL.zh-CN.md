@@ -1,4 +1,4 @@
-> 中文参考版（冻结于 v0.1.0，cbdb62e）；英文 `SKILL.md` 是活的正本、可能已经往前走了，差异用 `git diff v0.1.0 -- skills/` 看。 本文件里的数字（例如水位线）可能已过期，一律以英文正本为准。
+> 中文参考版（冻结于 v0.1.0，cbdb62e）；英文 `SKILL.md` 是活的正本、可能已经往前走了，差异用 `git diff v0.1.0 -- skills/` 看。 水位线相关句子已于 2026-09-06 对齐英文正本（黄 300k / 红 400k、批界双条件、同档只提醒一次）；其余差异仍以英文为准。
 ---
 name: ctx-takeover
 description: 接手在案。开新会话继任时用：用户说"接手 C-07""继续那个案""你来接这个案""接着上个会话的活"，或显式 /ctx-takeover C-NN。只读案文件、禁读旧会话转录，署名后四章复述(总目标→本案→进展→下一步)候抽查。 Take over a case in a fresh session — use on "take over C-07", "continue that case", or /ctx-takeover C-NN; reads only the case file (old transcripts off-limits), signs as pen-holder, recites goal, case, progress and next step for your spot-check.
@@ -86,4 +86,4 @@ PY
 - 取不到 → 说取不到。**不编造、不脑补、不用常识填空**——抽查里有一道负对照就是专门测这个的。
 
 ## 6. 接手后的第一批动作
-把"边讨论边落盘"接上：每拍一个决策当场写 C 节，每改一版方案当场重写 B 节；派活按派活判据选载体；本会话过 150k 或到批界，**只提醒**负责人（带当前水位读数），收不收口由负责人拍，**不自行执行 ctx-handoff**。
+把"边讨论边落盘"接上：每拍一个决策当场写 C 节，每改一版方案当场重写 B 节；派活按派活判据选载体；本会话**既**过黄线（默认 300k）**又**到批界——或一过红线（默认 400k）——**只提醒**负责人（带当前水位读数），且每进一档只提醒一次；收不收口由负责人拍，**不自行执行 ctx-handoff**。

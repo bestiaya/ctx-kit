@@ -1,4 +1,4 @@
-> 中文参考版（冻结于 v0.1.0，cbdb62e）；英文 `SKILL.md` 是活的正本、可能已经往前走了，差异用 `git diff v0.1.0 -- skills/` 看。 本文件里的数字（例如水位线）可能已过期，一律以英文正本为准。
+> 中文参考版（冻结于 v0.1.0，cbdb62e）；英文 `SKILL.md` 是活的正本、可能已经往前走了，差异用 `git diff v0.1.0 -- skills/` 看。 水位线相关句子已于 2026-09-06 对齐英文正本（黄 300k / 红 400k、批界双条件、同档只提醒一次）；其余差异仍以英文为准。
 ---
 name: ctx-kickoff
 description: 说事分诊与立案。用户说"我要做 X""帮我规划 X""开个新活""这事怎么搞"，说"记一下""先存着""保存这个任务""回头再做"要存待办，或显式 /ctx-kickoff 时用。分诊成立案/散活/顺手改三条路，当场建案文件；待办按归属落进案或任务板并回一句存到哪了，然后只问一个问题：在这儿聊还是派出去。 Triage and open a case — use on "I want to do X", "plan this", "start a new job", "note this down", "save this for later", or /ctx-kickoff; routes to case / one-off / quick-fix, creates the case file on the spot, parks to-dos where they belong, then asks one question — discuss here or dispatch.
@@ -56,7 +56,7 @@ description: 说事分诊与立案。用户说"我要做 X""帮我规划 X""开�
 回填 E 行（状态=待验收 / 交货路径 / 判定 / 对方案的影响一句）——**判定与"对方案的影响"两格各 ≤200 字**，E 是索引不是报告，细节只放交货件的结果节。完成即停，不开新话题。
 ```
 
-派完不等（>15 分钟的活一律异步）。**本会话已肥（>150k）时不要在这里派子代理**——等待的冷税 = 本会话水位 × 2。
+派完不等（>15 分钟的活一律异步）。**本会话已过黄线（默认 300k）时不要在这里派子代理**——等待的冷税 = 本会话水位 × 2。
 
 ## 4. 记待办（另一条入口）
 **触发**：用户说"记一下""先存着""保存这个任务""回头再做"；或你自己提了个待办、用户说"存"。
