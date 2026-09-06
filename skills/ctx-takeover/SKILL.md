@@ -41,15 +41,16 @@ if 'E' in S:
     h=z(R[0]) if R else []
     j,v=q('状态|status'),q('判定|verdict')
     m=lambda p:[r for r in D if re.search(p,g(r,j),re.I)]
-    A=m('在跑|待验收|排队|待派|running|awaiting acceptance|queued|to dispatch')
-    F=m('已交货|已完|^完|达成|delivered|done')
+    A=m('在跑|待验收|排队|待派|running|awaiting acceptance|queued|to dispatch')  # the six status words and nothing else (ctx-kickoff §2): 达成 used to be matched here too,
+    F=m('已交货|已完|delivered|done')                                        # and it matches 未达成 as happily as 部分达成, so a row that failed read as delivered
     o+=[L[a],'']+R[:2]+[T(r) for r in A]
     if F:
         y=lambda r:[(1,int(t)) if t.isdigit() else (0,t) for t in re.findall(r'\d+|[a-z]+',g(r,1 if j==0 else 0))]
         N=max(F,key=y) if any(y(r) for r in F) else F[-1]  # newest by ID (E-10b-2 < E-11), never by table order: newest-first and oldest-first both work
         o+=[f'latest delivered {M(g(N,1 if j==0 else 0),80)} | verdict {M(g(N,v) if v>=0 else "see that row in the case")}']
     if not A+F: o+=D[-3:]+['<!-- status column did not match (column missing, or wording outside the vocabulary); last 3 rows kept, scan E by hand -->']
-    o+=[f'<!-- E {len(D)} rows: all {len(A)} active rows + 1 latest verdict; the rest, and anything past 200 chars, stay in the case - fetch on target -->']
+    O=[r for r in D if r not in A+F]  # a status outside the six words is read as neither live nor finished, so say how many went unread rather than letting them vanish
+    o+=[f'<!-- E {len(D)} rows: all {len(A)} active rows + 1 latest verdict; the rest, and anything past 200 chars, stay in the case - fetch on target{f'. Status outside the six words on {len(O)} row{"s" if len(O)>1 else ""}, read as neither live nor finished - scan those by hand' if O and A+F else ""} -->']
 for k in 'FGH':
     if k in S: o+=['',f'{L[S[k][0]]}  <- not loaded ({S[k][1]-S[k][0]-1} lines), fetch on target']
 if 'I' in S:
