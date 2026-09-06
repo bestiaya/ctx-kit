@@ -18,7 +18,7 @@ import json, os, subprocess, sys, time, unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPT = os.path.join(os.path.dirname(HERE), "ctx-watermark.py")
-FIXTURES = os.environ.get("CTXKIT_TEST_DIR") or "/tmp/ctxkit-bell-unit"
+FIXTURES = os.environ.get("CTXKIT_TEST_DIR") or "/tmp/ctx-watermark-tests"
 PREFIX = "[ctx-kit watermark]"
 
 # The defaults the script falls back to, restated here so a silent change to either one shows up

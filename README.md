@@ -1,6 +1,8 @@
 # ctx-kit
 
-中文 / Chinese: [README.zh-CN.md](README.zh-CN.md) · The six skill prompts are English (a frozen Chinese reference copy, `SKILL.zh-CN.md`, sits beside each — a snapshot that lags the English original, and its first line says which release it was frozen at, so `git diff <that tag> -- skills/` shows what has changed since); docs 01–06 are in Chinese for now.
+**Current release: ctx-kit v0.4.0** — the same number `.claude-plugin/plugin.json` carries; `scripts/release-check.py` reports drift if the two disagree.
+
+中文 / Chinese: [README.zh-CN.md](README.zh-CN.md) · The six skill prompts are English (a frozen Chinese reference copy, `SKILL.zh-CN.md`, sits beside each — a snapshot that lags the English original, and its first line says which release it was frozen at, so `git diff <that tag> -- skills/` shows what has changed since); docs 01–06 are in Chinese for now. The English originals gloss the nine case-file section names in Chinese — `A Goal (目标)` and so on — so that a case written in either language stays readable to a session working in the other.
 
 **ctx-kit is for work that doesn't fit in one session. If your work ships inside one session, you don't need it.**
 
@@ -155,6 +157,8 @@ Eight comparisons; click a row and you land on that subsection of 01, with its r
 | [8 the author's own scenarios \| users' own words (three-source sampling)](01-BACKGROUND.md#310-对照-8作者自述场景--用户自述痛点三路取样) | an earlier draft: four scenarios written by the author | 220 items sampled from three streams of public discussion: session about to die 74 / long sessions expensive 55 / one place for all the work 30 / dispatch a job 22 / other 39 (18 of those dissenting) | the first two are real pain; the last two are quiet, and "dispatch" folded into "take over" |
 
 Every number comes from 01, which also defines "equivalent units" — the one billing unit that puts writes, cache reads and output on the same scale. The first seven comparisons can each be recomputed with a script; the eighth is a sample count, and its method and limits are written up in 01 §3.10.
+
+One measurement sits outside 01: [handing a task to a fresh session, six cases](docs/evidence/2026-09-05-handover-cost.md) measures how much of a case file a takeover actually loads — 93,073 characters down to 53,339.
 
 ## What gets installed
 
