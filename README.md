@@ -232,6 +232,10 @@ Case files live in `_ops/CASES/` when that directory already exists, otherwise i
 
 Docs 01–06 are all in Chinese for now.
 
+## Found something wrong? Say so
+
+Open an issue at [github.com/bestiaya/ctx-kit/issues](https://github.com/bestiaya/ctx-kit/issues) — there is a template, and one sentence is a perfectly good report. What helps most is what you ran, what you expected and what actually happened, plus any number you saw: every reading in these docs came from someone writing exactly that down.
+
 ## Words used here
 
 - **board** — one per project, kept by hand: the overall goal, a milestone table, a routine table, an index of the cases, and the one-offs; one line each.
