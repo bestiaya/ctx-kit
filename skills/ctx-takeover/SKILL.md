@@ -57,23 +57,26 @@ if 'I' in S:
     h=z(L[K[0]]) if K else []; d=q('处置|disposition') if K else -1
     if d<0: o+=['']+L[a:b]+(['<!-- inbox: no disposition column in the header row; whole inbox loaded, sort it out by hand -->'] if K else [])
     else:
-        # blank disposition cell = still on your plate. Read the positional cell and, when disposition is the last
-        # column, the row's last cell too, so a row with a stray | inside its own text still errs towards "undisposed".
-        # A cell that says the job is still in hand is not disposed either: trust a cell that opens with one of the
-        # disposal markers, and otherwise keep any row still talking about waiting. Dropping a live obligation costs
-        # far more than carrying one settled row, so write dispositions starting done / dropped / moved to.
-        n=re.compile(r'^\W*(已办|不办|已转|done|dropped|moved)',re.I); p=re.compile(r'候|待|pending|await|tbd',re.I)
-        u=lambda r:not(g(r,d).strip() and (n.match(g(r,d)) or not p.search(g(r,d))) and (z(r)[-1].strip() if d==len(h)-1 else '.'))
+        # Disposed = the disposition cell opens with one of the disposal markers (leading punctuation or bold marks
+        # allowed); blank, or worded any other way, is still on your plate and comes through in full. The rule no
+        # longer guesses at what the writer meant: the old fallback took "no waiting word in the cell" for settled,
+        # and the ways to word a cell are endless — "shown to the owner, not sent" holds no waiting word, and that
+        # live row went missing without a sound. Three agreed openings state the rule in one sentence, and they are
+        # what the docs teach anyway. Read the positional cell and, when disposition is the last column, the row's
+        # last cell too, so a row with a stray | inside its own text still errs towards "undisposed". Dropping a live
+        # obligation costs far more than carrying one settled row, so write dispositions starting done / dropped / moved to.
+        n=re.compile(r'^\W*(已办|不办|已转|done|dropped|moved)',re.I)
+        u=lambda r:not(g(r,d).strip() and n.match(g(r,d)) and (z(r)[-1].strip() if d==len(h)-1 else '.'))
         D=K[2:]; U=[i for i in D if u(L[i])]; V=[i for i in D if not u(L[i])]; C=V[-3:]  # newest = last, the inbox is append-only
         o+=['']+[T(L[i]) if i in C else L[i] for i in range(a,b) if i not in D or i in U or i in C]
         if len(V)>len(C) or any(len(c)>200 for i in C for c in z(L[i])):
             w=f', the other {len(V)-len(C)} left in the case' if len(V)>len(C) else ''
-            o+=[f'<!-- inbox {len(D)} rows: all {len(U)} undisposed in full + the last {len(C)} of {len(V)} disposed, cells cut at 200{w} - fetch on target. Undisposed = a blank disposition cell, or one still saying the job is in hand -->']
+            o+=[f'<!-- inbox {len(D)} rows: all {len(U)} undisposed in full + the last {len(C)} of {len(V)} disposed, cells cut at 200{w} - fetch on target. Undisposed = a blank disposition cell, or one not opening with done / dropped / moved to -->']
 t='\n'.join(o);print(t);print(f'\n=== characters loaded this time: {len(t)} ===')
 PY
 ```
 
-**The inbox must be read, never skipped** — messages sent in from other cases and the to-dos your predecessor left you both live there, and anything with an empty disposition cell is waiting on you. That is why the block brings every undisposed row in word for word and, of the disposed ones, only the last three with their cells cut at 200 characters: an inbox whose rows had all been disposed of was still taking nearly 40% of that case's slice, on rows nobody had to act on. A cell that is filled in but only says the work is still in hand counts as disposed to the filter, so run an eye down §I in the case itself whenever a row you were expecting is not in the slice. Skipping it has gone wrong once in practice: the predecessor wrote in 6 items (3 of them starred), the successor followed an older rule and never read the inbox, and the lot was lost on the spot. **Do not read deliverables end to end for the sake of being "more thorough"** — fetch them on target when you need them; reading transcripts is both expensive and liable to drag back dead branches that were already rejected.
+**The inbox must be read, never skipped** — messages sent in from other cases and the to-dos your predecessor left you both live there, and anything with an empty disposition cell is waiting on you. That is why the block brings every undisposed row in word for word and, of the disposed ones, only the last three with their cells cut at 200 characters: an inbox whose rows had all been disposed of was still taking nearly 40% of that case's slice, on rows nobody had to act on. A row whose disposition cell does not open with one of the three agreed words is carried in full whatever else it says, so write dispositions starting done (已办) / dropped (不办) / moved to (已转) — worded any other way, that row goes on taking up the slice for good. Skipping it has gone wrong once in practice: the predecessor wrote in 6 items (3 of them starred), the successor followed an older rule and never read the inbox, and the lot was lost on the spot. **Do not read deliverables end to end for the sake of being "more thorough"** — fetch them on target when you need them; reading transcripts is both expensive and liable to drag back dead branches that were already rejected.
 
 **The session name in an inbox row says who wrote it — it is not an address.** Before you answer a row, or deliver anything into another case, open that case's header line and read its Pen-holder cell **now**: the sender may have retired in between, and a retired session is not necessarily unreachable. Measured once: a delivery sent straight to the session named in the incoming row landed in a session that had already retired and woke it for about 15 seconds, while the successor who actually held the case never saw it. **A reply whose title carries the `✕` retirement mark means you delivered to the wrong place** — send it again to whoever the target case's header line names as pen-holder, and say in one line to the owner that it went astray. **Address a session by its title plus its working directory** (that pair works from a bare terminal too); the session id only breaks a tie between two sessions with the same title.
 
