@@ -1,6 +1,6 @@
 # ctx-kit
 
-**Current release: ctx-kit v0.4.0** — the same number `.claude-plugin/plugin.json` carries; `scripts/release-check.py` reports drift if the two disagree.
+**Current release: ctx-kit v0.5.0** — the same number `.claude-plugin/plugin.json` carries; `scripts/release-check.py` reports drift if the two disagree.
 
 中文 / Chinese: [README.zh-CN.md](README.zh-CN.md) · The six skill prompts are English (a frozen Chinese reference copy, `SKILL.zh-CN.md`, sits beside each — a snapshot that lags the English original, and its first line says which release it was frozen at, so `git diff <that tag> -- skills/` shows what has changed since); docs 01–06 are in Chinese for now. The English originals gloss the nine case-file section names in Chinese — `A Goal (目标)` and so on — so that a case written in either language stays readable to a session working in the other.
 
