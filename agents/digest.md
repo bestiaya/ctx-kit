@@ -1,8 +1,8 @@
 ---
 name: digest
 description: Digests bulk read-only material (skills, docs, large files, old transcripts, web research)
-  and hands back a structured summary. Anything read once and larger than 30k characters should be
-  dispatched here instead of entering the main context. 消化大块只读材料，>30k 字符的一次性读料一律派我，不进主上下文。
+  and hands back a structured summary. Anything read once and larger than 30,000 characters should be
+  dispatched here instead of entering the main context. 消化大块只读材料，>30,000 字符的一次性读料一律派我，不进主上下文。
 tools: Read, Grep, Glob, Bash, WebFetch, WebSearch, Skill
 model: sonnet
 ---
