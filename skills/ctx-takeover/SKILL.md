@@ -62,16 +62,22 @@ if 'I' in S:
         # longer guesses at what the writer meant: the old fallback took "no waiting word in the cell" for settled,
         # and the ways to word a cell are endless — "shown to the owner, not sent" holds no waiting word, and that
         # live row went missing without a sound. Three agreed openings state the rule in one sentence, and they are
-        # what the docs teach anyway. Read the positional cell and, when disposition is the last column, the row's
-        # last cell too, so a row with a stray | inside its own text still errs towards "undisposed". Dropping a live
-        # obligation costs far more than carrying one settled row, so write dispositions starting done / dropped / moved to.
+        # what the docs teach anyway. A row whose cell count differs from the header row's has an unescaped | somewhere
+        # in its own text: every column past that point is out of step, so the cell sitting at the disposition position
+        # is a fragment of somebody's sentence and nothing in that row can be trusted by position. Do not try to guess
+        # which fragment was meant — take the row as undisposed, load it whole, and count it in the note (measured:
+        # two live rows whose disposition column came out as "#" while the real cell said "for my successor to deal
+        # with"). Dropping a live obligation costs far more than carrying one settled row, so write dispositions
+        # starting done / dropped / moved to, and escape a pipe inside your own text as \|.
         n=re.compile(r'^\W*(已办|不办|已转|done|dropped|moved)',re.I)
-        u=lambda r:not(g(r,d).strip() and n.match(g(r,d)) and (z(r)[-1].strip() if d==len(h)-1 else '.'))
-        D=K[2:]; U=[i for i in D if u(L[i])]; V=[i for i in D if not u(L[i])]; C=V[-3:]  # newest = last, the inbox is append-only
+        x=lambda r:len(z(r))!=len(h)  # out of step with the header = an unescaped | in the text; position means nothing on that row
+        u=lambda r:x(r) or not n.match(g(r,d))
+        D=K[2:]; U=[i for i in D if u(L[i])]; V=[i for i in D if not u(L[i])]; C=V[-3:]; X=[i for i in D if x(L[i])]  # newest = last, the inbox is append-only
         o+=['']+[T(L[i]) if i in C else L[i] for i in range(a,b) if i not in D or i in U or i in C]
-        if len(V)>len(C) or any(len(c)>200 for i in C for c in z(L[i])):
+        if X or len(V)>len(C) or any(len(c)>200 for i in C for c in z(L[i])):
             w=f', the other {len(V)-len(C)} left in the case' if len(V)>len(C) else ''
-            o+=[f'<!-- inbox {len(D)} rows: all {len(U)} undisposed in full + the last {len(C)} of {len(V)} disposed, cells cut at 200{w} - fetch on target. Undisposed = a blank disposition cell, or one not opening with done / dropped / moved to -->']
+            y=f' {len(X)} of them do not have the header row cell count (an unescaped | inside a cell), so they are loaded whole as undisposed - go and check those against the case.' if X else ''
+            o+=[f'<!-- inbox {len(D)} rows: all {len(U)} undisposed in full + the last {len(C)} of {len(V)} disposed, cells cut at 200{w} - fetch on target. Undisposed = a blank disposition cell, or one not opening with done / dropped / moved to.{y} -->']
 t='\n'.join(o);print(t);print(f'\n=== characters loaded this time: {len(t)} ===')
 PY
 ```

@@ -82,7 +82,7 @@ Do not open a case, do not start work, do not chase priority — **decide where 
 | ① A to-do belonging to the case you hold the pen on (something to decide, something to think through) | one row added to that case's **section D**, with **one sentence of your recommendation** |
 | ② Belongs to the current case, and is something to execute | an **E row** of that case, status = `queued`, task brief path = `to be written` |
 | ③ A standalone small job outside this case | a **one-off row on the board** (**the milestone tag is required** — the milestone it pushes, or `candidate milestone: <one line>` plus a word to the owner; §1) |
-| ④ Belongs to another case | **that case's inbox (section I)**, **append only**, never touch their body text; leave the Disposition cell empty — an empty disposition is what marks the row as still waiting on them |
+| ④ Belongs to another case | **that case's inbox (section I)**, **append only**, never touch their body text; leave the Disposition cell empty — an empty disposition is what marks the row as still waiting on them. **Escape every pipe inside your message as `\|`**: an unescaped one splits the row into the wrong number of cells, and a takeover reads that row as malformed |
 
 If you cannot tell where it belongs, ask one question (this is the only follow-up allowed); do not stuff it somewhere yourself.
 
