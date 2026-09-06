@@ -422,9 +422,12 @@ def lint_file(path, rules):
 BADGE = {"ok": "ok  ", "warn": "WARN", "bad": "FAIL", "n/a": "--  "}
 
 
-def render(path, results):
+def render(path, results, terse=False):
+    """terse = only what is wrong, for a hook that has to be cheap to be tolerated."""
     out = ["=== %s ===" % path]
     for name, status, items, fix in results:
+        if terse and status != "bad":
+            continue
         if status == "n/a":
             out.append("  %s  %-18s no such section" % (BADGE[status], name))
             continue
@@ -487,7 +490,8 @@ def main(argv=None):
         sys.stderr.write("case-lint: no case files under %s\n" % args.target)
         return 2
 
-    blocks, bad_checks, warn_checks, ok_checks, findings = [], 0, 0, 0, 0
+    blocks, files_seen = [], []
+    bad_checks, warn_checks, ok_checks, findings = 0, 0, 0, 0
     for path in files:
         try:
             results = lint_file(path, rules)
@@ -497,15 +501,20 @@ def main(argv=None):
         if results is None:
             notes.append("%s has no A~I sections — not a case file, nothing checked" % path)
             continue
+        here = 0
         for _, status, items, _ in results:
             if status == "bad":
                 bad_checks += 1
+                here += 1
                 findings += len(items)
             elif status == "warn":
                 warn_checks += 1
             elif status == "ok":
                 ok_checks += 1
-        blocks.append(render(path, results))
+        files_seen.append(path)
+        if args.quiet and not here:
+            continue  # a hook is only worth having if a clean file costs nothing to read
+        blocks.append(render(path, results, terse=args.quiet))
 
     if args.quiet and not bad_checks:
         return 0
@@ -513,7 +522,7 @@ def main(argv=None):
     report = "\n\n".join(blocks)
     tail = "--- %d checks clean, %d with findings (%d finding%s over %d file%s)" % (
         ok_checks, bad_checks, findings, "" if findings == 1 else "s",
-        len(blocks), "" if len(blocks) == 1 else "s")
+        len(files_seen), "" if len(files_seen) == 1 else "s")
     if warn_checks:
         tail += ", %d yellow" % warn_checks
     tail += " ---"
