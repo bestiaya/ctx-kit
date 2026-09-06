@@ -1,6 +1,6 @@
 # ctx-kit
 
-**当前版本：ctx-kit v0.5.0** —— 与 `.claude-plugin/plugin.json` 里的号一致；两边对不上，`scripts/release-check.py` 会报出来。
+**当前版本：ctx-kit v0.6.0** —— 与 `.claude-plugin/plugin.json` 里的号一致；两边对不上，`scripts/release-check.py` 会报出来。
 
 English: [README.md](README.md) · 六条命令的 skill 只有英文一版，**正文以英文为准**，不再另出中文副本。skill 正文自己就写着"说用户的语言、案文件按用户的语言写"，所以中文用户用英文 skill，功能上不缺什么；文档 01–06 目前是中文。英文正文里九个案节名都带中文括注（`A Goal (目标)` 这样），为的是中英两种语言写出来的案能互读。
 
