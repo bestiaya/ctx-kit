@@ -197,7 +197,7 @@ Three self-checks afterwards:
 
 1. In a fresh session, say "I want to do X" and watch whether it triages before it starts working.
 2. Hand it a >30k-character read (`LC_ALL=en_US.UTF-8 wc -m`) and watch whether it dispatches the `digest` subagent instead of reading it inline.
-3. Grow a session past the yellow line and watch whether it offers to close out — if it doesn't, the rule block isn't loaded.
+3. Drop both lines low for a moment (`CTXKIT_WATERMARK_YELLOW` / `CTXKIT_WATERMARK_RED`, see just below) and take two turns — the first turn has no reading to go on yet: the session should quote its current watermark back at you and offer to close out. No reading at all means the hook isn't installed; a reading with no offer means the rule block isn't loaded.
 
 The yellow and red lines are **a spending preference, not a price tier and not a quality cliff**: nothing gets more expensive per token or worse at 200k, it is only that rewriting the same context over and over stops being worth the money. So they are yours to move — set `CTXKIT_WATERMARK_YELLOW` / `CTXKIT_WATERMARK_RED` (in tokens; `150000` and `150k` both work) in the `env` block of `settings.json` rather than editing anything in the kit.
 

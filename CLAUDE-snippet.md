@@ -36,9 +36,11 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
 - An exec session calls set_session_title first thing, naming itself as it appears on the board; delivery = a
   two-layer deliverable (machine-readable + written for people) + writing back the case's E row; an exec writes
   only its own E row and never reads the whole case.
-- Past 150-200k, or at a batch boundary: **only remind that it is time to close out** (with the current watermark
-  reading), the owner decides whether to do it, never act unasked (ctx-handoff); a successor opens by reading the
-  case file only, and never reads old session transcripts (ctx-takeover).
+- Past 150-200k, or at a batch boundary: **only remind that it is time to close out** — the current watermark
+  reading comes from the line starting `[ctx-kit watermark]`, so when one appears, pass that reading to the owner
+  in one sentence and suggest closing out, once per band; the owner decides whether to do it, never act unasked
+  (ctx-handoff); a successor opens by reading the case file only, and never reads old session transcripts
+  (ctx-takeover).
   A discussion / lead session is never compacted; compact is first aid for an exec session nearing the top of the
   window, and nothing else.
 - When asked "where do things stand": read the board + the cases and report in plain language, so the owner never

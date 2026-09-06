@@ -197,7 +197,7 @@ claude plugin install ctx-kit@ctx-kit
 
 1. 新开一个会话说"我要做 X"，看它是否先分诊再动手。
 2. 让它读一份 >30k 字符（`LC_ALL=en_US.UTF-8 wc -m`）的材料，看它是否派 digest 子代理而不是自己通读。
-3. 把会话养到黄灯线以上，看它过线时是否提醒你收口——不提就是条文没加载。
+3. 把两条线临时调低（`CTXKIT_WATERMARK_YELLOW` / `CTXKIT_WATERMARK_RED`，见紧接下面一段）跑两回合——第一回合还没有读数可看：会话应当报出当前水位并建议收口。什么读数都没有，先查 hook 装没装；报了读数却不提收口，是条文没加载。
 
 黄线红线是**花费偏好，不是价档，也不是质量悬崖**：过了 200k 既不跳价也不变笨，只是同一段上下文被反复重写的钱越来越不划算。所以线归你定——在 `settings.json` 的 `env` 块里设 `CTXKIT_WATERMARK_YELLOW` / `CTXKIT_WATERMARK_RED`（单位 token，`150000` 与 `150k` 都吃），不用改工具包里的任何文件。
 
