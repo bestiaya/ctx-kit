@@ -56,13 +56,16 @@ if 'I' in S:
     else:
         # blank disposition cell = still on your plate. Read the positional cell and, when disposition is the last
         # column, the row's last cell too, so a row with a stray | inside its own text still errs towards "undisposed".
-        # A disposition that only says the job is in hand reads as disposed here - no filter can tell those apart.
-        u=lambda r:not(g(r,d).strip() and (z(r)[-1].strip() if d==len(h)-1 else '.'))
+        # A cell that says the job is still in hand is not disposed either: trust a cell that opens with one of the
+        # disposal markers, and otherwise keep any row still talking about waiting. Dropping a live obligation costs
+        # far more than carrying one settled row, so write dispositions starting done / dropped / moved to.
+        n=re.compile(r'^\W*(已办|不办|已转|done|dropped|moved)',re.I); p=re.compile(r'候|待|pending|await|tbd',re.I)
+        u=lambda r:not(g(r,d).strip() and (n.match(g(r,d)) or not p.search(g(r,d))) and (z(r)[-1].strip() if d==len(h)-1 else '.'))
         D=K[2:]; U=[i for i in D if u(L[i])]; V=[i for i in D if not u(L[i])]; C=V[-3:]  # newest = last, the inbox is append-only
         o+=['']+[T(L[i]) if i in C else L[i] for i in range(a,b) if i not in D or i in U or i in C]
         if len(V)>len(C) or any(len(c)>200 for i in C for c in z(L[i])):
             w=f', the other {len(V)-len(C)} left in the case' if len(V)>len(C) else ''
-            o+=[f'<!-- inbox {len(D)} rows: all {len(U)} undisposed in full + the last {len(C)} of {len(V)} disposed, cells cut at 200{w} - fetch on target. Undisposed = a blank disposition cell -->']
+            o+=[f'<!-- inbox {len(D)} rows: all {len(U)} undisposed in full + the last {len(C)} of {len(V)} disposed, cells cut at 200{w} - fetch on target. Undisposed = a blank disposition cell, or one still saying the job is in hand -->']
 t='\n'.join(o);print(t);print(f'\n=== characters loaded this time: {len(t)} ===')
 PY
 ```

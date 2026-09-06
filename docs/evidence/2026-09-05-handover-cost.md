@@ -12,7 +12,7 @@ Two moves, boring on purpose.
 
 **Close-out.** Before a session is discarded, the discussion is distilled into a case file: one markdown file per job. It carries a header line (status, pen holder, last updated) and nine lettered sections: A goal, B current plan, C decisions, D open items, E experiment ledger, F chronicle, G archive pointers, H unsaved artifacts, I inbox. The letters never change, which is the only reason the next move can be mechanical.
 
-**Takeover.** A fresh session picks the job up from that file and nothing else. Old transcripts are off limits. It does not read the whole case file either: it reads the header, A through D, the inbox, and from the experiment ledger only the rows that are still active plus the verdict of the most recent finished row. For the chronicle, the archive pointers and the unsaved list it loads the section names and their line counts, then fetches from them on target only when a question actually needs the evidence.
+**Takeover.** A fresh session picks the job up from that file and nothing else. Old transcripts are off limits. It does not read the whole case file either: it reads the header, A through D, the inbox, and from the experiment ledger only the rows that are still active plus the verdict of the most recent finished row. (This describes the loader as it stood on 2026-09-05, which is what produced every number below. It has since been narrowed further: the inbox now arrives as the rows still waiting on you, in full, plus the last three settled ones — so a takeover run today reads less than the figures here.) For the chronicle, the archive pointers and the unsaved list it loads the section names and their line counts, then fetches from them on target only when a question actually needs the evidence.
 
 That asymmetry is the whole trick. A long job accumulates ledger rows and chronicle entries without limit, and whoever picks it up next does not need the accumulation. They need the goal, the plan, the decisions already made, what is still open, and what is in flight.
 
@@ -99,6 +99,8 @@ For exact tokens, run your model provider's token counting endpoint over the loa
 The loader is reproduced below verbatim.
 
 ## Appendix: the loader block
+
+This is the block as it stood on 2026-09-05 — kept verbatim so the numbers above stay reproducible, not as the current version. The one in `ctx-takeover` has moved on since.
 
 ```bash
 F=path/to/case.md; python3 - "$F" <<'PY'
