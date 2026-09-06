@@ -1,6 +1,6 @@
 ---
 name: ctx-handoff
-description: Close out and hand off — use on "close out", "wrap this up", "this session is too full", or /ctx-handoff; distills the discussion into a takeover-ready case file, persists unsaved artifacts, then retires this session. Also triggers on Chinese — 用户说"收口""关案""这个案完了""交接一下""这会话太肥了""换个新会话继续""退役这个会话"，或显式 /ctx-handoff 时用。
+description: Close out and hand off — use on "close out", "wrap this up", "this session is too full", or /ctx-handoff; distills the discussion into a takeover-ready case file, persists unsaved artifacts, then retires this session. Also triggers on Chinese — 用户说"收口""关案""这个案完了""交接一下""这会话太贵了""这会话太肥了""换个新会话继续""退役这个会话"，或显式 /ctx-handoff 时用。
 ---
 
 # Close-out: settle it into a case → retire
@@ -90,7 +90,7 @@ PY
 - ④ **Conclusion**: what it means for the goal, which premise was confirmed or refuted, what is still unproven;
 - ⑤ **The next step, derived from the conclusion** (every item awaiting decision carries a recommendation).
 
-Numbers, station ids and reading codes stay out of the sections written for people; if you must hand something to the execution layer, put it on one line at the end.
+Item numbers, station ids and reading codes stay out of the sections written for people — the codes, not the readings: a measurement with its baseline is exactly what those sections are for. If you must hand something to the execution layer, put it on one line at the end.
 
 **Then four items** (for the successor to take over with):
 
