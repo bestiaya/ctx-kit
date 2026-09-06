@@ -42,7 +42,7 @@ if 'E' in S:
     j,v=q('状态|status'),q('判定|verdict')
     m=lambda p:[r for r in D if re.search(p,g(r,j),re.I)]
     A=m('在跑|待验收|排队|待派|running|awaiting acceptance|queued|to dispatch')  # the six status words and nothing else (ctx-kickoff §2): 达成 used to be matched here too,
-    F=m('已交货|已完|delivered|done')                                        # and it matches 未达成 as happily as 部分达成, so a row that failed read as delivered
+    F=m(r'^\W*(已交货|已完|delivered|done)')                                 # and it matches 未达成 as happily as 部分达成, so a row that failed read as delivered. Anchored at the cell start for the same reason on the English side: loose, done matches "not done" and delivered matches "not delivered" (leading punctuation or ** allowed, as in the inbox rule below)
     o+=[L[a],'']+R[:2]+[T(r) for r in A]
     if F:
         y=lambda r:[(1,int(t)) if t.isdigit() else (0,t) for t in re.findall(r'\d+|[a-z]+',g(r,1 if j==0 else 0))]
