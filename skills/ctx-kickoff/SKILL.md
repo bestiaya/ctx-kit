@@ -69,7 +69,7 @@ Delivery = a machine-readable ledger + a summary for people, written into <deliv
 write back the E row (Status = awaiting acceptance / Delivery path / Verdict / one sentence in Impact on plan) — **the Verdict cell and the Impact-on-plan cell are each ≤200 characters**; E is an index, not a report, and detail belongs only in the results section of the deliverable. Stop when done, do not open a new topic.
 ```
 
-Once dispatched, do not wait (anything over 15 minutes goes async). **Do not dispatch a subagent from here once this session is expensive (>150k)** — the cold tax of waiting = this session's watermark × 2.
+Once dispatched, do not wait (anything over 15 minutes goes async). **Do not dispatch a subagent from here once this session is expensive (past the yellow line — 300k by default)** — the cold tax of waiting = this session's watermark × 2.
 
 ## 4. Park a to-do (the other entry point)
 **Trigger**: the user says "note this down", "save this for later", "save this task", "come back to it"; or you raised a to-do yourself and the user said "save it".

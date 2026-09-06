@@ -32,10 +32,13 @@ How it reads it
   weekly checkup does is not an option here. A window that is already parsed is not parsed again.
 
 Thresholds
-  CTXKIT_WATERMARK_YELLOW / CTXKIT_WATERMARK_RED, in tokens, `150000` and `150k` both accepted.
+  CTXKIT_WATERMARK_YELLOW / CTXKIT_WATERMARK_RED, in tokens, `300000` and `300k` both accepted.
   Anything unparseable or non-positive falls back to the defaults below, quietly. Set them in
   settings.json under `env` to move a line without touching this file. Red is tested first, so
   the two can be set in any order without producing a confusing reading.
+  The defaults are a spending preference, not a price tier and not a quality cliff: the whole 1M
+  window bills at the standard rate and nothing steps up at 200k, so these lines are meant to be
+  moved rather than obeyed. What they buy and what staying costs: 04-HANDBOOK.
 
 Failure posture
   A doorbell may never break the turn it rings in. Missing file, unreadable file, half-written
@@ -48,8 +51,8 @@ Exit codes
 """
 import json, os, sys
 
-YELLOW_DEFAULT = 150000
-RED_DEFAULT = 200000
+YELLOW_DEFAULT = 300000
+RED_DEFAULT = 400000
 
 # Every line this script prints starts with this, in both channels, so it is greppable in a
 # transcript, in a stream-json log, and in the owner's terminal.
@@ -58,7 +61,20 @@ PREFIX = "[ctx-kit watermark]"
 # What the model is told to do about the reading. The durable version of this lives in the
 # rule block (CLAUDE-snippet.md); this sentence is here so the reminder still works for someone
 # who installed the plugin and never pasted the rules.
-ACTION = "Tell the owner in one sentence, offer /ctx-handoff, do not act unasked."
+#
+# It is written as something the model can actually check. "Say it once per band" on its own does
+# not hold up: this hook has no memory between turns and rings again on every turn the session is
+# over the line, so the only record of what was already said is the conversation itself. Naming
+# the band inside the sentence is what makes the check answerable -- "have I already said yellow?"
+# is a question about the visible transcript; "have I already said this?" is not.
+def action(band):
+    """What to do about a `band` reading, phrased so the model can check it against the thread."""
+    return (
+        "Report this once per band: look back over your own earlier replies in this session -- if "
+        "you have already passed a %s reading to the owner, say nothing about it this turn. If you "
+        "have not, tell the owner in one sentence and offer /ctx-handoff, then stay quiet until the "
+        "band changes. Never act unasked." % band
+    )
 
 # Tail windows, in bytes: 64KB, 256KB, 1MB, 4MB, and an 8MB cap. Past the cap the answer is
 # "no reading", not "read the whole file".
@@ -68,7 +84,7 @@ USAGE_KEYS = ("input_tokens", "cache_read_input_tokens", "cache_creation_input_t
 
 
 def parse_threshold(raw, default):
-    """A threshold from the environment. '150000' and '150k' both mean 150000.
+    """A threshold from the environment. '300000' and '300k' both mean 300000.
 
     Anything else — empty, misspelled, negative, zero — falls back to `default` without a
     word, because a typo in a config file must not silence the doorbell or crash the turn.
@@ -146,7 +162,7 @@ def last_watermark(path):
 
 def render(tokens, band, line):
     """The one line both channels carry, e.g.
-    `[ctx-kit watermark] 213k / red 200k — time to close out (/ctx-handoff)`."""
+    `[ctx-kit watermark] 413k / red 400k — time to close out (/ctx-handoff)`."""
     return "%s %dk / %s %dk — time to close out (/ctx-handoff)" % (
         PREFIX, round(tokens / 1000.0), band, round(line / 1000.0)
     )
@@ -182,7 +198,7 @@ def main():
         "systemMessage": reading,
         "hookSpecificOutput": {
             "hookEventName": "UserPromptSubmit",
-            "additionalContext": reading + ". " + ACTION,
+            "additionalContext": reading + ". " + action(band),
         },
     }))
 
