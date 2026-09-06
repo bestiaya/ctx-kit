@@ -186,7 +186,13 @@ def check(root, verbose=False):
             if d not in body:
                 r.bad(rel, f"does not name the skill {d}")
         for i, line in enumerate(body.split("\n"), 1):
-            for tok in set(re.findall(r"ctx-[a-z][a-z0-9-]*", line)):
+            toks = set()
+            for m in re.finditer(r"ctx-[a-z][a-z0-9-]*(\.[a-z0-9]+)?", line):
+                # a `ctx-*` with a file extension is a file the kit ships
+                # (`ctx-watermark.py`), not a skill name
+                if not m.group(1):
+                    toks.add(m.group(0))
+            for tok in toks:
                 # `ctx-kit` is the product, and names derived from it (the backup
                 # directory `ctx-kit-backup-<timestamp>`, say) are not skill names
                 if tok != "ctx-kit" and not tok.startswith("ctx-kit-") and tok not in names:

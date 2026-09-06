@@ -184,7 +184,7 @@ claude plugin install ctx-kit@ctx-kit
 
 <details><summary>手动安装（不走 plugin）</summary>
 
-把 `skills/ctx-*` 拷进 `~/.claude/skills/`、`agents/digest.md` 拷进 `~/.claude/agents/`、`scripts/cache-audit.py` 拷进 `~/.claude/scripts/`（目录没有就建；没有插件根时，`ctx-checkup` 只到这里找脚本）、`hooks/hooks.json` 的 `hooks` 段并进 `~/.claude/settings.json`（macOS 弹通知，其它平台回落 stderr）；条文照上面粘贴。
+把 `skills/ctx-*` 拷进 `~/.claude/skills/`、`agents/digest.md` 拷进 `~/.claude/agents/`、`scripts/cache-audit.py` 与 `scripts/ctx-watermark.py` 两个脚本都拷进 `~/.claude/scripts/`（目录没有就建；没有插件根时，工具包只到这里找脚本）、`hooks/hooks.json` 的 `hooks` 段并进 `~/.claude/settings.json`（压缩预警在 macOS 弹通知，其它平台回落 stderr）；条文照上面粘贴。
 
 每次 `git pull` 之后：`scripts/sync-installed.sh --check` 列出安装态与仓库源码的差异，`--apply` 把仓库源码同步过去——覆盖前先把旧件备份到 `~/.claude/ctx-kit-backup-<时间戳>/`，只加不删。（维护者另有 `scripts/release-check.py`：发版前查版本号、skill 件数与 skill 名在插件清单、两份 README 与文档里是否一致。）
 </details>
@@ -195,9 +195,11 @@ claude plugin install ctx-kit@ctx-kit
 2. 让它读一份 >30k 字符（`LC_ALL=en_US.UTF-8 wc -m`）的材料，看它是否派 digest 子代理而不是自己通读。
 3. 把会话养到黄灯线以上，看它过线时是否提醒你收口——不提就是条文没加载。
 
+黄线红线是**花费偏好，不是价档，也不是质量悬崖**：过了 200k 既不跳价也不变笨，只是同一段上下文被反复重写的钱越来越不划算。所以线归你定——在 `settings.json` 的 `env` 块里设 `CTXKIT_WATERMARK_YELLOW` / `CTXKIT_WATERMARK_RED`（单位 token，`150000` 与 `150k` 都吃），不用改工具包里的任何文件。
+
 **从旧版升上来**：这一版把板的第二节从"全局计划"换成了**里程碑**表 + **例行**表。老板面不用重建：重跑一次 `/ctx-init` 走复核模式，它提议改名、你原来的行照留。手工那几步（旧"线"那层的行往哪去、案索引怎么补第七列）见 06 的[配方 7](06-RECIPES.md#配方-7老板面迁到新板里程碑--例行)。
 
-**卸载**：plugin 在 `/plugin` 里移除，手动装的 `rm -rf ~/.claude/skills/ctx-* ~/.claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/ctx-kit-backup-*`（最后一项是同步脚本留的备份）；再从 `CLAUDE.md` 与 `~/.claude/settings.json` 删掉对应段落——装到你机器上的件就这些，删干净了。留下来的是你自己的东西：`/ctx-init` 建的任务板与案库、`/ctx-handoff` 提交并推上去的历史，这两样不会替你删，留着还是清掉你自己定。
+**卸载**：plugin 在 `/plugin` 里移除，手动装的 `rm -rf ~/.claude/skills/ctx-* ~/.claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/scripts/ctx-watermark.py ~/.claude/ctx-kit-backup-*`（最后一项是同步脚本留的备份）；再从 `CLAUDE.md` 与 `~/.claude/settings.json` 删掉对应段落——装到你机器上的件就这些，删干净了。留下来的是你自己的东西：`/ctx-init` 建的任务板与案库、`/ctx-handoff` 提交并推上去的历史，这两样不会替你删，留着还是清掉你自己定。
 
 ## 六条命令
 
