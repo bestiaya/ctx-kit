@@ -39,8 +39,11 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
 - Watermark — the reading on the line starting `[ctx-kit watermark]`; yellow 300k, red 400k by default, both
   yours to move. An exec session past yellow books the next natural breakpoint to close out and past red is
   reminded this turn; a discussion / lead session is reminded only when it is **both** at a batch boundary
-  **and** past yellow, or the moment it is past red. **Only remind that it is time to close out** — pass the
-  reading to the owner in one sentence and suggest closing out; the owner decides, never act unasked
+  **and** past yellow, or the moment it is past red. The hook knows nothing about session types — it prints
+  whenever the number is past a line, so **the printed line is a reading, not an order**: an exec session
+  passes it to the owner that turn, a discussion / lead session only at a batch boundary (yellow) or that same
+  turn (red), and otherwise keeps the reading to itself. **Only remind that it is time to close out** — pass
+  the reading to the owner in one sentence and suggest closing out; the owner decides, never act unasked
   (ctx-handoff). Say it once per band: before passing a reading on, look back over your own earlier replies in
   this session — if you have already given the owner a reading for this same band, say nothing about it this
   turn; say it again only when the band changes (yellow → red). A successor opens by reading the case file
