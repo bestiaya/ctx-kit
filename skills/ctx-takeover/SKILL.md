@@ -77,8 +77,9 @@ if 'I' in S:
         o+=['']+[M(T(L[i]),240) if i in C else L[i] for i in range(a,b) if i not in D or i in U or i in C]  # the cap is on the whole rendered row, not per cell: a settled row is a reminder, and 200 a cell over 6 cells is 1,200 characters of it
         if X or len(V)>len(C) or any(len(T(L[i]))>240 for i in C):
             w=f', the other {len(V)-len(C)} left in the case' if len(V)>len(C) else ''
-            y=f' {len(X)} of them do not have the header row cell count (an unescaped | inside a cell), so they are loaded whole as undisposed - go and check those against the case.' if X else ''
-            o+=[f'<!-- inbox {len(D)} rows: all {len(U)} undisposed in full + the last {len(C)} of {len(V)} disposed, each cut to 240 chars{w} - fetch on target. Undisposed = a blank disposition cell, or one not opening with done / dropped / moved to.{y} -->']
+            s=f' + the last {len(C)} of {len(V)} disposed, each cut to 240 chars{w}' if V else ''
+            y=f' Cell count off the header on {len(X)} of them (an unescaped | inside a cell): loaded whole as undisposed, go and check those against the case.' if X else ''
+            o+=[f'<!-- inbox {len(D)} rows: all {len(U)} undisposed in full{s} - fetch on target. Undisposed = a blank disposition cell, or one not opening with done / dropped / moved to.{y} -->']
 t='\n'.join(o);print(t);print(f'\n=== characters loaded this time: {len(t)} ===')
 PY
 ```
