@@ -90,8 +90,10 @@ The repository: https://github.com/bestiaya/ctx-kit
 3. Run the loader block from `skills/ctx-takeover/SKILL.md` against it. It prints the loaded character count on its last line.
 4. Compare against the full size:
 
+**Run these with a real python3, written out in full** — `/usr/local/bin/python3`, `/opt/homebrew/bin/python3` on Apple silicon, or your virtualenv's — rather than a bare `python3`, which resolves differently from one shell to the next. On macOS it can land on the `/usr/bin/python3` Xcode shim, which fails with an error mentioning `xcodebuild` before it reads a line of the block: that error means the interpreter resolved somewhere else, not that the block is broken. Substitute the path your own machine uses.
+
 ```bash
-python3 -c "import sys;print(len(open(sys.argv[1],encoding='utf-8').read()))" path/to/case.md
+/usr/local/bin/python3 -c "import sys;print(len(open(sys.argv[1],encoding='utf-8').read()))" path/to/case.md
 ```
 
 For exact tokens, run your model provider's token counting endpoint over the loader's output, or read the usage fields your CLI reports for the request that did the reading.
@@ -100,10 +102,10 @@ The loader is reproduced below verbatim.
 
 ## Appendix: the loader block
 
-This is the block as it stood on 2026-09-05 — kept verbatim so the numbers above stay reproducible, not as the current version. The one in `ctx-takeover` has moved on since.
+This is the block as it stood on 2026-09-05 — the Python is kept verbatim so the numbers above stay reproducible, not as the current version. The one in `ctx-takeover` has moved on since. The interpreter on the first line is the one thing written out rather than reproduced: **run it with a real python3**, as above, because a bare `python3` may land on the macOS Xcode shim and fail with an error mentioning `xcodebuild`.
 
 ```bash
-F=path/to/case.md; python3 - "$F" <<'PY'
+F=path/to/case.md; /usr/local/bin/python3 - "$F" <<'PY'
 import sys,re
 L=open(sys.argv[1],encoding='utf-8').read().split('\n')
 P=[i for i,l in enumerate(L) if re.match(r'^##\s+[A-Z]\.?(\s|$)',l)]+[len(L)]
