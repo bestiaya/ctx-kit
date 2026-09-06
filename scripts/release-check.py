@@ -14,8 +14,8 @@ What it checks (every finding prints as `file:line`):
   5. version     every ctx-kit version written in the docs equals the manifest version;
                  the manifest version is never behind the newest released git tag
 
-Frozen Chinese copies (`skills/*/SKILL.zh-CN.md`) are excluded on purpose: they are
-frozen references and are not kept in step with the English originals.
+The skill prompts are English only — no SKILL.md has a translated copy beside it, so nothing
+under `skills/` is exempt from the checks above. Both READMEs are checked, Chinese included.
 
 Usage:
   release-check.py [--root <repo dir>] [-v]
