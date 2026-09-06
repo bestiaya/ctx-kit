@@ -232,6 +232,10 @@ claude plugin install ctx-kit@ctx-kit
 6. [05-FAQ.md](05-FAQ.md) 释疑——一条一个原话疑问，含"这东西怎么来的""传统开发要不要用"，以及几个流行说法靠不靠谱。
 7. [03-PLAYBOOK.md](03-PLAYBOOK.md) 工具定义模板——这个工具是怎么被定义出来的，给做工具的人看，用户可跳过。
 
+## 觉得哪里不对，说一声
+
+去 [github.com/bestiaya/ctx-kit/issues](https://github.com/bestiaya/ctx-kit/issues) 开一条——有模板，写一句话也算数。最有用的是：你跑了什么、以为会怎样、实际怎样，外加你看到的任何一个数——本文所有读数都是这么攒出来的。
+
 ## 本文用到的词
 
 - **任务板** — 一个项目一份，手写维护：总目标 + 里程碑表 + 例行表 + 案索引 + 散活，一件一行。
