@@ -78,8 +78,8 @@ If that last line reports **0 files read**, the library is not where the rule po
 
 ## 5. Retirement-mark sweep
 A session that marks itself at close-out carries the `✕` prefix. **A session that crashed or was abandoned never marks itself**, so this step catches up:
-- list every session that is **neither the pen-holder of any case nor the carrier of any one-off**, has not moved for >1 day, and has no `✕` prefix in its title;
-- `set_session_title` each of them to `✕ <original title>`. **Leave the doubtful ones alone** — better to miss one than to mark a live session dead. If the title tool is unavailable (a bare terminal), skip this step and say so in the reply.
+- list the sessions **whose working directory sits inside this project** — what the tool hands back is every project on this machine mixed together, and another project's session is never yours to mark, however dead it looks — and from those take the ones that are **neither the pen-holder of any case nor the carrier of any one-off**, have not moved for >1 day, and have no `✕` prefix in the title;
+- `set_session_title` each of them to `✕ <original title>`. **Leave the doubtful ones alone** — better to miss one than to mark a live session dead, and a session you cannot place inside this project is doubtful by definition. If the title tool is unavailable (a bare terminal), or it cannot tell you a session's working directory, skip this step and say so in the reply.
 - Report the numbers: N newly marked this period, M skipped as doubtful (named).
 
 ## 6. Reply
