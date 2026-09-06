@@ -1,4 +1,4 @@
-> 中文参考版（冻结于 v0.1.0，cbdb62e）；英文 `SKILL.md` 是活的正本、可能已经往前走了，差异用 `git diff v0.1.0 -- skills/` 看。
+> 中文参考版（冻结于 v0.1.0，cbdb62e）；英文 `SKILL.md` 是活的正本、可能已经往前走了，差异用 `git diff v0.1.0 -- skills/` 看。 本文件里的数字（例如水位线）可能已过期，一律以英文正本为准。
 ---
 name: ctx-status
 description: 查看现状。用户说"现在什么情况""进展如何""有哪些案""资产都在哪""看一下板"，或显式 /ctx-status 时用。读任务板与案文件，人话汇报目标链、各案状态、待拍板项与散活，不让用户翻文件。 Report status — use on "what's the status", "where do things stand", "show the board", or /ctx-status; reads the board and case files, reports goal chain, case states, pending decisions and one-offs in plain language.

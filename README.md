@@ -1,6 +1,8 @@
 # ctx-kit
 
-中文 / Chinese: [README.zh-CN.md](README.zh-CN.md) · The six skill prompts are English (a frozen Chinese reference copy, `SKILL.zh-CN.md`, sits beside each — a snapshot that lags the English original, and its first line says which release it was frozen at, so `git diff <that tag> -- skills/` shows what has changed since); docs 01–06 are in Chinese for now.
+**Current release: ctx-kit v0.4.0** — the same number `.claude-plugin/plugin.json` carries; `scripts/release-check.py` reports drift if the two disagree.
+
+中文 / Chinese: [README.zh-CN.md](README.zh-CN.md) · The six skill prompts are English (a frozen Chinese reference copy, `SKILL.zh-CN.md`, sits beside each — a snapshot that lags the English original, and its first line says which release it was frozen at, so `git diff <that tag> -- skills/` shows what has changed since); docs 01–06 are in Chinese for now. The English originals gloss the nine case-file section names in Chinese — `A Goal (目标)` and so on — so that a case written in either language stays readable to a session working in the other.
 
 **ctx-kit is for work that doesn't fit in one session. If your work ships inside one session, you don't need it.**
 
@@ -156,6 +158,8 @@ Eight comparisons; click a row and you land on that subsection of 01, with its r
 
 Every number comes from 01, which also defines "equivalent units" — the one billing unit that puts writes, cache reads and output on the same scale. The first seven comparisons can each be recomputed with a script; the eighth is a sample count, and its method and limits are written up in 01 §3.10.
 
+One measurement sits outside 01: [handing a task to a fresh session, six cases](docs/evidence/2026-09-05-handover-cost.md) measures how much of a case file a takeover actually loads — 93,073 characters down to 53,339.
+
 ## What gets installed
 
 What goes in: six skills, one CLAUDE.md rule block, one reminder hook, one audit script and one `digest` subagent.
@@ -184,7 +188,7 @@ Third step (manual, required): paste the whole code block from [CLAUDE-snippet.m
 
 <details><summary>Manual install (no plugin)</summary>
 
-Copy `skills/ctx-*` into `~/.claude/skills/`, `agents/digest.md` into `~/.claude/agents/` and `scripts/cache-audit.py` into `~/.claude/scripts/` (create the directory if it is not there — with no plugin root, that is the one place `ctx-checkup` looks for the script), then merge the `hooks` object from `hooks/hooks.json` into `~/.claude/settings.json` (macOS shows a notification; elsewhere it falls back to stderr). Paste the rule block as above.
+Copy `skills/ctx-*` into `~/.claude/skills/`, `agents/digest.md` into `~/.claude/agents/`, and both `scripts/cache-audit.py` and `scripts/ctx-watermark.py` into `~/.claude/scripts/` (create the directory if it is not there — with no plugin root, that is the one place the kit's scripts are looked for), then merge the `hooks` object from `hooks/hooks.json` into `~/.claude/settings.json` (the compact warning shows a macOS notification and falls back to stderr elsewhere). Paste the rule block as above.
 
 After every `git pull`, `scripts/sync-installed.sh --check` lists where the installed copies have drifted from the repository, and `--apply` copies the repository over them — backing up whatever it overwrites into `~/.claude/ctx-kit-backup-<timestamp>/` first, and never deleting anything. (For maintainers, `scripts/release-check.py` checks that the version number, the skill count and the skill names agree across the plugin manifest, both READMEs and the docs before a release.)
 </details>
@@ -193,11 +197,13 @@ Three self-checks afterwards:
 
 1. In a fresh session, say "I want to do X" and watch whether it triages before it starts working.
 2. Hand it a >30k-character read (`LC_ALL=en_US.UTF-8 wc -m`) and watch whether it dispatches the `digest` subagent instead of reading it inline.
-3. Grow a session past the yellow line and watch whether it offers to close out — if it doesn't, the rule block isn't loaded.
+3. Drop both lines low for a moment (`CTXKIT_WATERMARK_YELLOW` / `CTXKIT_WATERMARK_RED`, see just below) and take two turns — the first turn has no reading to go on yet: the session should quote its current watermark back at you and offer to close out. No reading at all means the hook isn't installed; a reading with no offer means the rule block isn't loaded.
+
+The yellow and red lines — 300k and 400k by default — are **a spending preference, not a price tier and not a quality cliff**. Neither of those would hold the line up: the whole 1M window bills at the standard rate with no price step at 200k, and on quality the vendor publishes no scale at all, only "longer is worse". What is left is that rewriting the same context over and over stops being worth the money. The cost of staying is worth saying out loud: **at 400k a turn carries roughly 2.7x the residency cost it does at 150k** — 150k being the old default yellow line, kept here only as the comparison baseline — because every turn re-reads the whole context. Staying in the session or closing out is your call, not the tool's — so the lines are yours to move: set `CTXKIT_WATERMARK_YELLOW` / `CTXKIT_WATERMARK_RED` (in tokens; `300000` and `300k` both work) in the `env` block of `settings.json` rather than editing anything in the kit.
 
 **Upgrading from an earlier version**: this one renames the board's second section from "Global plan" to a **milestone** table plus a **routine** table. An existing board does not have to be rebuilt — run `/ctx-init` again and its review mode proposes the rename, keeping the rows you already have. The manual steps — where the rows of the old "track" layer go, how the case index gains its seventh column — are [recipe 7](06-RECIPES.md#配方-7老板面迁到新板里程碑--例行) in 06.
 
-**Uninstall**: remove ctx-kit in `/plugin`, or for a manual install `rm -rf ~/.claude/skills/ctx-* ~/.claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/ctx-kit-backup-*` (the last one is the backups the sync script keeps). Then delete the blocks you pasted into `CLAUDE.md` and `~/.claude/settings.json` — that is everything the kit puts on your machine. What stays behind is yours, not the kit's: the board and the case library `/ctx-init` created, and the commits and remote history `/ctx-handoff` pushed. Nothing deletes those for you; keep them or clear them yourself.
+**Uninstall**: remove ctx-kit in `/plugin`, or for a manual install `rm -rf ~/.claude/skills/ctx-* ~/.claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/scripts/ctx-watermark.py ~/.claude/ctx-kit-backup-*` (the last one is the backups the sync script keeps). Then delete the blocks you pasted into `CLAUDE.md` and `~/.claude/settings.json` — that is everything the kit puts on your machine. What stays behind is yours, not the kit's: the board and the case library `/ctx-init` created, and the commits and remote history `/ctx-handoff` pushed. Nothing deletes those for you; keep them or clear them yourself.
 
 ## The six commands
 

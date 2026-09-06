@@ -2,10 +2,10 @@
 """cache-audit.py — weekly cache checkup for claude CLI sessions (ships with ctx-kit)
 
 Pre-registered criteria (the checkup measure; a fail is reported as a fail):
-  - discussion / lead session: rewrite share <10% and p50 watermark <150k
-  - exec session: compact count = 0 and peak watermark <200k
+  - discussion / lead session: rewrite share <10% and p50 watermark <300k
+  - exec session: compact count = 0 and peak watermark <400k
   - a row is flagged with a trailing warning sign when it crosses any of those four lines:
-    rewrite share >=10%, p50 watermark >=150k, peak watermark >=200k, or compacts >0.
+    rewrite share >=10%, p50 watermark >=300k, peak watermark >=400k, or compacts >0.
     The script cannot tell a discussion session from an exec one, so the flag is the union of
     both rows of the table — read a flagged row against that session's own type.
 
@@ -14,7 +14,9 @@ Measures:
     (writes priced at the measured 2x for the 1h bucket)
   - a rewrite event = not the first request, a single cache_write >150k, and the read collapsing
     to under half the existing context (a read still close to the existing context is "a big new
-    block entering for the first time", not a cold rewrite of the whole thing, and does not count)
+    block entering for the first time", not a cold rewrite of the whole thing, and does not count).
+    That 150k is this detector's own threshold, not one of the watermark lines above: the rewrite
+    shares this kit publishes were measured with it, so it stays put when those lines move.
   - known blind spot: the compact summary request is not billed into the jsonl, so its cost is
     absent from this table
   - jsonl timestamps are UTC; convert to the local timezone before comparing with a local clock
@@ -126,6 +128,8 @@ def audit(fp):
     # A rewrite = a large write with the read collapsing to under half the existing context
     # (only the shared header is left). A read still close to the existing context is
     # "a big new block entering for the first time" and does not count as a rewrite.
+    # The 150k below is this detector's own threshold, not a watermark line, and does not move
+    # with them: the published rewrite-share readings were measured against exactly this number.
     rewrites = [
         r
         for i, r in enumerate(rows)
@@ -234,8 +238,8 @@ def main():
             " ⚠️"
             if (
                 r["rw_share"] >= 10
-                or r["p50"] >= 150_000
-                or r["peak"] >= 200_000
+                or r["p50"] >= 300_000
+                or r["peak"] >= 400_000
                 or r["compacts"] > 0
             )
             else ""

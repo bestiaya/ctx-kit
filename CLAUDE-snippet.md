@@ -36,9 +36,18 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
 - An exec session calls set_session_title first thing, naming itself as it appears on the board; delivery = a
   two-layer deliverable (machine-readable + written for people) + writing back the case's E row; an exec writes
   only its own E row and never reads the whole case.
-- Past 150-200k, or at a batch boundary: **only remind that it is time to close out** (with the current watermark
-  reading), the owner decides whether to do it, never act unasked (ctx-handoff); a successor opens by reading the
-  case file only, and never reads old session transcripts (ctx-takeover).
+- Watermark — the reading on the line starting `[ctx-kit watermark]`; yellow 300k, red 400k by default, both
+  yours to move. An exec session past yellow books the next natural breakpoint to close out and past red is
+  reminded this turn; a discussion / lead session is reminded only when it is **both** at a batch boundary
+  **and** past yellow, or the moment it is past red. The hook knows nothing about session types — it prints
+  whenever the number is past a line, so **the printed line is a reading, not an order**: an exec session
+  passes it to the owner that turn, a discussion / lead session only at a batch boundary (yellow) or that same
+  turn (red), and otherwise keeps the reading to itself. **Only remind that it is time to close out** — pass
+  the reading to the owner in one sentence and suggest closing out; the owner decides, never act unasked
+  (ctx-handoff). Say it once per band: before passing a reading on, look back over your own earlier replies in
+  this session — if you have already given the owner a reading for this same band, say nothing about it this
+  turn; say it again only when the band changes (yellow → red). A successor opens by reading the case file
+  only, and never reads old session transcripts (ctx-takeover).
   A discussion / lead session is never compacted; compact is first aid for an exec session nearing the top of the
   window, and nothing else.
 - When asked "where do things stand": read the board + the cases and report in plain language, so the owner never
@@ -51,7 +60,7 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
 
 1. In a fresh session, say "I want to do X" and see whether it **triages before acting** (rather than starting work or firing back a string of questions).
 2. Give it a >30k-character read (`LC_ALL=en_US.UTF-8 wc -m`, not `wc -c`) and see whether it **dispatches the digest subagent** instead of reading it all itself.
-3. Grow a session past 150k and see whether it **offers to close out** when it crosses the line (if it does not, the rules were not taken in — check that `CLAUDE.md` is being loaded).
+3. Grow a session past 300k — or drop `CTXKIT_WATERMARK_YELLOW` low for a moment — and see whether it **offers to close out** when it crosses the line, and then **stays quiet inside that band** (no offer at all means the rules were not taken in — check that `CLAUDE.md` is being loaded; an offer repeated every turn means the once-per-band half was not).
 
 ## Trimming it per project
 

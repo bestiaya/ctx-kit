@@ -14,6 +14,7 @@
 #   skills/ctx-*/SKILL.md   ->  $HOME/.claude/skills/<skill>/SKILL.md
 #   agents/digest.md        ->  $HOME/.claude/agents/digest.md
 #   scripts/cache-audit.py  ->  $HOME/.claude/scripts/cache-audit.py
+#   scripts/ctx-watermark.py -> $HOME/.claude/scripts/ctx-watermark.py
 #
 # What is only reported, never written:
 #   hooks/hooks.json vs the `hooks` section of $HOME/.claude/settings.json — that file is
@@ -74,6 +75,7 @@ pairs() {
   done
   [ -f "$ROOT/agents/digest.md" ] && printf '%s\tagents/digest.md\n' "$ROOT/agents/digest.md"
   [ -f "$ROOT/scripts/cache-audit.py" ] && printf '%s\tscripts/cache-audit.py\n' "$ROOT/scripts/cache-audit.py"
+  [ -f "$ROOT/scripts/ctx-watermark.py" ] && printf '%s\tscripts/ctx-watermark.py\n' "$ROOT/scripts/ctx-watermark.py"
   return 0
 }
 

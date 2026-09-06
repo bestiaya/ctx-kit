@@ -1,6 +1,8 @@
 # ctx-kit
 
-English: [README.md](README.md) · 六条命令的 skill 正本是英文，每个旁边的 `SKILL.zh-CN.md` 是中文参考件——它是快照、会滞后于英文正本，头一行写着冻结在哪一版，差异用 `git diff <那个 tag> -- skills/` 看。
+**当前版本：ctx-kit v0.4.0** —— 与 `.claude-plugin/plugin.json` 里的号一致；两边对不上，`scripts/release-check.py` 会报出来。
+
+English: [README.md](README.md) · 六条命令的 skill 正本是英文，每个旁边的 `SKILL.zh-CN.md` 是中文参考件——它是快照、会滞后于英文正本，头一行写着冻结在哪一版，差异用 `git diff <那个 tag> -- skills/` 看。英文正本里九个案节名都带中文括注（`A Goal (目标)` 这样），为的是中英两种语言写出来的案能互读。
 
 **一次会话装不下的活，才需要 ctx-kit；一次会话能出货的活，用不上。**
 
@@ -156,6 +158,8 @@ English: [README.md](README.md) · 六条命令的 skill 正本是英文，每�
 
 数字全部出自 01；前七组每个能用脚本复算，第 8 组是取样计数，口径与局限写在 01 §3.10。
 
+还有一组读数不在 01 里：[把一件活交给新会话，六个案例](docs/evidence/2026-09-05-handover-cost.md)——量的是接手实际加载了案文件的多少：93,073 字符降到 53,339。
+
 ## 装什么
 
 装进去的是 6 个 skill、1 段 CLAUDE.md 条文、1 个提醒 hook、1 个查账脚本、1 个 digest 子代理。
@@ -184,7 +188,7 @@ claude plugin install ctx-kit@ctx-kit
 
 <details><summary>手动安装（不走 plugin）</summary>
 
-把 `skills/ctx-*` 拷进 `~/.claude/skills/`、`agents/digest.md` 拷进 `~/.claude/agents/`、`scripts/cache-audit.py` 拷进 `~/.claude/scripts/`（目录没有就建；没有插件根时，`ctx-checkup` 只到这里找脚本）、`hooks/hooks.json` 的 `hooks` 段并进 `~/.claude/settings.json`（macOS 弹通知，其它平台回落 stderr）；条文照上面粘贴。
+把 `skills/ctx-*` 拷进 `~/.claude/skills/`、`agents/digest.md` 拷进 `~/.claude/agents/`、`scripts/cache-audit.py` 与 `scripts/ctx-watermark.py` 两个脚本都拷进 `~/.claude/scripts/`（目录没有就建；没有插件根时，工具包只到这里找脚本）、`hooks/hooks.json` 的 `hooks` 段并进 `~/.claude/settings.json`（压缩预警在 macOS 弹通知，其它平台回落 stderr）；条文照上面粘贴。
 
 每次 `git pull` 之后：`scripts/sync-installed.sh --check` 列出安装态与仓库源码的差异，`--apply` 把仓库源码同步过去——覆盖前先把旧件备份到 `~/.claude/ctx-kit-backup-<时间戳>/`，只加不删。（维护者另有 `scripts/release-check.py`：发版前查版本号、skill 件数与 skill 名在插件清单、两份 README 与文档里是否一致。）
 </details>
@@ -193,11 +197,13 @@ claude plugin install ctx-kit@ctx-kit
 
 1. 新开一个会话说"我要做 X"，看它是否先分诊再动手。
 2. 让它读一份 >30k 字符（`LC_ALL=en_US.UTF-8 wc -m`）的材料，看它是否派 digest 子代理而不是自己通读。
-3. 把会话养到黄灯线以上，看它过线时是否提醒你收口——不提就是条文没加载。
+3. 把两条线临时调低（`CTXKIT_WATERMARK_YELLOW` / `CTXKIT_WATERMARK_RED`，见紧接下面一段）跑两回合——第一回合还没有读数可看：会话应当报出当前水位并建议收口。什么读数都没有，先查 hook 装没装；报了读数却不提收口，是条文没加载。
+
+黄线红线——默认 300k 与 400k——是**花费偏好，不是价档，也不是质量悬崖**。两头都定不住：1M 上下文全程标准价，20 万 token 处没有价档拐点；质量那头厂商只说"越长越差"，没给任何刻度。剩下的只有"同一段上下文被反复重写的钱越来越不划算"。代价明写：**水位 400k 时，每轮驻留开销大约是旧默认黄线 150k 时的 2.7 倍**（每轮都要把整段上下文重读一遍；150k 只是这里的对照基线，已经不是现行线了）。留下接着干还是这轮收口，是你自己的取舍，不是工具替你拍的——所以线归你定：在 `settings.json` 的 `env` 块里设 `CTXKIT_WATERMARK_YELLOW` / `CTXKIT_WATERMARK_RED`（单位 token，`300000` 与 `300k` 都吃），不用改工具包里的任何文件。
 
 **从旧版升上来**：这一版把板的第二节从"全局计划"换成了**里程碑**表 + **例行**表。老板面不用重建：重跑一次 `/ctx-init` 走复核模式，它提议改名、你原来的行照留。手工那几步（旧"线"那层的行往哪去、案索引怎么补第七列）见 06 的[配方 7](06-RECIPES.md#配方-7老板面迁到新板里程碑--例行)。
 
-**卸载**：plugin 在 `/plugin` 里移除，手动装的 `rm -rf ~/.claude/skills/ctx-* ~/.claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/ctx-kit-backup-*`（最后一项是同步脚本留的备份）；再从 `CLAUDE.md` 与 `~/.claude/settings.json` 删掉对应段落——装到你机器上的件就这些，删干净了。留下来的是你自己的东西：`/ctx-init` 建的任务板与案库、`/ctx-handoff` 提交并推上去的历史，这两样不会替你删，留着还是清掉你自己定。
+**卸载**：plugin 在 `/plugin` 里移除，手动装的 `rm -rf ~/.claude/skills/ctx-* ~/.claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/scripts/ctx-watermark.py ~/.claude/ctx-kit-backup-*`（最后一项是同步脚本留的备份）；再从 `CLAUDE.md` 与 `~/.claude/settings.json` 删掉对应段落——装到你机器上的件就这些，删干净了。留下来的是你自己的东西：`/ctx-init` 建的任务板与案库、`/ctx-handoff` 提交并推上去的历史，这两样不会替你删，留着还是清掉你自己定。
 
 ## 六条命令
 
