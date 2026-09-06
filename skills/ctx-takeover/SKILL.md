@@ -17,9 +17,9 @@ Given a path, use the path; given a case number, glob `<case number>*.md` in the
 ## 2. Read the case file only, and only the sections you should
 **Never read any old session transcript (jsonl)**, including the paths listed in section G — G is "reference only", and you fetch from it once, on target, only when the question in front of you plainly needs the evidence.
 
-**How to read it: the header line + all of A~D + all of the inbox (§I — this case's own address, the only route other cases have to it); from E take only the table header + the rows whose status is running / awaiting acceptance / queued / to dispatch + the verdict of the most recent delivered row; for F / G / H look only at the section names and the line counts. Never `cat` the whole case file** — the E ledger has no length limit and old rows are often written as paragraphs, so reading a long-running case in full spends the great majority of its characters on old E rows nobody will look at.
+**How to read it: the header line + all of A~D + from the inbox (§I — this case's own address, the only route other cases have to it) every undisposed row in full plus the last three disposed ones; from E take only the table header + the rows whose status is running / awaiting acceptance / queued / to dispatch + the verdict of the most recent delivered row; for F / G / H look only at the section names and the line counts. Never `cat` the whole case file** — the E ledger has no length limit and old rows are often written as paragraphs, so reading a long-running case in full spends the great majority of its characters on old E rows nobody will look at.
 
-Fill in the path and run the whole block; it locates the "status / verdict" columns by their header text (the column order differs from case to case, so a hard-coded column number must be wrong) and reports the number of characters loaded at the end:
+Fill in the path and run the whole block; it locates the "status / verdict / disposition" columns by their header text (the column order differs from case to case, so a hard-coded column number must be wrong) and reports the number of characters loaded at the end:
 
 ```bash
 F=<case file path>; python3 - "$F" <<'PY'
@@ -28,17 +28,19 @@ L=open(sys.argv[1],encoding='utf-8').read().split('\n')
 P=[i for i,l in enumerate(L) if re.match(r'^##\s+[A-Z]\.?(\s|$)',l)]+[len(L)]
 S={L[i].split()[1].rstrip('.'):(i,P[n+1]) for n,i in enumerate(P[:-1])}
 z=lambda r:[c.strip() for c in r.strip().strip('|').split('|')]
+q=lambda w:next((i for i,x in enumerate(h) if re.search(w,x,re.I)),-1)  # a column by its header text, never by number
+g=lambda r,i:(z(r)+['']*9)[i]; T=lambda r:'|'+'|'.join(c[:200] for c in z(r))+'|'
 o=L[:P[0]]
 for k in 'ABCD':
     if k in S: o+=L[S[k][0]:S[k][1]]
 if 'E' in S:
     a,b=S['E']; R=[l for l in L[a:b] if l.lstrip().startswith('|')]; D=R[2:]
-    h=z(R[0]) if R else []; q=lambda w:next((i for i,x in enumerate(h) if re.search(w,x,re.I)),-1)
-    j,v=q('状态|status'),q('判定|verdict'); g=lambda r,i:(z(r)+['']*9)[i]
+    h=z(R[0]) if R else []
+    j,v=q('状态|status'),q('判定|verdict')
     m=lambda p:[r for r in D if re.search(p,g(r,j),re.I)]
     A=m('在跑|待验收|排队|待派|running|awaiting acceptance|queued|to dispatch')
     F=m('已交货|已完|^完|达成|delivered|done')
-    o+=[L[a],'']+R[:2]+['|'+'|'.join(c[:200] for c in z(r))+'|' for r in A]
+    o+=[L[a],'']+R[:2]+[T(r) for r in A]
     if F:
         y=lambda r:[(1,int(t)) if t.isdigit() else (0,t) for t in re.findall(r'\d+|[a-z]+',g(r,1 if j==0 else 0))]
         N=max(F,key=y) if any(y(r) for r in F) else F[-1]  # newest by ID (E-10b-2 < E-11), never by table order: newest-first and oldest-first both work
@@ -47,12 +49,25 @@ if 'E' in S:
     o+=[f'<!-- E {len(D)} rows: all {len(A)} active rows + 1 latest verdict; the rest, and anything past 200 chars, stay in the case - fetch on target -->']
 for k in 'FGH':
     if k in S: o+=['',f'{L[S[k][0]]}  <- not loaded ({S[k][1]-S[k][0]-1} lines), fetch on target']
-if 'I' in S: o+=['']+L[S['I'][0]:S['I'][1]]
+if 'I' in S:
+    a,b=S['I']; K=[i for i in range(a,b) if L[i].lstrip().startswith('|')]
+    h=z(L[K[0]]) if K else []; d=q('处置|disposition') if K else -1
+    if d<0: o+=['']+L[a:b]+(['<!-- inbox: no disposition column in the header row; whole inbox loaded, sort it out by hand -->'] if K else [])
+    else:
+        # blank disposition cell = still on your plate. Read the positional cell and, when disposition is the last
+        # column, the row's last cell too, so a row with a stray | inside its own text still errs towards "undisposed".
+        # A disposition that only says the job is in hand reads as disposed here - no filter can tell those apart.
+        u=lambda r:not(g(r,d).strip() and (z(r)[-1].strip() if d==len(h)-1 else '.'))
+        D=K[2:]; U=[i for i in D if u(L[i])]; V=[i for i in D if not u(L[i])]; C=V[-3:]  # newest = last, the inbox is append-only
+        o+=['']+[T(L[i]) if i in C else L[i] for i in range(a,b) if i not in D or i in U or i in C]
+        if len(V)>len(C) or any(len(c)>200 for i in C for c in z(L[i])):
+            w=f', the other {len(V)-len(C)} left in the case' if len(V)>len(C) else ''
+            o+=[f'<!-- inbox {len(D)} rows: all {len(U)} undisposed in full + the last {len(C)} of {len(V)} disposed, cells cut at 200{w} - fetch on target. Undisposed = a blank disposition cell -->']
 t='\n'.join(o);print(t);print(f'\n=== characters loaded this time: {len(t)} ===')
 PY
 ```
 
-**The inbox must be read, never skipped** — messages sent in from other cases and the to-dos your predecessor left you both live there, and anything with an empty disposition cell is waiting on you. Skipping it has gone wrong once in practice: the predecessor wrote in 6 items (3 of them starred), the successor followed an older rule and never read the inbox, and the lot was lost on the spot. **Do not read deliverables end to end for the sake of being "more thorough"** — fetch them on target when you need them; reading transcripts is both expensive and liable to drag back dead branches that were already rejected.
+**The inbox must be read, never skipped** — messages sent in from other cases and the to-dos your predecessor left you both live there, and anything with an empty disposition cell is waiting on you. That is why the block brings every undisposed row in word for word and, of the disposed ones, only the last three with their cells cut at 200 characters: an inbox whose items had all been cleared was still costing a case over 40% of its slice, on rows nobody had to act on. A cell that is filled in but only says the work is still in hand counts as disposed to the filter, so run an eye down §I in the case itself whenever a row you were expecting is not in the slice. Skipping it has gone wrong once in practice: the predecessor wrote in 6 items (3 of them starred), the successor followed an older rule and never read the inbox, and the lot was lost on the spot. **Do not read deliverables end to end for the sake of being "more thorough"** — fetch them on target when you need them; reading transcripts is both expensive and liable to drag back dead branches that were already rejected.
 
 **Size limit**: the character count on the last line = the entry tax base, in three bands — **≤10,000 is green; >10,000 and ≤15,000 is yellow, and the case gets slimmed at the next close-out; >15,000 must be slimmed before the case changes hands** (how to slim: see ctx-handoff). It is a count of characters, not bytes and not the file size on disk.
 
