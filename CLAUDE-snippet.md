@@ -22,11 +22,19 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
   ④ heavy but certain (long mechanical volume) → its own session, no stop-and-wait point, delivery pulled rather
   than pushed. A subagent cannot talk to anybody mid-run, so any job that might need the owner must never be inline.
   **A high-watermark session is nobody's parent** (the cold tax of waiting on a subagent = the dispatcher's watermark × 2).
-- Cross-case / cross-session delivery: check the address before sending — if the target case has
-  **no live pen-holder** (awaiting takeover / closing / predecessor retired), **do not send**; append a row to the
-  target file's **inbox** instead (append only, never touch the body, so two pens never write over each other),
-  and for something urgent tell the owner to open a session. Send directly only when there is a live pen-holder
-  that has been active within the hour. To get at what a dead session knows, **read its archive, do not wake it**
+- Cross-case / cross-session delivery — looking the address up and sending are **one indivisible sequence**:
+  (1) any address read earlier is **void**, however few minutes ago, and anything coming in between means you
+  look it up again; (2) read the **target case file's** header Pen-holder cell now — the session named in an
+  inbox row is the signature, not the address; (3) **immediately before sending**, check that session with
+  get_session / list_sessions; (4) **do not send** if any one holds: the title starts with `✕` (retired),
+  isArchived, or the Pen-holder cell names nobody live (awaiting takeover / closing / predecessor retired) —
+  a retired session is not necessarily unreachable, so this check has to come before the send; (5) where you
+  refused, **append** a row to the target file's **inbox** (append only, never touch the body, so two pens never
+  write over each other) and tell the owner in one line that the case has no live pen-holder, asking whether to
+  open a session for it; (6) only once all of it passes, send — and only to a live pen-holder that has been
+  active within the hour. A `✕` noticed only afterwards, on a reply that comes back, means the message has
+  already gone astray: the symptom of having skipped (3) and (4), never a substitute for them.
+  To get at what a dead session knows, **read its archive, do not wake it**
   (reading the archive costs only the reader; waking it costs watermark × 2).
   Do not chase progress after dispatching: subscribe to notify_when_idle on the exec session (a zero-token idle
   bell, CLI ≥2.1.236) and read only the deliverable when the notification arrives; a high-watermark discussion
