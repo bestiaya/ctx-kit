@@ -21,6 +21,8 @@ Given a path, use the path; given a case number, glob `<case number>*.md` in the
 
 Fill in the path and run the whole block; it locates the "status / verdict / disposition" columns by their header text (the column order differs from case to case, so a hard-coded column number must be wrong) and reports the number of characters loaded at the end:
 
+**Run it with a real python3**: an error mentioning `xcodebuild` or similar means the interpreter resolved somewhere else (the macOS Xcode shim, for instance) — run it again with a real python3; the block is not broken.
+
 ```bash
 F=<case file path>; python3 - "$F" <<'PY'
 import sys,re

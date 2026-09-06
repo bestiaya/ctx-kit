@@ -50,6 +50,8 @@ Criterion (relaxed by the owner on 2026-08-24, previously 7,000), in three bands
 
 **E row length check (report, do not fix)**: the Verdict cell and the Impact-on-plan cell are each ≤200 characters. Run it over the whole case library and list the over-long rows in descending order of length (case file / row number / which cell / character count), reporting them to that case's pen-holding session to slim down themselves — **the checkup never edits somebody else's case**:
 
+**Run it with a real python3**, the same as §1: an error mentioning `xcodebuild` or similar means the interpreter resolved somewhere else (the macOS Xcode shim, for instance) — run it again with a real python3; the block is not broken.
+
 ```bash
 D=$(sed -n 's/^[^A-Za-z]*ctx-kit case library:[[:space:]]*//p' CLAUDE.md 2>/dev/null | head -1 | sed 's/[`[:space:]]*$//')
 [ -n "$D" ] || { D=_ops/CASES; [ -d "$D" ] || D=cases; }

@@ -41,6 +41,8 @@ Stop there: **closing a case means only this, that nobody takes it over again** 
 - **Rolling E into an archive**: once E passes 5,000 characters or 30 rows, move the rows whose status is delivered and whose "what it changes in the plan" has already been written into B / C **verbatim** into `<case file name without .md>_experiment-archive_<date>.md` (same format as the decision appendix, headed "moved verbatim, nothing deleted or altered, stub kept in the case"), leaving one stub row each in the case: `ID | question | verdict in one sentence (≤80 characters) | archive pointer`. **Rows at running / awaiting acceptance / queued / to dispatch always stay in the case**, and so do delivered rows whose impact has not been written back into B / C — that account is still owed.
 - **E row length check (report, do not fix)**: the Verdict cell and the Impact-on-plan cell are each ≤200 characters, and the detail belongs only in the results section of the deliverable. Run it once before closing out; slim an over-long row on the spot if you wrote it, and report without touching it if somebody else did:
 
+**Run it with a real python3**: an error mentioning `xcodebuild` or similar means the interpreter resolved somewhere else (the macOS Xcode shim, for instance) — run it again with a real python3; the block is not broken.
+
 ```bash
 python3 - <path to this case file> <<'PY'
 import sys,re
