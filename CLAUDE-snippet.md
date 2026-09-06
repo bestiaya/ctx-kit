@@ -31,8 +31,9 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
   Do not chase progress after dispatching: subscribe to notify_when_idle on the exec session (a zero-token idle
   bell, CLI ≥2.1.236) and read only the deliverable when the notification arrives; a high-watermark discussion
   session can set crossSessionInbound to hold so an incoming message does not wake it and start billing.
-- Read-once material over 30k characters (`LC_ALL=en_US.UTF-8 wc -m`) goes to the digest subagent, and you take back a ≤5k-character
-  summary only; the working set (the deliverables this batch chews on repeatedly) is not subject to this.
+- Read-once material of **more than 30,000 characters** (`LC_ALL=en_US.UTF-8 wc -m`; 30,000 exactly is under the line, so
+  it stays here) goes to the digest subagent, and you take back a ≤5,000-character summary only; the working set (the
+  deliverables this batch chews on repeatedly) is not subject to this.
 - An exec session calls set_session_title first thing, naming itself as it appears on the board; delivery = a
   two-layer deliverable (machine-readable + written for people) + writing back the case's E row; an exec writes
   only its own E row and never reads the whole case.
@@ -59,7 +60,7 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
 ## Three self-checks after installing
 
 1. In a fresh session, say "I want to do X" and see whether it **triages before acting** (rather than starting work or firing back a string of questions).
-2. Give it a >30k-character read (`LC_ALL=en_US.UTF-8 wc -m`, not `wc -c`) and see whether it **dispatches the digest subagent** instead of reading it all itself.
+2. Give it a read of more than 30,000 characters (`LC_ALL=en_US.UTF-8 wc -m`, not `wc -c`) and see whether it **dispatches the digest subagent** instead of reading it all itself.
 3. Grow a session past 300k — or drop `CTXKIT_WATERMARK_YELLOW` low for a moment — and see whether it **offers to close out** when it crosses the line, and then **stays quiet inside that band** (no offer at all means the rules were not taken in — check that `CLAUDE.md` is being loaded; an offer repeated every turn means the once-per-band half was not).
 
 ## Trimming it per project
