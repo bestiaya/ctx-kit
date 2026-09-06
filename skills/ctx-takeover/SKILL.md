@@ -29,7 +29,8 @@ P=[i for i,l in enumerate(L) if re.match(r'^##\s+[A-Z]\.?(\s|$)',l)]+[len(L)]
 S={L[i].split()[1].rstrip('.'):(i,P[n+1]) for n,i in enumerate(P[:-1])}
 z=lambda r:[c.strip() for c in r.strip().strip('|').split('|')]
 q=lambda w:next((i for i,x in enumerate(h) if re.search(w,x,re.I)),-1)  # a column by its header text, never by number
-g=lambda r,i:(z(r)+['']*9)[i]; T=lambda r:'|'+'|'.join(c[:200] for c in z(r))+'|'
+g=lambda r,i:(z(r)+['']*9)[i]; M=lambda s,n=200:s[:n]+('…' if len(s)>n else '')  # ellipsis at the cut, or "brief: to be written" comes out as "brief:" and reads as the opposite
+T=lambda r:'|'+'|'.join(M(c) for c in z(r))+'|'
 o=L[:P[0]]
 for k in 'ABCD':
     if k in S: o+=L[S[k][0]:S[k][1]]
@@ -44,7 +45,7 @@ if 'E' in S:
     if F:
         y=lambda r:[(1,int(t)) if t.isdigit() else (0,t) for t in re.findall(r'\d+|[a-z]+',g(r,1 if j==0 else 0))]
         N=max(F,key=y) if any(y(r) for r in F) else F[-1]  # newest by ID (E-10b-2 < E-11), never by table order: newest-first and oldest-first both work
-        o+=[f'latest delivered {g(N,1 if j==0 else 0)[:80]} | verdict {(g(N,v) if v>=0 else "see that row in the case")[:200]}']
+        o+=[f'latest delivered {M(g(N,1 if j==0 else 0),80)} | verdict {M(g(N,v) if v>=0 else "see that row in the case")}']
     if not A+F: o+=D[-3:]+['<!-- status column did not match (column missing, or wording outside the vocabulary); last 3 rows kept, scan E by hand -->']
     o+=[f'<!-- E {len(D)} rows: all {len(A)} active rows + 1 latest verdict; the rest, and anything past 200 chars, stay in the case - fetch on target -->']
 for k in 'FGH':
