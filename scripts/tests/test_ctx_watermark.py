@@ -23,11 +23,11 @@ PREFIX = "[ctx-kit watermark]"
 
 # The defaults the script falls back to, restated here so a silent change to either one shows up
 # as a failing test rather than as a doorbell that rings at a line nobody chose.
-YELLOW_DEFAULT, RED_DEFAULT = 300000, 400000
+YELLOW_DEFAULT, RED_DEFAULT = 400000, 500000
 
 # Three synthetic readings, picked to sit in each band under the default lines.
-OVER_RED = (12000, 390000, 11000)       # 413000
-IN_YELLOW = (10000, 300000, 8000)       # 318000
+OVER_RED = (12000, 490000, 11000)       # 513000
+IN_YELLOW = (10000, 400000, 8000)       # 418000
 UNDER_BOTH = (40000, 20000, 3000)       # 63000
 
 
@@ -133,7 +133,7 @@ class Ringing(unittest.TestCase):
             assistant(OVER_RED, mid="msg_newest"),
         ])
         payload = self.assert_rings(run(path), OVER_RED, "red", RED_DEFAULT)
-        self.assertIn("413k", payload["systemMessage"])  # the newest record, not the older one
+        self.assertIn("513k", payload["systemMessage"])  # the newest record, not the older one
 
     def test_between_the_lines_rings_yellow(self):
         path = write_transcript("yellow.ndjson", [assistant(IN_YELLOW)])
@@ -202,7 +202,7 @@ class MainThreadOnly(unittest.TestCase):
         ])
         result = run(path)
         message = json.loads(result.stdout)["systemMessage"]
-        self.assertIn("413k", message)
+        self.assertIn("513k", message)
         self.assertNotIn("2700k", message)
 
     def test_only_sidechain_records_means_no_reading(self):
@@ -216,12 +216,12 @@ class Thresholds(unittest.TestCase):
     """The lines move with the environment, and never crash on a typo."""
 
     def setUp(self):
-        self.path = write_transcript("thresholds.ndjson", [assistant(IN_YELLOW)])  # 318000
+        self.path = write_transcript("thresholds.ndjson", [assistant(IN_YELLOW)])  # 418000
 
     def test_lowering_red_to_30k_changes_the_band(self):
         result = run(self.path, CTXKIT_WATERMARK_RED="30k")
         message = json.loads(result.stdout)["systemMessage"]
-        self.assertIn("318k / red 30k", message)
+        self.assertIn("418k / red 30k", message)
         self.assertEqual(0, result.returncode)
 
     def test_both_spellings_are_accepted(self):
@@ -241,24 +241,24 @@ class Thresholds(unittest.TestCase):
                 result = run(self.path, CTXKIT_WATERMARK_YELLOW=junk, CTXKIT_WATERMARK_RED=junk)
                 self.assertEqual(0, result.returncode, result.stderr)
                 self.assertNotIn("Traceback", result.stderr)
-                # 318000 is yellow under the defaults, so falling back is visible in the band.
+                # 418000 is yellow under the defaults, so falling back is visible in the band.
                 message = json.loads(result.stdout)["systemMessage"]
-                self.assertIn("318k / yellow 300k", message)
+                self.assertIn("418k / yellow 400k", message)
 
-    def test_the_shipped_default_lines_are_300k_and_400k(self):
+    def test_the_shipped_default_lines_are_400k_and_500k(self):
         """Where the bell rings when nothing is configured — the defaults, checked from outside.
 
         Every other test here moves the lines or reads a fixture chosen to sit in a band; this one
         pins the two numbers the kit ships with, so raising or lowering a default cannot pass
-        silently. Both boundaries are checked on the token, and 399,999 is in on purpose: it
-        rounds to "400k" in the printed reading while still being a yellow-band watermark, so a
+        silently. Both boundaries are checked on the token, and 499,999 is in on purpose: it
+        rounds to "500k" in the printed reading while still being a yellow-band watermark, so a
         band picked off the rounded number instead of the raw one fails here.
         """
         for numbers, expected in (
-            ((1000, 297999, 1000), ""),                    # 299,999 — one token under yellow
-            ((1000, 298000, 1000), "300k / yellow 300k"),  # 300,000 — exactly on yellow
-            ((1000, 397999, 1000), "400k / yellow 300k"),  # 399,999 — one token under red
-            ((1000, 398000, 1000), "400k / red 400k"),     # 400,000 — exactly on red
+            ((1000, 397999, 1000), ""),                    # 399,999 — one token under yellow
+            ((1000, 398000, 1000), "400k / yellow 400k"),  # 400,000 — exactly on yellow
+            ((1000, 497999, 1000), "500k / yellow 400k"),  # 499,999 — one token under red
+            ((1000, 498000, 1000), "500k / red 500k"),     # 500,000 — exactly on red
         ):
             with self.subTest(watermark=sum(numbers)):
                 path = write_transcript("default-%d.ndjson" % sum(numbers), [assistant(numbers)])
@@ -331,7 +331,7 @@ class TailRead(unittest.TestCase):
                            assistant(OVER_RED, mid="msg_buried"), 600 * 1024)
         result = run(path)
         self.assertEqual(0, result.returncode, result.stderr)
-        self.assertIn("413k", json.loads(result.stdout)["systemMessage"])
+        self.assertIn("513k", json.loads(result.stdout)["systemMessage"])
 
     def test_a_record_past_the_8mb_cap_is_left_alone(self):
         # The cap is deliberate: past 8MB of tail the answer is "no reading", not "read the
@@ -351,7 +351,7 @@ class TailRead(unittest.TestCase):
         result = run(self.BIG)
         elapsed = time.perf_counter() - started
         self.assertEqual(0, result.returncode, result.stderr)
-        self.assertIn("413k", json.loads(result.stdout)["systemMessage"])
+        self.assertIn("513k", json.loads(result.stdout)["systemMessage"])
         self.assertLess(elapsed, 1.0, "took %.3fs on a %.1fMB transcript" % (
             elapsed, os.path.getsize(self.BIG) / 1048576.0))
         print("\n  30MB transcript, one run end to end: %.3fs" % elapsed)
