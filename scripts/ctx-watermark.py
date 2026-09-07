@@ -32,13 +32,16 @@ How it reads it
   weekly checkup does is not an option here. A window that is already parsed is not parsed again.
 
 Thresholds
-  CTXKIT_WATERMARK_YELLOW / CTXKIT_WATERMARK_RED, in tokens, `300000` and `300k` both accepted.
+  CTXKIT_WATERMARK_YELLOW / CTXKIT_WATERMARK_RED, in tokens, `400000` and `400k` both accepted.
   Anything unparseable or non-positive falls back to the defaults below, quietly. Set them in
   settings.json under `env` to move a line without touching this file. Red is tested first, so
   the two can be set in any order without producing a confusing reading.
   The defaults are a spending preference, not a price tier and not a quality cliff: the whole 1M
   window bills at the standard rate and nothing steps up at 200k, so these lines are meant to be
-  moved rather than obeyed. What they buy and what staying costs: 04-HANDBOOK.
+  moved rather than obeyed. Where they sit is measured, not guessed: of nine sessions audited
+  on 2026-09-07, all nine peaked past 300k, four past 400k and one past 500k, so the old 300k
+  yellow rang on every one of them with work still left in them. What they buy and what staying
+  costs: 04-HANDBOOK.
 
 Failure posture
   A doorbell may never break the turn it rings in. Missing file, unreadable file, half-written
@@ -51,8 +54,8 @@ Exit codes
 """
 import json, os, sys
 
-YELLOW_DEFAULT = 300000
-RED_DEFAULT = 400000
+YELLOW_DEFAULT = 400000
+RED_DEFAULT = 500000
 
 # Every line this script prints starts with this, in both channels, so it is greppable in a
 # transcript, in a stream-json log, and in the owner's terminal.
@@ -162,7 +165,7 @@ def last_watermark(path):
 
 def render(tokens, band, line):
     """The one line both channels carry, e.g.
-    `[ctx-kit watermark] 413k / red 400k — time to close out (/ctx-handoff)`."""
+    `[ctx-kit watermark] 513k / red 500k — time to close out (/ctx-handoff)`."""
     return "%s %dk / %s %dk — time to close out (/ctx-handoff)" % (
         PREFIX, round(tokens / 1000.0), band, round(line / 1000.0)
     )
