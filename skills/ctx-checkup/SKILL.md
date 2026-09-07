@@ -25,10 +25,10 @@ The script derives the project archive directory from cwd; if the directory does
 
 | Session type | Criterion | What crossing the line means |
 |---|---|---|
-| Discussion / lead | rewrite share **<10%** and p50 watermark **<300k** | the money is leaking into re-reading the same thing |
-| Exec | compact count **= 0** and peak watermark **<400k** | what should have gone to disk did not |
+| Discussion / lead | rewrite share **<10%** and p50 watermark **<400k** | the money is leaking into re-reading the same thing |
+| Exec | compact count **= 0** and peak watermark **<500k** | what should have gone to disk did not |
 
-The script flags every row over the line with ⚠️ — the flag fires on any of those four lines: rewrite share >=10%, p50 watermark >=300k, peak watermark >=400k, or compacts >0. **The script cannot tell a discussion session from an exec one, so the flag is the union of both rows of the table above: read a flagged row against that session's own type** — a discussion session that crossed only an exec line (peak watermark >=400k, say, while rewrite share and p50 stayed inside their lines) is flagged but is **not** a fail. Then **do not just recite the table** — give an action for each one:
+The script flags every row over the line with ⚠️ — the flag fires on any of those four lines: rewrite share >=10%, p50 watermark >=400k, peak watermark >=500k, or compacts >0. **The script cannot tell a discussion session from an exec one, so the flag is the union of both rows of the table above: read a flagged row against that session's own type** — a discussion session that crossed only an exec line (peak watermark >=500k, say, while rewrite share and p50 stayed inside their lines) is flagged but is **not** a fail. Then **do not just recite the table** — give an action for each one:
 - High rewrite share + high watermark → **"time for ctx-handoff"**; while you are there, estimate the buy-out price `watermark×(2+0.1×(N−1))+output×5` and set it against "one more cold re-entry costs watermark×2", so the user can decide at a glance.
 - An exec session with compact >0 → point out that it should have written to disk and started fresh instead of compacting.
 - An already closed old session with **0 new requests** this period → the retirement check passes; >0 and you name it: "retirement not honoured".

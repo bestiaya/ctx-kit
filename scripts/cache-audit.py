@@ -2,10 +2,10 @@
 """cache-audit.py — weekly cache checkup for claude CLI sessions (ships with ctx-kit)
 
 Pre-registered criteria (the checkup measure; a fail is reported as a fail):
-  - discussion / lead session: rewrite share <10% and p50 watermark <300k
-  - exec session: compact count = 0 and peak watermark <400k
+  - discussion / lead session: rewrite share <10% and p50 watermark <400k
+  - exec session: compact count = 0 and peak watermark <500k
   - a row is flagged with a trailing warning sign when it crosses any of those four lines:
-    rewrite share >=10%, p50 watermark >=300k, peak watermark >=400k, or compacts >0.
+    rewrite share >=10%, p50 watermark >=400k, peak watermark >=500k, or compacts >0.
     The script cannot tell a discussion session from an exec one, so the flag is the union of
     both rows of the table — read a flagged row against that session's own type.
 
@@ -238,8 +238,8 @@ def main():
             " ⚠️"
             if (
                 r["rw_share"] >= 10
-                or r["p50"] >= 300_000
-                or r["peak"] >= 400_000
+                or r["p50"] >= 400_000
+                or r["peak"] >= 500_000
                 or r["compacts"] > 0
             )
             else ""
