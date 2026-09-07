@@ -304,7 +304,7 @@ snapshot. They are argued in `material.md` §d, one shot named per row.
 | String | Class | Where it comes from |
 |---|---|---|
 | the four cards (opening / mechanism / closing / sign-off) | editorial | written by the owner, used verbatim. ★ One word of the opening card changed this cut, by the owner's ruling |
-| `Messages translated from the original Chinese · originals in the repo` | editorial | lifted verbatim from the current cut's subtitle script |
+| `Messages translated from the original Chinese · originals in the repo` — **not in the published film; removed 2026-09-07** | editorial | It was lifted verbatim from the subtitle script and stood in the fourth cut. The owner had it taken out of the picture, and the cut published is the one without it. Two consequences worth stating plainly: the film no longer says in frame that the messages are translated — **the post carrying the film says so in its caption instead, and the Chinese originals are in this file, one to a row**; and the film's other resident line, `as of one frozen snapshot · timestamp in the repo`, is untouched, so this file is still what the picture points at. Nothing else in the film changed: measured on the delivered cuts, the only pixels that differ are the strip this line occupied. |
 | `Inbox`, `Experiment ledger` | editorial | the product's published English section names |
 | `ctx-kit`, `~/demo` | editorial | the product's own name; a fictional placeholder path |
 | ★ the five `Milestone n · …` labels | editorial | ours; the rendering and its source are in §14 |
