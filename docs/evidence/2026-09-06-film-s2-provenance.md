@@ -310,7 +310,8 @@ snapshot. They are argued in `material.md` §d, one shot named per row.
 | ★ the five `Milestone n · …` labels | editorial | ours; the rendering and its source are in §14 |
 | ★ `01` to `06` | editorial | ours; the map is in §11 |
 | ★ `as of one frozen snapshot · timestamp in the repo` | editorial | ours; it points at the time-slice block at the top of this file, which is why this file has to travel with the film |
-| the two install commands, `+ one paste (see README)`, the repository URL | editorial | the **public** repository's README, which is where the film sends the viewer — not the snapshot |
+| the two install commands, `+ one paste (see README)` | editorial | the **public** repository's README, which is where the film sends the viewer — not the snapshot |
+| the repository URL on the end card | editorial | the repository's own address; it is not quoted from anything. **Corrected 2026-09-07**: this row previously sourced the URL to the README along with the install commands. It is not there — the README's only ctx-kit link is the issues page. The install commands and the paste do come from the README; the address does not, and saying so was wrong. Left visible rather than quietly rewritten, on the same rule as the two retracted readings above. |
 
 ## 17. Two honest limits
 
