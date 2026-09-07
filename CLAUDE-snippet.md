@@ -45,7 +45,7 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
 - An exec session calls set_session_title first thing, naming itself as it appears on the board; delivery = a
   two-layer deliverable (machine-readable + written for people) + writing back the case's E row; an exec writes
   only its own E row and never reads the whole case.
-- Watermark — the reading on the line starting `[ctx-kit watermark]`; yellow 300k, red 400k by default, both
+- Watermark — the reading on the line starting `[ctx-kit watermark]`; yellow 400k, red 500k by default, both
   yours to move. An exec session past yellow books the next natural breakpoint to close out and past red is
   reminded this turn; a discussion / lead session is reminded only when it is **both** at a batch boundary
   **and** past yellow, or the moment it is past red. The hook knows nothing about session types — it prints
@@ -69,7 +69,7 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
 
 1. In a fresh session, say "I want to do X" and see whether it **triages before acting** (rather than starting work or firing back a string of questions).
 2. Give it a read of more than 30,000 characters (`LC_ALL=en_US.UTF-8 wc -m`, not `wc -c`) and see whether it **dispatches the digest subagent** instead of reading it all itself.
-3. Grow a session past 300k — or drop `CTXKIT_WATERMARK_YELLOW` low for a moment — and see whether it **offers to close out** when it crosses the line, and then **stays quiet inside that band** (no offer at all means the rules were not taken in — check that `CLAUDE.md` is being loaded; an offer repeated every turn means the once-per-band half was not).
+3. Grow a session past 400k — or drop `CTXKIT_WATERMARK_YELLOW` low for a moment — and see whether it **offers to close out** when it crosses the line, and then **stays quiet inside that band** (no offer at all means the rules were not taken in — check that `CLAUDE.md` is being loaded; an offer repeated every turn means the once-per-band half was not).
 
 ## Trimming it per project
 
