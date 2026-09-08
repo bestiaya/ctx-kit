@@ -69,7 +69,7 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
 
 1. In a fresh session, say "I want to do X" and see whether it **triages before acting** (rather than starting work or firing back a string of questions).
 2. Give it a read of more than 30,000 characters (`LC_ALL=en_US.UTF-8 wc -m`, not `wc -c`) and see whether it **dispatches the digest subagent** instead of reading it all itself.
-3. Grow a session past 400k — or drop `CTXKIT_WATERMARK_YELLOW` low for a moment — and see whether it **offers to close out** when it crosses the line, and then **stays quiet inside that band** (no offer at all means the rules were not taken in — check that `CLAUDE.md` is being loaded; an offer repeated every turn means the once-per-band half was not).
+3. Drop **both** `CTXKIT_WATERMARK_YELLOW` and `CTXKIT_WATERMARK_RED` below the current watermark for a moment and take two turns — the first has no reading to go on yet. It should quote its watermark, **offer to close out**, and then **stay quiet inside that band**. Drop both, not just yellow: past yellow alone a discussion / lead session waits for a batch boundary, so its silence is correct and would read as a failure. No offer at all means the rules were not taken in — check that `CLAUDE.md` is being loaded; an offer repeated every turn means the once-per-band half was not.
 
 ## Trimming it per project
 
