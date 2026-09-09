@@ -237,7 +237,7 @@ CELL_DETAIL_RE = re.compile(r"^(?P<path>.+):(?P<line>\d+)\s+\[(?P<col>.*)\]\s+(?
 CELL_TOTAL_RE = re.compile(r"^---\s+(?P<n>\d+)\s+cells over (?P<limit>\d+) characters")
 
 
-# ---------------------------------------------------------------- the six checks
+# -------------------------------------------------------------- the seven checks
 
 def check_takeover_load(path, rules):
     """1. What one takeover reads in, measured by the loader the skill owns."""
