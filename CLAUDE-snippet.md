@@ -26,14 +26,17 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
   (1) any address read earlier is **void**, however few minutes ago, and anything coming in between means you
   look it up again; (2) read the **target case file's** header Pen-holder cell now — the session named in an
   inbox row is the signature, not the address; (3) **immediately before sending**, check that session with
-  get_session / list_sessions; (4) **do not send** if any one holds: the title starts with `✕` (retired),
-  isArchived, or the Pen-holder cell names nobody live (awaiting takeover / closing / predecessor retired) —
-  a retired session is not necessarily unreachable, so this check has to come before the send; (5) where you
-  refused, **append** a row to the target file's **inbox** (append only, never touch the body, so two pens never
-  write over each other) and tell the owner in one line that the case has no live pen-holder, asking whether to
-  open a session for it; (6) only once all of it passes, send — and only to a live pen-holder that has been
-  active within the hour. A `✕` noticed only afterwards, on a reply that comes back, means the message has
-  already gone astray: the symptom of having skipped (3) and (4), never a substitute for them.
+  get_session / list_sessions; (4) **refuse to send if any one of these holds**: the title starts with `✕`
+  (the retirement mark); `isArchived` is set; or the case header's Pen-holder cell names nobody live (awaiting
+  takeover / closing / predecessor retired) — a retired session is not necessarily unreachable, so this check
+  has to come before the send; (5) where you refused, **append** a row to the target file's **inbox** (append
+  only, never touch the body, so two pens never write over each other) and tell the owner in one line that the
+  case has no live pen-holder, asking whether to open a session for it; (6) only once all of it passes, send.
+  Those three are the whole of the refusal list — **whether the pen-holder has been active within the hour is
+  a cost reading, not a fourth condition**: a session that has gone cold is billed at its watermark × 2 on the
+  next request, worth weighing before you ring anybody, and never a reason to hold a delivery back from a live
+  pen-holder. A `✕` noticed only afterwards, on a reply that comes back, means the message has already gone
+  astray: the symptom of having skipped (3) and (4), never a substitute for them.
   To get at what a dead session knows, **read its archive, do not wake it**
   (reading the archive costs only the reader; waking it costs watermark × 2).
   Do not chase progress after dispatching: subscribe to notify_when_idle on the exec session (a zero-token idle
