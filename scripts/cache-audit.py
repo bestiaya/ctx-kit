@@ -308,6 +308,18 @@ def session_echo(fp):
     return total, per.get("Bash", 0), biggest, make
 
 
+def make_up(fp):
+    """The make-up of one transcript on its own: the five routes, plus the dispatch sub-count.
+
+    Its own function so that the watermark doorbell in this same kit can quote this split
+    rather than growing a second one of its own that would drift from this one. `per` is
+    thrown away here — the caller wants the make-up, not the per-tool echo.
+    """
+    make = dict.fromkeys(MAKEUP + ("dispatch",), 0)
+    echo(fp, {}, make)
+    return make
+
+
 def audit(fp):
     main, compacts = {}, 0
     with open(fp, errors="replace") as f:

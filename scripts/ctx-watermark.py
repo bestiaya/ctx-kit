@@ -9,10 +9,13 @@ What it is for
   no tokens for it. The session gets a reading of itself; deciding what to do with it stays with
   the owner.
 
-  One further reading rides on the same run, and it sets no line either: a session that started
-  before the ctx-kit files it is running were last written gets told so, once, whatever its
-  watermark. That one is not about spending — the fixes made since a long session opened reach
-  new sessions and not it, and until now nothing said so.
+  Two further readings ride on the same run, and neither one sets a line either:
+    - when the bell rings, one more line saying by which route this context filled up, taken
+      from cache-audit.py's own split so the doorbell and the weekly checkup cannot disagree.
+      No bell, no make-up line: a quiet session is not parsed in full;
+    - a session that started before the ctx-kit files it is running were last written gets told
+      so, once, whatever its watermark. That one is not about spending — the fixes made since a
+      long session opened reach new sessions and not it, and until now nothing said so.
 
 The measure, the same one in three places
       watermark = input_tokens + cache_read_input_tokens + cache_creation_input_tokens
@@ -273,6 +276,41 @@ def update_reading(path):
     )
 
 
+def make_up_reading(path):
+    """One line saying by which route this context filled up, or None.
+
+    The split is cache-audit.py's, loaded from beside this script, so the doorbell and the
+    weekly checkup quote one function rather than two that drift. Anything missing — no
+    cache-audit.py next door, an unreadable log, a log with nothing countable in it — returns
+    None and the doorbell says nothing about the make-up.
+
+    Cost: this parses the whole log, where the rest of this script reads only its tail. It is
+    called only on a turn the bell already rings on, which is at most once per band per
+    session, so a session under the line still pays for nothing but the tail read.
+    """
+    try:
+        import importlib.util
+        source = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache-audit.py")
+        spec = importlib.util.spec_from_file_location("ctxkit_cache_audit", source)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        made = module.make_up(path)
+        whole = sum(made[k] for k in module.MAKEUP)
+        if not whole:
+            return None
+        share = lambda key: 100.0 * made[key] / whole
+        return (
+            "%s what filled it, this log on its own: self %.0f%% (of the whole, %.0f%% is"
+            " prompts written for a subagent), echo %.0f%%, reports %.0f%%, replies %.0f%%,"
+            " other %.0f%% -- the system prompt and the tool definitions are paid every turn"
+            " and are outside this split"
+            % (PREFIX, share("self"), share("dispatch"), share("echo"), share("reports"),
+               share("replies"), share("other"))
+        )
+    except Exception:
+        return None
+
+
 def render(tokens, band, line):
     """The one line both channels carry, e.g.
     `[ctx-kit watermark] 513k / red 500k — time to close out (/ctx-handoff)`."""
@@ -302,6 +340,11 @@ def main():
         if band:  # under the line: not one byte about the watermark
             readings.append(render(tokens, band, line))
             actions.append(action(band))
+            # Rides along with the bell and never on its own: this is the same reading, said
+            # in more detail, and it carries no instruction of its own.
+            made = make_up_reading(path)
+            if made:
+                readings.append(made)
 
     update = update_reading(path)
     if update:

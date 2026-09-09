@@ -527,5 +527,58 @@ class StaleInstall(unittest.TestCase):
         self.assertIn("once per session", context)
 
 
+class MakeUp(unittest.TestCase):
+    """The line the bell carries with it: by which route this context filled up.
+
+    The split is not this script's own. It is imported from cache-audit.py next door, so the
+    doorbell and the weekly checkup cannot answer one question two ways. What is checked here
+    is that the doorbell quotes it, that the shares are the ones the fixture was built to
+    produce, and that a session under the line is never parsed for it.
+    """
+
+    # What the fixture puts in each route: 300 characters this session wrote (a 100-character
+    # Bash command and a 200-character prompt handed to a subagent), 400 characters of tool
+    # result echoed back, 50 characters of reply. 750 in all, so the shares are 40 / 53 / 7,
+    # with 27% of the whole being the prompt written for the subagent.
+    def log(self, name, numbers):
+        record = assistant(numbers, mid="msg_calls")
+        record["message"]["content"] = [
+            {"type": "tool_use", "id": "toolu_bash", "name": "Bash",
+             "input": {"command": "x" * 100}},
+            {"type": "tool_use", "id": "toolu_agent", "name": "Agent",
+             "input": {"prompt": "p" * 200}},
+            {"type": "text", "text": "y" * 50},
+        ]
+        echoed = {"type": "user", "message": {"role": "user", "content": [
+            {"type": "tool_result", "tool_use_id": "toolu_bash", "content": "z" * 400},
+        ]}}
+        return write_transcript(name, [record, echoed])
+
+    def test_the_bell_says_which_route_the_context_came_in_by(self):
+        result = run(self.log("make-up-ringing.ndjson", OVER_RED))
+        self.assertEqual(0, result.returncode, result.stderr)
+        payload = json.loads(result.stdout)
+        lines = payload["systemMessage"].splitlines()
+        self.assertEqual(2, len(lines), lines)
+        self.assertTrue(lines[0].startswith(PREFIX), lines[0])
+        made = lines[1]
+        self.assertTrue(made.startswith(PREFIX), made)
+        for share in ("self 40%", "echo 53%", "reports 0%", "replies 7%", "other 0%",
+                      "27% is prompts written for a subagent"):
+            self.assertIn(share, made)
+        # The part nobody can see in a log is named rather than counted as zero.
+        self.assertIn("outside this split", made)
+        # It reaches the model as a reading, and brings no instruction of its own with it.
+        context = payload["hookSpecificOutput"]["additionalContext"]
+        self.assertIn(made, context)
+        self.assertEqual(1, context.count("Report this once per band"))
+
+    def test_no_bell_means_the_log_is_not_parsed_for_it(self):
+        """Same content, a watermark under both lines: nothing at all, make-up included."""
+        result = run(self.log("make-up-quiet.ndjson", UNDER_BOTH))
+        self.assertEqual("", result.stdout)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
