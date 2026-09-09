@@ -169,7 +169,7 @@ One measurement sits outside 01: [handing a task to a fresh session, six cases](
 
 ## What gets installed
 
-What goes in: six skills, one CLAUDE.md rule block, one reminder hook, one audit script and one `digest` subagent.
+What goes in: six skills, one CLAUDE.md rule block, two hooks (a warning before an auto-compact, and the once-per-turn watermark doorbell), three scripts (the weekly audit, the doorbell itself, and the case-file lint — whose own hook is opt-in and is not switched on for you) and one `digest` subagent.
 
 **Check your version first** — `claude --version`. What each layer needs (versions from the [claude CLI changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)):
 
@@ -195,7 +195,7 @@ Third step (manual, required): paste the whole code block from [CLAUDE-snippet.m
 
 <details><summary>Manual install (no plugin)</summary>
 
-Copy `skills/ctx-*` into `~/.claude/skills/`, `agents/digest.md` into `~/.claude/agents/`, and both `scripts/cache-audit.py` and `scripts/ctx-watermark.py` into `~/.claude/scripts/` (create the directory if it is not there — with no plugin root, that is the one place the kit's scripts are looked for), then merge the `hooks` object from `hooks/hooks.json` into `~/.claude/settings.json` (the compact warning shows a macOS notification and falls back to stderr elsewhere). Paste the rule block as above.
+Copy `skills/ctx-*` into `~/.claude/skills/`, `agents/digest.md` into `~/.claude/agents/`, and all three of `scripts/cache-audit.py`, `scripts/ctx-watermark.py` and `scripts/case-lint.py` into `~/.claude/scripts/` (create the directory if it is not there — with no plugin root, that is the one place the kit's scripts are looked for; leave the lint out and the opt-in hook in 04's "install and self-check" finds nothing and stays silent for ever), then merge the `hooks` object from `hooks/hooks.json` into `~/.claude/settings.json` (the compact warning shows a macOS notification and falls back to stderr elsewhere). Paste the rule block as above.
 
 After every `git pull`, `scripts/sync-installed.sh --check` lists where the installed copies have drifted from the repository, and `--apply` copies the repository over them — backing up whatever it overwrites into `~/.claude/ctx-kit-backup-<timestamp>/` first, and never deleting anything. (For maintainers, `scripts/release-check.py` checks that the version number, the skill count and the skill names agree across the plugin manifest, both READMEs and the docs before a release.)
 </details>
@@ -210,7 +210,7 @@ The yellow and red lines — 400k and 500k by default — are **a spending prefe
 
 **Upgrading from an earlier version**: this one renames the board's second section from "Global plan" to a **milestone** table plus a **routine** table. An existing board does not have to be rebuilt — run `/ctx-init` again and its review mode proposes the rename, keeping the rows you already have. The manual steps — where the rows of the old "track" layer go, how the case index gains its seventh column — are [recipe 7](06-RECIPES.md#配方-7老板面迁到新板里程碑--例行) in 06.
 
-**Uninstall**: remove ctx-kit in `/plugin`, or for a manual install `rm -rf ~/.claude/skills/ctx-* ~/.claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/scripts/ctx-watermark.py ~/.claude/ctx-kit-backup-*` (the last one is the backups the sync script keeps). Then delete the blocks you pasted into `CLAUDE.md` and `~/.claude/settings.json` — that is everything the kit puts on your machine. What stays behind is yours, not the kit's: the board and the case library `/ctx-init` created, and the commits and remote history `/ctx-handoff` pushed. Nothing deletes those for you; keep them or clear them yourself.
+**Uninstall**: remove ctx-kit in `/plugin`, or for a manual install `rm -rf ~/.claude/skills/ctx-* ~/.claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/scripts/ctx-watermark.py ~/.claude/scripts/case-lint.py ~/.claude/ctx-kit-backup-*` (the last one is the backups the sync script keeps). Then delete the blocks you pasted into `CLAUDE.md` and `~/.claude/settings.json` — that is everything the kit puts on your machine. What stays behind is yours, not the kit's: the board and the case library `/ctx-init` created, and the commits and remote history `/ctx-handoff` pushed. Nothing deletes those for you; keep them or clear them yourself.
 
 ## The six commands
 

@@ -169,7 +169,7 @@ English: [README.md](README.md) · 六条命令的 skill 只有英文一版，**
 
 ## 装什么
 
-装进去的是 6 个 skill、1 段 CLAUDE.md 条文、1 个提醒 hook、1 个查账脚本、1 个 digest 子代理。
+装进去的是 6 个 skill、1 段 CLAUDE.md 条文、2 个 hook（自动压缩前的预警，与每回合一次的水位门铃）、3 支脚本（周检查账、门铃本身，以及案文件体检——它自己那个 hook 是可选的，本包不替你打开）、1 个 digest 子代理。
 
 **先看版本**：`claude --version`。哪一层要什么版本（版本出自 [claude CLI 更新日志](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)）：
 
@@ -195,7 +195,7 @@ claude plugin install ctx-kit@ctx-kit
 
 <details><summary>手动安装（不走 plugin）</summary>
 
-把 `skills/ctx-*` 拷进 `~/.claude/skills/`、`agents/digest.md` 拷进 `~/.claude/agents/`、`scripts/cache-audit.py` 与 `scripts/ctx-watermark.py` 两个脚本都拷进 `~/.claude/scripts/`（目录没有就建；没有插件根时，工具包只到这里找脚本）、`hooks/hooks.json` 的 `hooks` 段并进 `~/.claude/settings.json`（压缩预警在 macOS 弹通知，其它平台回落 stderr）；条文照上面粘贴。
+把 `skills/ctx-*` 拷进 `~/.claude/skills/`、`agents/digest.md` 拷进 `~/.claude/agents/`、`scripts/cache-audit.py`、`scripts/ctx-watermark.py` 与 `scripts/case-lint.py` 三支脚本都拷进 `~/.claude/scripts/`（目录没有就建；没有插件根时，工具包只到这里找脚本。体检那支漏了，04 手册里那个可选 hook 就永远找不到它、永远静默）、`hooks/hooks.json` 的 `hooks` 段并进 `~/.claude/settings.json`（压缩预警在 macOS 弹通知，其它平台回落 stderr）；条文照上面粘贴。
 
 每次 `git pull` 之后：`scripts/sync-installed.sh --check` 列出安装态与仓库源码的差异，`--apply` 把仓库源码同步过去——覆盖前先把旧件备份到 `~/.claude/ctx-kit-backup-<时间戳>/`，只加不删。（维护者另有 `scripts/release-check.py`：发版前查版本号、skill 件数与 skill 名在插件清单、两份 README 与文档里是否一致。）
 </details>
@@ -210,7 +210,7 @@ claude plugin install ctx-kit@ctx-kit
 
 **从旧版升上来**：这一版把板的第二节从"全局计划"换成了**里程碑**表 + **例行**表。老板面不用重建：重跑一次 `/ctx-init` 走复核模式，它提议改名、你原来的行照留。手工那几步（旧"线"那层的行往哪去、案索引怎么补第七列）见 06 的[配方 7](06-RECIPES.md#配方-7老板面迁到新板里程碑--例行)。
 
-**卸载**：plugin 在 `/plugin` 里移除，手动装的 `rm -rf ~/.claude/skills/ctx-* ~/.claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/scripts/ctx-watermark.py ~/.claude/ctx-kit-backup-*`（最后一项是同步脚本留的备份）；再从 `CLAUDE.md` 与 `~/.claude/settings.json` 删掉对应段落——装到你机器上的件就这些，删干净了。留下来的是你自己的东西：`/ctx-init` 建的任务板与案库、`/ctx-handoff` 提交并推上去的历史，这两样不会替你删，留着还是清掉你自己定。
+**卸载**：plugin 在 `/plugin` 里移除，手动装的 `rm -rf ~/.claude/skills/ctx-* ~/.claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/scripts/ctx-watermark.py ~/.claude/scripts/case-lint.py ~/.claude/ctx-kit-backup-*`（最后一项是同步脚本留的备份）；再从 `CLAUDE.md` 与 `~/.claude/settings.json` 删掉对应段落——装到你机器上的件就这些，删干净了。留下来的是你自己的东西：`/ctx-init` 建的任务板与案库、`/ctx-handoff` 提交并推上去的历史，这两样不会替你删，留着还是清掉你自己定。
 
 ## 六条命令
 

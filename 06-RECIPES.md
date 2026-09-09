@@ -184,9 +184,16 @@
 
 这不是一套节奏，是一个开关，所以不占配方号。案库一大、并行的会话一多，案文件的毛病（判定格写成一段话、状态词写成判定、收件位处置栏写了却不以那三个词开头、表格里一根裸 `|` 把整行的列错开、案里点名的档案文件根本没入库）就会一条条攒起来，而**每一条都要下一个接手的人替你付**。
 
-手动这样查：`python3 scripts/case-lint.py <案文件或案库目录>`——七项检查各报各的，报到 `文件:行号`；`--quiet` 是没问题就不吭声。想让它在写的当下就响，仓库里备着 `hooks/case-lint.PostToolUse.candidate.json`：把里面那段 `PostToolUse` 并进你自己的 `~/.claude/settings.json`（**本包不替你动 `settings.json`，这段也不在 `hooks/hooks.json` 里**），之后 Write / Edit 落到案库路径下时它跑一遍，有问题打 stderr、exit 2，那几行直接摆到 Claude 面前；其余路径、档案、任务板与干净的案文件一律静默。
+手动这样查（脚本在哪，跟别处一样解析两处；`python3` 得是一支真跑得起来的——macOS 的 `/usr/bin/python3` 是 Xcode 垫片，报 `xcodebuild` 就是解释器走错了，不是脚本坏了）：
 
-**先清库再装**——存量没清完，每写一次案都会响。本仓 2026-09-09 的读数：6 个案文件 0.48 秒，36 项干净、3 项有 finding（都是黄档接手加载量），照这个状态装上去，那三个案每改一次就念一次。这段片段的日常用法**还没有人验过**，这里给的是装法，不是"建议装"。
+```bash
+S="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/scripts/case-lint.py}"; [ -f "$S" ] || S="$HOME/.claude/scripts/case-lint.py"
+python3 "$S" <案文件或案库目录>
+```
+
+七项检查各报各的，报到 `文件:行号`；`--quiet` 是没问题就不吭声。想让它在写的当下就响，仓库里备着 `hooks/case-lint.PostToolUse.candidate.json`：把里面那段 `PostToolUse` 并进你自己的 `~/.claude/settings.json`（**本包不替你动 `settings.json`，这段也不在 `hooks/hooks.json` 里**），之后 Write / Edit 落到案库路径下时它跑一遍，有问题打 stderr、exit 2，那几行直接摆到 Claude 面前；其余路径、档案、任务板与干净的案文件一律静默。**手动装机的先把 `scripts/case-lint.py` 拷进 `~/.claude/scripts/`**——脚本不在那儿，这段 hook 找不到它就静默 exit 0，装了等于没装，也不会告诉你为什么。
+
+**先清库再装**——存量没清完，每写一次案都会响。本仓 2026-09-09 的读数：6 个案文件 0.48 秒，36 项干净、3 项有 finding。**那 3 条全是红档（FAIL）**——表格列数 2 条、收件位处置词 1 条，落在两个案上；照这个状态装上去，**这两个案**每改一次就念一次。**黄档（WARN，接手加载量偏大）另算 2 条，`--quiet` 对黄档不出声、退出码 0，hook 不会为它响。**这段片段的日常用法**还没有人验过**，这里给的是装法，不是"建议装"。
 
 ---
 
