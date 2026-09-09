@@ -274,6 +274,20 @@ class Echo(unittest.TestCase):
         self.assertEqual(shown, [l for l in written.split("\n") if l])
         self.assertIn("# written to " + target, done.stdout)
 
+    def test_out_makes_the_directory_it_was_pointed_at(self):
+        # a project's first checkup points --out at a CHECKUP/ that does not exist yet.
+        # Before this, the audit printed in full and then exited 2, leaving no artifact.
+        session(self.where, "s", [("Read", 120)])
+        target = os.path.join(self.where, "CHECKUP", "2026-09-09.md")
+        done = subprocess.run(
+            [sys.executable, SCRIPT, "--project", self.where, "--cases", self.where,
+             "--out", target, "--all", "0"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        self.assertEqual(0, done.returncode, done.stderr)
+        self.assertTrue(os.path.isfile(target), done.stdout + done.stderr)
+        self.assertIn("# written to " + target, done.stdout)
+        self.assertIn("session", io.open(target, encoding="utf-8").read())
+
     def test_out_is_off_unless_asked_for(self):
         session(self.where, "s", [("Read", 120)])
         done = run(self.where)

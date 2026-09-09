@@ -18,7 +18,9 @@ Measures:
     them. The reading they exist for is the count printed under the table -- sessions whose
     echo adds up past 30,000 characters while no single tool result ever reached it, which is
     the read-gate's blind spot, measured at 167 of 217 contexts in this kit's own project on
-    2026-09-09 and 34 of 150 in a second project. 30,000 is the existing read-gate number,
+    2026-09-09, every tool counted, and at 34 of the 106 contexts that carried any Read in a
+    second project -- a Read-only count, ignores Bash, not comparable in size with the first.
+    30,000 is the existing read-gate number,
     reused here as the boundary of a count; nothing acts on it
   - a rewrite event = not the first request, a single cache_write >150k, and the read collapsing
     to under half the existing context (a read still close to the existing context is "a big new
@@ -56,7 +58,9 @@ empty table is reported as "no sessions found" only when the directory really ho
 
 --out writes the same text that goes to the terminal, unchanged, into a file, and is off
 unless asked for: the weekly checkup keeps its artifact this way (ctx-checkup section
-"The artifact"). Usage errors go to stderr and are not written to it.
+"The artifact"). A directory in the path that is not there yet is created, so the first
+checkup of a project can point --out straight at its CHECKUP/ without making it by hand.
+Usage errors go to stderr and are not written to it.
 
 Exit codes:
   0  the audit ran. A zero-row table still exits 0 — read the line printed under the table;
@@ -193,7 +197,9 @@ def session_echo(fp):
     A subagent's results are read in that subagent's context, not in its parent's, so this
     is not a bill the parent paid twice — it is what the whole of one dispatched job put in
     front of a model. The subagents of `<id>.jsonl` live in `<id>/subagents/`; a workflow
-    journal in there carries no messages and is skipped, the same as in E-17.
+    journal in there carries no messages and is skipped. The rule is the same inside a
+    subagent transcript as in the session's own: a result is charged to the call it answers,
+    joined to it by tool_use_id.
     """
     per, biggest = {}, 0
     biggest = max(biggest, echo(fp, per))
@@ -443,6 +449,9 @@ def main():
             )
     if out_path:
         try:
+            # The directory first: a project's first checkup points --out at a CHECKUP/ that
+            # is not there yet, and failing here threw the whole audit away after printing it.
+            os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
             with open(out_path, "w", encoding="utf-8") as fh:
                 fh.write("\n".join(lines) + "\n")
         except OSError as e:
