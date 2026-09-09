@@ -22,7 +22,7 @@ description: Triage and open a case — use on "I want to do X", "plan this", "s
 | Executable in one pass, criteria are clear | **One-off**: no case; one row on the board (**the milestone tag is required**, see below), plus a self-contained task brief |
 | A quick fix (change a setting, change one line, answer a question) | **Just do it**, no case and no task brief |
 
-**Look for it on the books before you open anything — and not only on the board.** The same job may already be an E row in somebody's ledger, or already sitting in somebody's inbox waiting to be dealt with, and neither shows up in the case index. One command over the whole library answers all three:
+**Look for it on the books before you open anything — and not only on the board.** The same job may already be an E row in somebody's ledger, or already sitting in somebody's inbox waiting to be dealt with, and neither shows up in the case index. Fill in the two keywords first; one command over the whole library then answers all three:
 
 ```bash
 D=$(sed -n 's/^[^A-Za-z]*ctx-kit case library:[[:space:]]*//p' CLAUDE.md 2>/dev/null | head -1 | sed 's/[`[:space:]]*$//')
