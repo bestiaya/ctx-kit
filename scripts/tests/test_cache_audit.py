@@ -90,9 +90,12 @@ def result(tid, text):
     }
 
 
-def session(where, name, echoes):
+EXT = ".jsonl"  # what cache-audit globs for; the tests below name stems and let this add it
+
+
+def session(where, stem, echoes):
     """A synthetic session log: one call and one result per (tool name, characters) pair."""
-    path = os.path.join(where, name)
+    path = os.path.join(where, stem + EXT)
     with io.open(path, "w", encoding="utf-8") as fh:
         for n, (tool, size) in enumerate(echoes):
             tid = "t%d" % n
@@ -101,11 +104,11 @@ def session(where, name, echoes):
     return path
 
 
-def subagent(where, parent_stem, name, echoes):
+def subagent(where, parent_stem, stem, echoes):
     """The same, written where a subagent of `parent_stem` keeps its transcript."""
     here = os.path.join(where, parent_stem, "subagents")
     os.makedirs(here, exist_ok=True)
-    return session(here, name, echoes)
+    return session(here, stem, echoes)
 
 
 def run(where):
@@ -186,57 +189,57 @@ class Echo(unittest.TestCase):
             shutil.rmtree(self.where)
         os.makedirs(self.where)
 
-    def echo_of(self, out, name):
+    def echo_of(self, out, stem):
         """The echo cell of one row, as an integer."""
         for line in out.split("\n"):
-            if line.startswith(name):
+            if line.startswith(stem + EXT):
                 return int(line.split()[-2].replace(",", ""))
-        self.fail("no row for %s in:\n%s" % (name, out))
+        self.fail("no row for %s in:\n%s" % (stem, out))
 
-    def bash_of(self, out, name):
+    def bash_of(self, out, stem):
         for line in out.split("\n"):
-            if line.startswith(name):
+            if line.startswith(stem + EXT):
                 return int(line.split()[-1].rstrip("%").replace("⚠️", "").strip())
-        self.fail("no row for %s in:\n%s" % (name, out))
+        self.fail("no row for %s in:\n%s" % (stem, out))
 
     def test_a_subagents_echo_is_counted_into_the_session_that_dispatched_it(self):
-        session(self.where, "s.jsonl", [("Bash", 1000), ("Read", 500)])
-        subagent(self.where, "s", "agent-one.jsonl", [("Bash", 2500)])
+        session(self.where, "s", [("Bash", 1000), ("Read", 500)])
+        subagent(self.where, "s", "agent-one", [("Bash", 2500)])
         done = run(self.where)
         self.assertEqual(0, done.returncode, done.stderr)
-        self.assertEqual(4000, self.echo_of(done.stdout, "s.jsonl"))
-        self.assertEqual(88, self.bash_of(done.stdout, "s.jsonl"))  # 3500 of 4000
+        self.assertEqual(4000, self.echo_of(done.stdout, "s"))
+        self.assertEqual(88, self.bash_of(done.stdout, "s"))  # 3500 of 4000
         self.assertIn("subagent transcripts included", done.stdout)
 
     def test_a_workflow_journal_under_subagents_is_not_counted(self):
-        session(self.where, "s.jsonl", [("Read", 100)])
-        subagent(self.where, "s", "journal.jsonl", [("Bash", 9999)])
+        session(self.where, "s", [("Read", 100)])
+        subagent(self.where, "s", "journal", [("Bash", 9999)])
         done = run(self.where)
-        self.assertEqual(100, self.echo_of(done.stdout, "s.jsonl"))
+        self.assertEqual(100, self.echo_of(done.stdout, "s"))
 
     def test_the_same_tool_use_id_written_twice_arrives_once(self):
         # a resumed or forked log writes the same result again; it is one arrival in one context
-        path = os.path.join(self.where, "s.jsonl")
+        path = os.path.join(self.where, "s" + EXT)
         with io.open(path, "w", encoding="utf-8") as fh:
             fh.write(json.dumps(call("2026-09-09T10:00:00.000Z", "t1", "Read", "m1")) + "\n")
             fh.write(json.dumps(result("t1", "R" * 700)) + "\n")
             fh.write(json.dumps(result("t1", "R" * 700)) + "\n")
         done = run(self.where)
-        self.assertEqual(700, self.echo_of(done.stdout, "s.jsonl"))
+        self.assertEqual(700, self.echo_of(done.stdout, "s"))
 
     def test_a_result_written_before_its_own_tool_use_is_still_named(self):
         # order is normally the other way round; a forked log can invert it, and an echo
         # charged to no tool at all would silently drop out of the bash share
-        path = os.path.join(self.where, "s.jsonl")
+        path = os.path.join(self.where, "s" + EXT)
         with io.open(path, "w", encoding="utf-8") as fh:
             fh.write(json.dumps(result("t1", "B" * 400)) + "\n")
             fh.write(json.dumps(call("2026-09-09T10:00:00.000Z", "t1", "Bash", "m1")) + "\n")
         done = run(self.where)
-        self.assertEqual(400, self.echo_of(done.stdout, "s.jsonl"))
-        self.assertEqual(100, self.bash_of(done.stdout, "s.jsonl"))
+        self.assertEqual(400, self.echo_of(done.stdout, "s"))
+        self.assertEqual(100, self.bash_of(done.stdout, "s"))
 
     def test_a_part_that_is_not_text_counts_zero_characters(self):
-        path = os.path.join(self.where, "s.jsonl")
+        path = os.path.join(self.where, "s" + EXT)
         with io.open(path, "w", encoding="utf-8") as fh:
             fh.write(json.dumps(call("2026-09-09T10:00:00.000Z", "t1", "Read", "m1")) + "\n")
             fh.write(json.dumps({
@@ -246,19 +249,19 @@ class Echo(unittest.TestCase):
                     "content": [{"type": "text", "text": "x" * 250},
                                 {"type": "image", "source": {"data": "y" * 5000}}]}]}}) + "\n")
         done = run(self.where)
-        self.assertEqual(250, self.echo_of(done.stdout, "s.jsonl"))
+        self.assertEqual(250, self.echo_of(done.stdout, "s"))
 
     def test_the_blind_spot_count_takes_the_sessions_the_per_call_gate_never_sees(self):
         # over the gate in total, never in one call: the reading the count exists for
-        session(self.where, "quiet.jsonl", [("Bash", 20000), ("Bash", 20000)])
+        session(self.where, "quiet", [("Bash", 20000), ("Bash", 20000)])
         # one call past the gate on its own: the gate saw this session, so it is not counted
-        session(self.where, "loud.jsonl", [("Read", 40000)])
+        session(self.where, "loud", [("Read", 40000)])
         done = run(self.where)
         self.assertIn("1 of 2 session(s) echo more than 30,000 characters in total", done.stdout)
         self.assertIn("a reading, no line is set on it", done.stdout)
 
     def test_out_writes_the_same_text_the_terminal_got(self):
-        session(self.where, "s.jsonl", [("Read", 120)])
+        session(self.where, "s", [("Read", 120)])
         target = os.path.join(self.where, "artifact.md")
         done = subprocess.run(
             [sys.executable, SCRIPT, "--project", self.where, "--cases", self.where,
@@ -272,7 +275,7 @@ class Echo(unittest.TestCase):
         self.assertIn("# written to " + target, done.stdout)
 
     def test_out_is_off_unless_asked_for(self):
-        session(self.where, "s.jsonl", [("Read", 120)])
+        session(self.where, "s", [("Read", 120)])
         done = run(self.where)
         self.assertNotIn("# written to", done.stdout)
         self.assertEqual([], [n for n in os.listdir(self.where) if n.endswith(".md")])

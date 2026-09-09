@@ -147,8 +147,8 @@ def echo(fp, per):
     again — the same result written twice is one arrival in one context. Sidechain records
     are counted: a subagent's echo is echo, and this is what the subagent transcript holds.
 
-    The count is the one _internal/tools/readgate-replicate.py used for the readings quoted
-    in the docstring, so the two can be set side by side.
+    This is the same count that produced the readings quoted at the top of this file, so the
+    two can be set side by side rather than argued about.
     """
     seen, id2name, pending, biggest = set(), {}, [], 0
     with open(fp, errors="replace") as f:
