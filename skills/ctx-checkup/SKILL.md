@@ -67,13 +67,46 @@ Run it with a real python3, the same as §1. A floor reading is a **project** re
 
 ## 3. Backfill section G
 Sweep the case library — **resolved in this order: the path on the line `ctx-kit case library: <path relative to the project root>` in the project root's `CLAUDE.md` if there is one, otherwise an existing `_ops/CASES/`, otherwise `cases/`** (the block in §4 resolves it in one line; the audit script prints the same answer under `# case library:`) — for cases whose section G says `(to be backfilled)` / `(待回填)`, and pair them up one at a time:
-1. take the close-out moment from the case file's "updated" date and the file mtime;
-2. in the project archive directory find the session around that moment carrying the **billing signature of a close-out round** — a single `cache_creation` ≈ that session's watermark, with no request after it;
+1. take the session name out of the case file's header **Pen-holder** cell, and the close-out moment out of its "updated" date and the file mtime;
+2. **match that name against the session names the transcripts carry**, and check the moment agrees: the block below reads the last `custom-title` record of every log in the project archive directory, which is the name that session was last known by, and prints it beside the log's own last write. The name is the route; the moment is the second opinion, taken independently of it;
 3. once paired, write the jsonl path into section G, marked "reference only, do not read in full".
 
-Two rules:
-- **jsonl timestamps are UTC** — convert to the local timezone before comparing them with the local clock (one timezone out and you pair the wrong session).
-- **If it does not pair, leave `(to be backfilled)` in place and say so.** Better empty than a path that merely "looks right" — using `ls -t` to point at yourself has been measured pointing at a file two weeks old.
+**The billing signature of a close-out round** — a single `cache_creation` ≈ that session's watermark with no request after it — **is corroboration where it appears, and its absence pairs nothing off**. It used to be step 2 here, and the reading says it cannot be: of 19 backfills done on 2026-09-09 it showed up on 2, because the other 17 sessions were still warm at the last moment they billed and no such record could exist. The name and the moment paired 17 of those 19, agreeing with each other every time.
+
+**The `@xxxxxxxx` in a Pen-holder cell is not the name of a transcript file.** It is the session id the session tools hand back, a different id minted for the same session, and matching it against filenames is matching two unrelated series: of 21 checked on 2026-09-09, 2 happened to coincide. Pair on the name.
+
+```bash
+A="$HOME/.claude/projects/$(printf %s "$PWD" | sed 's/[^A-Za-z0-9]/-/g')"   # or the --project directory
+python3 - "$A" <<'PY'
+import sys, os, glob, json, datetime, re
+# The record is {"type":"custom-title","customTitle":"…","sessionId":"…"} and is written again
+# every time the title is set, so the last one in the file is the name the session ended under.
+# Read as bytes in blocks with an overlap, rather than parsed line by line: these logs reach
+# tens of MB each and only this one field is wanted.
+MARK = re.compile(rb'"customTitle":"((?:[^"\\]|\\.)*)"')
+rows, unnamed = [], 0
+for f in glob.glob(os.path.join(sys.argv[1], "*.jsonl")):
+    last, tail = None, b""
+    with open(f, "rb") as h:
+        while True:
+            block = h.read(4 << 20)
+            if not block: break
+            found = MARK.findall(tail + block)
+            if found: last = found[-1]
+            tail = block[-4096:]
+    if last is None: unnamed += 1; continue
+    rows.append((os.path.getmtime(f), json.loads(b'"' + last + b'"'), os.path.basename(f)))
+for stamp, title, name in sorted(rows):
+    print("%s  %s  %s" % (
+        datetime.datetime.fromtimestamp(stamp).strftime("%Y-%m-%d %H:%M"), title, name))
+print("--- %d log(s) carry a session name, %d were never named ---" % (len(rows), unnamed))
+PY
+```
+
+Three rules:
+- **The moment printed is the file's last write**, which for a session that closed out and stopped is when it last billed. A session resumed afterwards writes again and moves it, so a moment that sits well away from the close-out is a reason to look again — **not a threshold, and nothing here passes or fails on it**.
+- **jsonl timestamps are UTC** — the block above converts the mtime to local time for you, but anything you read out of a record yourself needs converting before you compare it with the local clock (one timezone out and you pair the wrong session).
+- **If it does not pair, leave `(to be backfilled)` in place and say so.** Better empty than a path that merely "looks right" — using `ls -t` to point at yourself has been measured pointing at a file two weeks old. A log with no name in it pairs on nothing here, which is what the count on the last line is for: report it rather than reading an empty answer as "there was no session".
 
 ## 4. Case size check
 The measure = **what a takeover actually loads** (header line + A~D + E's active rows and latest verdict + I's header, its undisposed rows in full and the last three disposed ones), not "how big the file is", and not the old measure of "count up to E". Run the extraction command from `ctx-takeover` §2 on each case (swap `F=` for each case path) and `| tail -1` to take only the character count on the last line — **do not read the extracted body into context**; the checkup only needs the number. Skip decision appendices, experiment archives and TASKBOARD.
