@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 """test_case_lint.py — unit tests for scripts/case-lint.py and the rule blocks it lifts.
 
-case-lint keeps no second copy of two of its rules: it pulls the python block out of
-`skills/ctx-takeover/SKILL.md` and `skills/ctx-handoff/SKILL.md` and runs it as it stands. So
-these tests run against the real skills directory of this repository, not against a copy: a
-change to either block that breaks the extraction, the output shape or the reading shows up
-here rather than in somebody's case file.
+case-lint keeps no second copy of two of its rules: it runs `scripts/takeover-load.py` as it
+stands, and pulls the length block out of `skills/ctx-handoff/SKILL.md` and runs that. So
+these tests run against the real skills and scripts of this repository, not against a copy: a
+change to either rule that breaks the reading, the output shape or the loading shows up here
+rather than in somebody's case file.
 
 The case files under /tmp here are synthetic — made-up rows with made-up text. No real case
 library is read or written.
@@ -28,6 +28,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 SKILLS = os.path.join(ROOT, "skills")
 SCRIPT = os.path.join(ROOT, "scripts", "case-lint.py")
+LOADER = os.path.join(ROOT, "scripts", "takeover-load.py")
 FIXTURES = os.environ.get("CTXKIT_TEST_DIR") or "/tmp/ctx-case-lint-tests"
 
 
@@ -130,8 +131,7 @@ class SplitAgreement(unittest.TestCase):
             (2, "second"), (3, "third"), (4, "fourth"))]
         path = case("split-loader.md", i_rows=rows)
         out = lint.run_py_block(
-            lint.extract_py_block(os.path.join(SKILLS, "ctx-takeover", "SKILL.md")),
-            ["ctx-takeover", path])
+            io.open(LOADER, encoding="utf-8").read(), ["takeover-load.py", path])
         self.assertNotIn("Cell count off the header", out)
         self.assertNotIn("quite settled", out)
         self.assertIn("all 0 undisposed in full", out)
@@ -142,8 +142,9 @@ class SplitAgreement(unittest.TestCase):
         naive = ".split('|')"
         places = {
             "case-lint.py": io.open(SCRIPT, encoding="utf-8").read(),
+            "takeover-load.py": io.open(LOADER, encoding="utf-8").read(),
         }
-        for skill, marker in (("ctx-takeover", "§2"), ("ctx-handoff", "§3"), ("ctx-checkup", "§4")):
+        for skill, marker in (("ctx-handoff", "§3"), ("ctx-checkup", "§4")):
             places[skill + " " + marker] = lint.extract_py_block(
                 os.path.join(SKILLS, skill, "SKILL.md"))
         for where, text in places.items():
@@ -353,7 +354,7 @@ class ArchivesTracked(unittest.TestCase):
 
 
 class LiftedBlocks(unittest.TestCase):
-    """The two blocks are lifted out of the skills at run time; the lifting has to keep working."""
+    """One rule is a script and one is lifted out of a skill; both have to keep running."""
 
     def test_the_handoff_block_extracts_and_runs_and_ends_in_a_total(self):
         path = case("lifted.md", e_rows=[e_row("E-01", "在跑")])
@@ -363,11 +364,16 @@ class LiftedBlocks(unittest.TestCase):
         self.assertIsNotNone(lint.CELL_TOTAL_RE.match(last), last)
         self.assertEqual(200, int(lint.CELL_TOTAL_RE.match(last).group("limit")))
 
-    def test_the_takeover_block_extracts_and_runs_and_ends_in_a_count(self):
+    def test_the_loader_script_runs_and_ends_in_a_count(self):
         path = case("lifted-loader.md", e_rows=[e_row("E-01", "在跑")])
-        code = lint.extract_py_block(os.path.join(SKILLS, "ctx-takeover", "SKILL.md"))
-        out = lint.run_py_block(code, ["ctx-takeover", path])
+        code = io.open(LOADER, encoding="utf-8").read()
+        out = lint.run_py_block(code, ["takeover-load.py", path])
         self.assertIsNotNone(lint.LOAD_RE.search(out), out[-200:])
+
+    def test_the_loader_is_found_beside_the_skills_directory_given(self):
+        """`--skills <a second copy>` has to pick up that copy's loader, not this one's."""
+        self.assertEqual(LOADER, lint.find_loader(SKILLS))
+        self.assertEqual(LOADER, lint.Rules(SKILLS).loader_path)
 
     def test_the_command_line_reports_a_clean_case_as_clean(self):
         here = os.path.join(FIXTURES, "cli")

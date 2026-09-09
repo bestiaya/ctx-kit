@@ -16,6 +16,7 @@
 #   scripts/cache-audit.py  ->  $HOME/.claude/scripts/cache-audit.py
 #   scripts/ctx-watermark.py -> $HOME/.claude/scripts/ctx-watermark.py
 #   scripts/case-lint.py    ->  $HOME/.claude/scripts/case-lint.py
+#   scripts/takeover-load.py -> $HOME/.claude/scripts/takeover-load.py
 #
 # What is only reported, never written:
 #   hooks/hooks.json vs the `hooks` section of $HOME/.claude/settings.json — that file is
@@ -80,6 +81,9 @@ pairs() {
   # The opt-in case-file lint: its hook resolves the plugin root first and this path second,
   # so a manual install without it leaves that hook silently finding nothing.
   [ -f "$ROOT/scripts/case-lint.py" ] && printf '%s\tscripts/case-lint.py\n' "$ROOT/scripts/case-lint.py"
+  # The loader a takeover runs: ctx-takeover §2 looks for it under the plugin root and then in
+  # ~/.claude/scripts/, so a manual install without it leaves every takeover with nothing to run.
+  [ -f "$ROOT/scripts/takeover-load.py" ] && printf '%s\tscripts/takeover-load.py\n' "$ROOT/scripts/takeover-load.py"
   return 0
 }
 

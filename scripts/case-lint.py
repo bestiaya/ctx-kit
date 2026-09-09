@@ -30,18 +30,21 @@ Seven checks, each reported on its own (every finding prints as `file:line`):
                      kept outside git is a legitimate shape and reports a skip,
                      not a finding
 
-Checks 1 and 2 keep no second copy of the rule: they lift the python block out of
-`skills/ctx-takeover/SKILL.md` and `skills/ctx-handoff/SKILL.md` and run it as it
-stands, so the skill remains the one place the rule is written and the two cannot
-drift apart. Change the skill and the readings here change with it.
+Checks 1 and 2 keep no second copy of the rule: check 1 runs `scripts/takeover-load.py`
+as it stands — the same script `ctx-takeover` §2 tells a session to run — and check 2
+lifts the python block out of `skills/ctx-handoff/SKILL.md` and runs that. So the kit
+remains the one place each rule is written and the readings here cannot drift from what
+a takeover or a close-out actually does. Change either and the readings follow.
 
 Usage:
   case-lint.py <case file>         check one case
   case-lint.py <directory>         check every case in a library (archives and
                                    the board are skipped)
   case-lint.py --quiet <path>      print nothing unless something is wrong
-  case-lint.py --skills <dir> ...  read the two rule blocks from another copy of
-                                   the skills (for testing this script)
+  case-lint.py --skills <dir> ...  read the rules from another copy of the kit
+                                   (for testing this script): the length block from
+                                   that directory's ctx-handoff, and the loader from
+                                   the `scripts/` beside it if there is one
 
 Exit codes: 0 all clear, 1 findings, 2 bad usage or a file that would not read.
 
@@ -68,12 +71,13 @@ SECTION_RE = re.compile(r"^##\s+([A-Z])\.?(\s|$)")
 
 # A `\|` inside a cell is content, not a separator (ctx-handoff §4 step 2). Three more places
 # carry this same split and all four have to agree, or a row that escapes its pipes by the rule
-# reads as one shape here and another there: the loader in `ctx-takeover` §2, the length block in
-# `ctx-handoff` §3, and the same block over a whole library in `ctx-checkup` §4.
+# reads as one shape here and another there: `scripts/takeover-load.py` (the loader ctx-takeover
+# §2 runs), the length block in `ctx-handoff` §3, and the same block over a library in
+# `ctx-checkup` §4.
 CELL_SPLIT = re.compile(r"(?<!\\)\|")
 
 # The six status words and nothing else, both sides anchored; leading punctuation
-# or `**` allowed, exactly as the loader in ctx-takeover §2 reads them.
+# or `**` allowed, exactly as `scripts/takeover-load.py` reads them.
 STATUS_RE = re.compile(
     r"^\W*(在跑|待验收|排队|待派|已交货|已完"
     r"|running|awaiting acceptance|queued|to dispatch|delivered|done)", re.I)
@@ -112,7 +116,7 @@ def is_case_file(path):
 def split_cells(line):
     """Cells of one markdown row, split on unescaped pipes only.
 
-    The three python blocks the skills own split the same way, line for line. Measured on one
+    The loader script and the two blocks the skills own split the same way, line for line. Measured on one
     8-column row carrying one `\\|`: they used to split at every `|` they saw and make 9 cells
     of it against the 8 counted here, so a row written by the rule read as malformed to a
     takeover and was loaded whole, while this checker never said a word about it.
@@ -222,17 +226,43 @@ def find_skills_dir(explicit):
     for cand in (os.path.join(os.path.dirname(here), "skills"),
                  os.path.join(plugin_root, "skills") if plugin_root else None,
                  os.path.expanduser("~/.claude/skills")):
-        if cand and os.path.isfile(os.path.join(cand, "ctx-takeover", "SKILL.md")):
+        if cand and os.path.isfile(os.path.join(cand, "ctx-handoff", "SKILL.md")):
             return cand
     return None
 
 
-class Rules(object):
-    """The two blocks the skills own, read once per run."""
+def find_loader(skills_dir):
+    """`scripts/takeover-load.py`, the loader ctx-takeover §2 tells a session to run.
 
-    def __init__(self, skills_dir):
-        self.takeover = extract_py_block(
-            os.path.join(skills_dir, "ctx-takeover", "SKILL.md"))
+    A `scripts/` beside the skills directory first, so `--skills` picks up a whole second
+    copy of the kit; then the directory this script itself sits in. Every layout the kit
+    installs into keeps the two beside each other — repository, plugin root, `~/.claude/` —
+    so the sibling rule covers all three and nothing has to be typed by hand.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    for cand in (os.path.join(os.path.dirname(os.path.abspath(skills_dir)), "scripts")
+                 if skills_dir else None, here):
+        if cand and os.path.isfile(os.path.join(cand, "takeover-load.py")):
+            return os.path.join(cand, "takeover-load.py")
+    return None
+
+
+class Rules(object):
+    """The two rules run as they stand, read once per run.
+
+    The loader is a script file rather than a block inside the skill (it was moved out so a
+    takeover stops pasting 5,800 characters of python into a shell every time), so it is read
+    from disk here; the length rule is still a block inside ctx-handoff and is lifted out.
+    """
+
+    def __init__(self, skills_dir, loader_path=None):
+        loader_path = loader_path or find_loader(skills_dir)
+        if not loader_path or not os.path.isfile(loader_path):
+            raise RuntimeError("no takeover-load.py beside %s or %s"
+                               % (skills_dir, os.path.dirname(os.path.abspath(__file__))))
+        with io.open(loader_path, encoding="utf-8") as fh:
+            self.takeover = fh.read()
+        self.loader_path = loader_path
         self.handoff = extract_py_block(
             os.path.join(skills_dir, "ctx-handoff", "SKILL.md"))
 
@@ -255,7 +285,7 @@ def check_takeover_load(path, rules):
     if not hit:
         return "bad", [("-", "the ctx-takeover loader printed no character count; "
                              "its last line has changed shape and case-lint needs updating")], \
-               "re-read skills/ctx-takeover/SKILL.md §2 and update the parse here"
+               "re-read scripts/takeover-load.py and update the parse here"
     n = int(hit.group(1).replace(",", ""))
     if n > 15000:
         return "bad", [("-", "%s characters — red" % format(n, ","))], \
@@ -611,7 +641,7 @@ def main(argv=None):
 
     skills_dir = find_skills_dir(args.skills)
     if not skills_dir:
-        sys.stderr.write("case-lint: cannot find skills/ctx-takeover/SKILL.md; "
+        sys.stderr.write("case-lint: cannot find skills/ctx-handoff/SKILL.md; "
                          "pass --skills <dir>\n")
         return 2
     try:
