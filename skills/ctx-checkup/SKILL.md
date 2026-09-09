@@ -138,7 +138,7 @@ A session that marks itself at close-out carries the `✕` prefix. **A session t
 
 Where: **`CHECKUP/<YYYY-MM-DD>.md`, beside the case library** (case library `_ops/CASES/` → `_ops/CHECKUP/`), the date being the one `date` gave you at the top of this skill. Four parts, in this order:
 
-1. **A head line**: the date, who ran it (the session's name), and **the command as it was actually typed** — an interpreter path and a `--project` included, so the next run can repeat it rather than reconstruct it.
+1. **A head line**: the date, who ran it (the session's name), and **the command as it was actually typed** — the interpreter path spelled out, and any `--project` or `--cases` that was needed, so the next run repeats it instead of reconstructing it.
 2. **The script's output, unchanged.** Use `--out <that file>` on the audit in §1 to write it and then build the rest around it, or paste the block whole; **do not restate the numbers in your own words and do not round them** — the artifact is the evidence, the reply is the summary.
 3. **A disposition table for the flagged rows**: `session | which line | reading | baseline | what was done`. The baseline cell is what makes the file worth keeping: where there is no earlier reading to name, write **"no earlier reading"** rather than leaving it blank. Rows flagged for the same reason may be merged into one row saying how many, provided the merged row names the reason.
 4. **The section G backfill result**: how many paired, how many stayed `(to be backfilled)` / `(待回填)`, and why each of the latter did not pair.
