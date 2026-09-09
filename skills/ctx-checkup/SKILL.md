@@ -16,6 +16,7 @@ S="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/scripts/cache-audit.py}"; [ -f "$S"
 if [ -f "$S" ]; then python3 "$S" --all; else echo "cache-audit.py is in neither place ctx-checkup looks (plugin root, then ~/.claude/scripts/) — nothing was audited. Manual install: copy scripts/cache-audit.py out of the ctx-kit repository into ~/.claude/scripts/, as the README manual-install step says (repository: github.com/bestiaya/ctx-kit)."; fi
 ```
 
+**To keep the run as an artifact (§6), add `--out <path>` to that command**; without it the script writes nothing, and the file it writes is the same text the terminal got, unchanged.
 The script is pure standard library, zero dependencies. An error mentioning `xcodebuild` or similar means the interpreter resolved somewhere else (the macOS Xcode shim, for instance) — run it again with a real python3; the script is not broken.
 **Two places, in this order: the plugin root, then `~/.claude/scripts/`.** `${CLAUDE_PLUGIN_ROOT}` is set only under a plugin install; on a manual install it is empty and the script sits where the README's manual-install step puts it, `~/.claude/scripts/cache-audit.py` — the block above tries both, so never type a plugin path by hand. If it prints that the script is in neither place, **say exactly that — nothing was audited** — and pass on the one fix it prints: copy `scripts/cache-audit.py` out of the ctx-kit repository you installed from into `~/.claude/scripts/`, which is the README's manual-install step (a manual install leaves no README on disk, so point at the repo, not at a local file). Do not guess at a plugin directory that is not there, do not go hunting through backups, and never report an audit you did not run.
 The script derives the project archive directory from cwd; if the directory does not match, add `--project <directory>`. It also prints the case library it resolved on the `# case library:` line — the same directory §3 and §4 sweep, and `--cases <directory>` overrides it.
@@ -32,6 +33,35 @@ The script flags every row over the line with ⚠️ — the flag fires on any o
 - High rewrite share + high watermark → **"time for ctx-handoff"**; while you are there, estimate the buy-out price `watermark×(2+0.1×(N−1))+output×5` and set it against "one more cold re-entry costs watermark×2", so the user can decide at a glance.
 - An exec session with compact >0 → point out that it should have written to disk and started fresh instead of compacting.
 - An already closed old session with **0 new requests** this period → the retirement check passes; >0 and you name it: "retirement not honoured".
+
+### Echo the per-call read gate never sees (a reading; no line is set on it)
+
+The table's `echo` column is the characters a session's tool results put into a context — its own and its subagents' — and `bash%` is the Bash share of that. Under the table the script prints two more numbers: the total across the rows shown, and **how many of those sessions echo more than 30,000 characters in total while no single tool result ever reaches it**. Those are the sessions a read gate that fires on one result at a time cannot see. **Report both and attach no action**: nothing here passes or fails on them, and 30,000 is the read gate's existing number reused as the boundary of a count, not a new line.
+
+Two readings to set the count against, both taken on 2026-09-09, and **both counted per context** — one transcript is one context and a subagent counts as its own, which is *not* the unit the table uses, because the table folds a subagent's echo into the session that dispatched it and so counts fewer, larger sessions: **167 of the 217 contexts that carried any tool echo** in this kit's own project, and **34 of 150 contexts** in a second project on the same machine. Bash is where the bulk of it sits and is also where a per-call gate is structurally blind: **60% of all echo characters in the first project, with none of its 6,890 Bash results reaching 30,000 characters; 82% in the second, with none of its 7,705 reaching it either**. What those readings say is that a gate reading one result at a time does not see this material. They do **not** say the material was waste, and nothing measured here says what a cumulative gate would save — so do not propose one off the back of this number.
+
+### The resident floor (a reading; no line is set on it)
+
+**What it is**: what a session pays before anybody has said anything — the rules and the memory index the runtime loads at the top of every fresh session. It is outside the four criteria above; a project measures it so that adding a rule block, or a line to a memory index, is a change with a number against it instead of a guess.
+
+**How to measure it**: a brand-new headless session, one turn, **with the tools shut off** — flags that leave no tool available, or `--max-turns 1`, which stops before any tool can be called. Take the first assistant record's `input_tokens + cache_creation_input_tokens + cache_read_input_tokens`; output tokens are no part of it, which is the same three-term sum the `p50 ctx` column and the watermark doorbell use. **Measure it twice**, on the same machine, in the same project directory, on the same day, and change one thing at a time. **Keep the prompt fixed**: the prompt is inside the reading, so a reworded prompt is a different measurement, not a change in the floor.
+
+**What to report**: the two readings and the spread between them; the make-up in characters (the user-level `CLAUDE.md`, the project `CLAUDE.md`, the memory index); and **the difference from last time — not a verdict**. The same total can arrive by different routes, because the first session of a day writes the cache and later ones read it, so a change in how the three terms split is a change in cache hits and says nothing about what was loaded. **No line is set here, deliberately.** Where a project has never measured this before, say so in those words — there is no baseline yet, so there is nothing to set a line from; report the difference and let the owner decide, after two of them, whether a line is worth having. How much jitter to expect is itself a reading rather than an assumption: one project measured 72, 89 and about ±150 between repeats and warned that a few hundred is not an effect, while another read the same number twice in a row on every pair it took. Call something a change only when the pair before and the pair after each agree with themselves.
+
+```bash
+# Two readings of the resident floor. Same prompt every time — the prompt is inside the number.
+# `< /dev/null` is not optional: left off, the command waits on stdin and reads 335 tokens
+# higher (28,230 against 27,895, measured back to back on 2026-09-09).
+for n in 1 2; do
+  claude -p "Do not call any tool. Answer with one word: ok." --output-format json --max-turns 1 < /dev/null \
+  | python3 -c 'import json,sys; u=(json.load(sys.stdin).get("usage") or {}); print("floor", u.get("input_tokens",0)+u.get("cache_creation_input_tokens",0)+u.get("cache_read_input_tokens",0))'
+done
+# What it is made of, in characters
+M="$HOME/.claude/projects/$(printf %s "$PWD" | sed 's/[^A-Za-z0-9]/-/g')/memory/MEMORY.md"
+LC_ALL=en_US.UTF-8 wc -m "$HOME/.claude/CLAUDE.md" CLAUDE.md "$M" 2>/dev/null
+```
+
+Run it with a real python3, the same as §1. A floor reading is a **project** reading, not a session one: it belongs in the artifact (§6) beside the table, and it is the one number in this checkup that a second project can be compared against, because none of it depends on how anybody worked this week.
 
 ## 3. Backfill section G
 Sweep the case library — **resolved in this order: the path on the line `ctx-kit case library: <path relative to the project root>` in the project root's `CLAUDE.md` if there is one, otherwise an existing `_ops/CASES/`, otherwise `cases/`** (the block in §4 resolves it in one line; the audit script prints the same answer under `# case library:`) — for cases whose section G says `(to be backfilled)` / `(待回填)`, and pair them up one at a time:
@@ -103,5 +133,19 @@ A session that marks itself at close-out carries the `✕` prefix. **A session t
 - `set_session_title` each of them to `✕ <original title>`. **Leave the doubtful ones alone** — better to miss one than to mark a live session dead, and a session you cannot place inside this project is doubtful by definition. If the title tool is unavailable (a bare terminal), or it cannot tell you a session's working directory, skip this step and say so in the reply.
 - Report the numbers: N newly marked this period, M skipped as doubtful (named).
 
-## 6. Reply
-One table (session / criterion / actual reading / pass or fail / recommended action) + one line of overall account: how many over the line this period, how many recommended for close-out, how many cases over the size limit, section G backfilled x/y, how many retirement checks passed.
+## 6. The artifact
+**Write the run down, or it did not happen.** A checkup whose findings only ever appear in one reply is a checkup nobody can compare against next week — measured: a project that had been running this script since August had produced no file at all, so every reading it had ever taken was gone by the following turn, and "over the line" had never once been seen twice.
+
+Where: **`CHECKUP/<YYYY-MM-DD>.md`, beside the case library** (case library `_ops/CASES/` → `_ops/CHECKUP/`), the date being the one `date` gave you at the top of this skill. Four parts, in this order:
+
+1. **A head line**: the date, who ran it (the session's name), and **the command as it was actually typed** — an interpreter path and a `--project` included, so the next run can repeat it rather than reconstruct it.
+2. **The script's output, unchanged.** Use `--out <that file>` on the audit in §1 to write it and then build the rest around it, or paste the block whole; **do not restate the numbers in your own words and do not round them** — the artifact is the evidence, the reply is the summary.
+3. **A disposition table for the flagged rows**: `session | which line | reading | baseline | what was done`. The baseline cell is what makes the file worth keeping: where there is no earlier reading to name, write **"no earlier reading"** rather than leaving it blank. Rows flagged for the same reason may be merged into one row saying how many, provided the merged row names the reason.
+4. **The section G backfill result**: how many paired, how many stayed `(to be backfilled)` / `(待回填)`, and why each of the latter did not pair.
+
+Then **point the board at it**: the `Last / next` cell of this routine's row in the board's routine table takes today's date and the artifact's path, which is where `ctx-status` reads it from. Say in the reply where the file went and how many characters it runs to.
+
+**The floor reading from §2 goes in this file too**, under the table, with its make-up and its difference from the last artifact's — that is the whole reason the difference is knowable.
+
+## 7. Reply
+One table (session / criterion / actual reading / pass or fail / recommended action) + one line of overall account: how many over the line this period, how many recommended for close-out, how many cases over the size limit, section G backfilled x/y, how many retirement checks passed, and where the artifact was written.
