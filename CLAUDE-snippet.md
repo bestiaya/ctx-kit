@@ -37,10 +37,11 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
   look it up again; (2) read the **target case file's** header Pen-holder cell now — the session named in an
   inbox row is the signature, not the address; (3) **immediately before sending**, check that session with
   get_session / list_sessions — and in the same list ask whether the cell is merely out of date: filter to
-  titles under this project's working directory matching `^(?:✕\s*)?(\d+)-C0N` (the case number with its
-  hyphen out), drop `✕` and archived, and if a **larger** number is live then the cell names an earlier
-  stint — send to the largest one and say so in a line. That redirects the address; it is not a fourth
-  refusal condition; (4) **refuse to send if any one of these holds**: the title starts with `✕`
+  titles under this project's working directory matching `^(?:✕\s*)?(?:(\d+)-C0N|C0N-(\d+))` (the case
+  number with its hyphen out, either naming form), drop `✕` and archived, and if the **latest** live one is
+  not that cell's session then the cell names an earlier stint — send to the latest and say so in a line
+  (a `C0N-NN` title is later than any `NN-C0N` one; inside one form the larger number is later). That
+  redirects the address; it is not a fourth refusal condition; (4) **refuse to send if any one of these holds**: the title starts with `✕`
   (the retirement mark); `isArchived` is set; or the case header's Pen-holder cell names nobody live (awaiting
   takeover / closing / predecessor retired) — a retired session is not necessarily unreachable, so this check
   has to come before the send; (5) where you refused, **append** a row to the target file's **inbox** (append
