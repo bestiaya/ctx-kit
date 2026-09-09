@@ -77,7 +77,7 @@ Sweep the case library — **resolved in this order: the path on the line `ctx-k
 
 ```bash
 A="$HOME/.claude/projects/$(printf %s "$PWD" | sed 's/[^A-Za-z0-9]/-/g')"   # or the --project directory
-python3 - "$A" <<'PY'
+python3 - "$A" <<'NAMES'
 import sys, os, glob, json, datetime, re
 # The record is {"type":"custom-title","customTitle":"…","sessionId":"…"} and is written again
 # every time the title is set, so the last one in the file is the name the session ended under.
@@ -100,7 +100,7 @@ for stamp, title, name in sorted(rows):
     print("%s  %s  %s" % (
         datetime.datetime.fromtimestamp(stamp).strftime("%Y-%m-%d %H:%M"), title, name))
 print("--- %d log(s) carry a session name, %d were never named ---" % (len(rows), unnamed))
-PY
+NAMES
 ```
 
 Three rules:

@@ -176,7 +176,12 @@ _COMPILED = {}
 
 
 def extract_py_block(skill_path):
-    """The python between `<<'PY'` and the closing `PY` in a SKILL.md."""
+    """The python between `<<'PY'` and the closing `PY` in a SKILL.md.
+
+    The first such block, and a skill that carries more than one keeps `PY` for
+    the one meant to be lifted from here — ctx-checkup's other block uses a tag
+    of its own for exactly that reason.
+    """
     with io.open(skill_path, encoding="utf-8") as fh:
         lines = fh.read().split("\n")
     start = None
