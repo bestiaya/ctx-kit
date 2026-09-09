@@ -17,7 +17,7 @@ Given a path, use it. Given a case number, glob `<case number>*.md` in **this pr
 
 ```bash
 S="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/scripts/takeover-load.py}"; [ -f "$S" ] || S="$HOME/.claude/scripts/takeover-load.py"
-[ -f "$S" ] && python3 "$S" <case file path> || echo "takeover-load.py is in neither place ctx-takeover looks (plugin root, then ~/.claude/scripts/) — nothing loaded. Copy scripts/takeover-load.py out of the ctx-kit repository into ~/.claude/scripts/, as the README manual-install step says."
+if [ -f "$S" ]; then python3 "$S" <case file path>; else echo "takeover-load.py is in neither place ctx-takeover looks (plugin root, then ~/.claude/scripts/) — nothing loaded. Copy scripts/takeover-load.py out of the ctx-kit repository into ~/.claude/scripts/, as the README manual-install step says."; fi
 ```
 
 Those two places in that order, as `ctx-checkup` §1 does; never type a plugin path by hand. Where it says the script is in neither, **say exactly that — nothing was loaded**, pass on that one fix, and never recite off a case you did not load. **Run it with a real python3**: an `xcodebuild` error means the interpreter resolved somewhere else (the macOS Xcode shim), not that the script is broken.
