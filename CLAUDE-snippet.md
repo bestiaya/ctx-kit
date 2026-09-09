@@ -75,7 +75,12 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
   this session — if you have already given the owner a reading for this same band, say nothing about it this
   turn; say it again only when the band changes (yellow → red). **A band once reported stays reported for this
   session**: a reading that drops back below the line does not re-arm that band, and climbing back into the
-  same band says nothing more. A successor opens by reading the case file only, and never reads old session
+  same band says nothing more. A second reading rides on the same hook and answers to no line: a line starting
+  `[ctx-kit update]` says this session opened before the ctx-kit files it is running were last written — pass
+  it on once in one sentence and act on nothing, since whatever changed reaches new sessions and not this one.
+  **The hook keeps nothing between turns**: it recomputes every turn and re-prints whatever still holds, so
+  saying a reading once is the session's own job — and a compact leaves no earlier replies to look back over,
+  so after one it gets said again. A successor opens by reading the case file only, and never reads old session
   transcripts (ctx-takeover).
   A discussion / lead session is never compacted; compact is first aid for an exec session nearing the top of the
   window, and nothing else.
