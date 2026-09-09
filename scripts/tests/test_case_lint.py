@@ -19,6 +19,7 @@ Use a working python3 — on macOS /usr/bin/python3 is an Xcode shim that cannot
 import importlib.util
 import io
 import os
+import shutil
 import subprocess
 import sys
 import unittest
@@ -225,6 +226,130 @@ class LengthCheckScope(unittest.TestCase):
         ], header=header)
         self.assertEqual("bad", status)
         self.assertEqual(1, len(items), items)  # E-05 is in the last three, E-01 is not
+
+
+GIT = shutil.which("git")
+
+
+def git(where, *args):
+    """One git command, with an identity of its own so a bare machine can still run these."""
+    return subprocess.run(
+        [GIT, "-C", where, "-c", "user.name=case-lint tests",
+         "-c", "user.email=tests@example.invalid", "-c", "commit.gpgsign=false"] + list(args),
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+
+
+@unittest.skipUnless(GIT, "git is not on PATH")
+class ArchivesTracked(unittest.TestCase):
+    """A case that cites an archive nobody committed is a case whose rows are on one disk only.
+
+    Measured in this project's own books on 2026-09-08: three archive files quoted by name in
+    their cases had never been `git add`ed, and the check that would have caught it did not
+    exist. The library sits in a private repository nested inside a public one, so the outer
+    `git status` was clean throughout.
+    """
+
+    NAME = "C-01_synthetic.md"
+    ARCHIVE = "C-01_synthetic_决策附录_2026-09-09.md"
+
+    def library(self, where):
+        """A case citing one archive, both on disk, in a directory of their own."""
+        os.makedirs(where, exist_ok=True)
+        path = os.path.join(where, self.NAME)
+        os.replace(case(self.NAME, e_rows=[e_row("E-01", "在跑")],
+                        goal="rows moved out to `%s`" % self.ARCHIVE), path)
+        with io.open(os.path.join(where, self.ARCHIVE), "w", encoding="utf-8") as fh:
+            fh.write("# moved verbatim, nothing deleted or altered\n")
+        return path
+
+    def check(self, path):
+        return results(path)["7 archives tracked"]
+
+    def fresh(self, name):
+        where = os.path.join(FIXTURES, name)
+        shutil.rmtree(where, ignore_errors=True)
+        return where
+
+    def test_an_archive_nobody_added_is_a_finding_and_git_add_settles_it(self):
+        where = self.fresh("gate-plain")
+        path = self.library(where)
+        git(where, "init", "-q")
+        git(where, "add", self.NAME)
+        git(where, "commit", "-q", "-m", "the case, without its archive")
+
+        status, items, fix = self.check(path)
+        self.assertEqual("bad", status)
+        self.assertEqual(1, len(items), items)
+        self.assertIn(self.ARCHIVE, items[0][1])
+        self.assertIn("git add", fix)
+
+        git(where, "add", self.ARCHIVE)
+        lint._TOPLEVEL.clear()
+        status, items, _ = self.check(path)
+        self.assertEqual("ok", status)
+        self.assertIn("all tracked", items[0][1])
+
+    def test_a_clean_outer_repository_does_not_speak_for_a_nested_one(self):
+        outer = self.fresh("gate-nested")
+        inner = os.path.join(outer, "private")
+        os.makedirs(inner, exist_ok=True)
+        with io.open(os.path.join(outer, ".gitignore"), "w", encoding="utf-8") as fh:
+            fh.write("private/\n")
+        git(outer, "init", "-q")
+        git(outer, "add", ".gitignore")
+        git(outer, "commit", "-q", "-m", "outer repository, ignoring the private one")
+
+        path = self.library(inner)
+        git(inner, "init", "-q")
+        git(inner, "add", self.NAME)
+        git(inner, "commit", "-q", "-m", "the case, without its archive")
+
+        self.assertEqual("", git(outer, "status", "--porcelain").stdout.strip(),
+                         "the outer repository has to look clean for this test to mean anything")
+        lint._TOPLEVEL.clear()
+        status, items, _ = self.check(path)
+        self.assertEqual("bad", status)
+        self.assertEqual(1, len(items), items)
+        self.assertIn(os.path.realpath(inner), os.path.realpath(items[0][1].split("books of ")[-1]))
+
+    def test_a_library_outside_git_reports_a_skip_and_no_finding(self):
+        where = self.fresh("gate-nogit")
+        path = self.library(where)
+        lint._TOPLEVEL.clear()
+        status, items, _ = self.check(path)
+        self.assertEqual("skip", status)
+        self.assertIn("not inside a git repository", items[0][1])
+
+    def test_a_library_git_ignores_reports_a_skip_and_no_finding(self):
+        """A repository that keeps its cases out of git is a legitimate shape, not a failure."""
+        where = self.fresh("gate-ignored")
+        os.makedirs(where, exist_ok=True)
+        git(where, "init", "-q")
+        cases = os.path.join(where, "cases")
+        path = self.library(cases)
+        with io.open(os.path.join(where, ".gitignore"), "w", encoding="utf-8") as fh:
+            fh.write("cases/\n")
+        git(where, "add", ".gitignore")
+        git(where, "commit", "-q", "-m", "cases stay out of the repository")
+        lint._TOPLEVEL.clear()
+        status, items, _ = self.check(path)
+        self.assertEqual("skip", status)
+        self.assertIn("not on this repository's books", items[0][1])
+
+    def test_an_archive_the_case_never_names_is_not_this_case_s_to_answer_for(self):
+        where = self.fresh("gate-uncited")
+        os.makedirs(where, exist_ok=True)
+        path = os.path.join(where, self.NAME)
+        os.replace(case(self.NAME, e_rows=[e_row("E-01", "在跑")]), path)
+        with io.open(os.path.join(where, self.ARCHIVE), "w", encoding="utf-8") as fh:
+            fh.write("# an archive the case does not point at\n")
+        git(where, "init", "-q")
+        git(where, "add", self.NAME)
+        git(where, "commit", "-q", "-m", "the case only")
+        lint._TOPLEVEL.clear()
+        status, items, _ = self.check(path)
+        self.assertEqual("ok", status)
+        self.assertIn("no archive file is cited", items[0][1])
 
 
 class LiftedBlocks(unittest.TestCase):

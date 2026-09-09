@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """case-lint.py — health check for case files, run against one file or a library.
 
-Six checks, each reported on its own (every finding prints as `file:line`):
+Seven checks, each reported on its own (every finding prints as `file:line`):
   1. takeover load   what one takeover has to read in, in characters, in three
                      bands — <=10,000 green / <=15,000 yellow / above that must
                      be slimmed before the case changes hands
@@ -21,8 +21,12 @@ Six checks, each reported on its own (every finding prints as `file:line`):
                      done / dropped / moved to is read as still waiting, and
                      that row keeps its place in the slice for good
   6. table columns   any row whose cell count is off its header row — almost
-                     always an unescaped `|` inside somebody's sentence, which
-                     puts every column past it out of step
+                     always a bare `|` inside somebody's sentence, which puts
+                     every column past it out of step
+  7. archives tracked  every archive file the case cites by name is on the books
+                     of the repository the case file itself lives in. A library
+                     kept outside git is a legitimate shape and reports a skip,
+                     not a finding
 
 Checks 1 and 2 keep no second copy of the rule: they lift the python block out of
 `skills/ctx-takeover/SKILL.md` and `skills/ctx-handoff/SKILL.md` and run it as it
@@ -46,6 +50,7 @@ import argparse
 import io
 import os
 import re
+import subprocess
 import sys
 from contextlib import redirect_stdout
 
@@ -83,6 +88,7 @@ CHECK_NAMES = [
     "4 D struck rows",
     "5 inbox disposal",
     "6 table columns",
+    "7 archives tracked",
 ]
 
 
@@ -419,6 +425,112 @@ def check_table_columns(path, lines):
     return ("bad" if items else "ok"), items, fix
 
 
+# ---------------------------------------------------------------- the repository a case lives in
+
+_TOPLEVEL = {}
+
+
+def git_toplevel(directory):
+    """The repository `directory` belongs to, or None if it belongs to none.
+
+    Asked of the directory the case file is in, never of the working directory: a case library
+    kept as its own private repository nested inside a public one is the ordinary shape, and
+    the outer repository knows nothing about what the inner one has on its books. `git status`
+    run in the outer one comes back clean whatever the inner one is carrying.
+    """
+    directory = os.path.abspath(directory)
+    if directory in _TOPLEVEL:
+        return _TOPLEVEL[directory]
+    top = None
+    try:
+        got = subprocess.run(["git", "-C", directory, "rev-parse", "--show-toplevel"],
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             universal_newlines=True, timeout=20)
+        if got.returncode == 0 and got.stdout.strip():
+            top = got.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        top = None
+    _TOPLEVEL[directory] = top
+    return top
+
+
+def untracked(top, paths):
+    """Which of `paths` this repository does not have on its books, in the order given."""
+    if not paths:
+        return []
+    try:
+        got = subprocess.run(["git", "-C", top, "ls-files", "--error-unmatch", "--"] + paths,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             universal_newlines=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return []  # git itself is unusable: say nothing rather than report a false finding
+    if got.returncode == 0:
+        return []  # every one of them is tracked, in one call
+    if len(paths) == 1:
+        return list(paths)
+    out = []
+    for one in paths:  # the call above stops at the first miss, so name them one at a time
+        out += untracked(top, [one])
+    return out
+
+
+def cited_archives(path, lines):
+    """[(file name, first line it is named on)] for the archives this case points at.
+
+    An archive is a file beside the case whose name starts with the case file's own name —
+    `<case>_decision-archive_<date>.md` and its two siblings, and anything else a project
+    splits off the same way. Cited = its name appears somewhere in the case text: a file
+    sitting in the directory that the case never mentions is not this case's to answer for.
+    """
+    directory = os.path.dirname(os.path.abspath(path))
+    here = os.path.basename(path)
+    stem = here[:-3]
+    try:
+        beside = sorted(os.listdir(directory))
+    except OSError:
+        return []
+    found = []
+    for name in beside:
+        if name == here or not name.endswith(".md") or not name.startswith(stem + "_"):
+            continue
+        for n, line in enumerate(lines, 1):
+            if name in line:
+                found.append((name, n))
+                break
+    return found
+
+
+def check_archives_tracked(path, lines):
+    """7. The archives a case cites, checked against the books of the repository it lives in.
+
+    Slimming a case moves rows verbatim into an archive file and leaves a pointer behind. Until
+    that file is committed the pointer leads nowhere for anybody but this machine, and the
+    move has quietly deleted the rows. Measured in this project's own books on 2026-09-08:
+    three archive files cited in full by their cases had never been added at all.
+    """
+    directory = os.path.dirname(os.path.abspath(path))
+    cited = cited_archives(path, lines)
+    fix = "`git add` it in the repository the case file is in and commit it — until then the " \
+          "pointer in the case leads nowhere for anybody else, and the rows it points at were " \
+          "moved out of the case and are on no other copy. A clean `git status` in an outer " \
+          "repository says nothing about a case library nested inside it"
+    if not cited:
+        return "ok", [("-", "no archive file is cited by name")], ""  # nothing to ask git about
+    top = git_toplevel(directory)
+    if not top:
+        return "skip", [("-", "not inside a git repository — nothing to check against")], ""
+    if untracked(top, [os.path.abspath(path)]):
+        return "skip", [("-", "the case file itself is not on this repository's books "
+                              "(%s) — a library kept outside git is a legitimate shape" % top)], ""
+    missing = set(untracked(top, [os.path.join(directory, n) for n, _ in cited]))
+    items = [(n, "%s is cited here but is not on the books of %s" % (name, top))
+             for name, n in cited if os.path.join(directory, name) in missing]
+    if items:
+        return "bad", items, fix
+    return "ok", [("-", "%d cited archive%s, all tracked in %s"
+                   % (len(cited), "" if len(cited) == 1 else "s", top))], ""
+
+
 # ---------------------------------------------------------------- running and reporting
 
 def lint_file(path, rules):
@@ -434,10 +546,11 @@ def lint_file(path, rules):
         (CHECK_NAMES[3],) + check_d_struck(path, lines),
         (CHECK_NAMES[4],) + check_inbox_disposal(path, lines),
         (CHECK_NAMES[5],) + check_table_columns(path, lines),
+        (CHECK_NAMES[6],) + check_archives_tracked(path, lines),
     ]
 
 
-BADGE = {"ok": "ok  ", "warn": "WARN", "bad": "FAIL", "n/a": "--  "}
+BADGE = {"ok": "ok  ", "warn": "WARN", "bad": "FAIL", "n/a": "--  ", "skip": "--  "}
 
 
 def render(path, results, terse=False):
@@ -481,7 +594,7 @@ def collect(target):
 def main(argv=None):
     ap = argparse.ArgumentParser(
         prog="case-lint.py", add_help=True,
-        description="Health check for case files: six rules the docs state, checked in one run.")
+        description="Health check for case files: seven rules the docs state, checked in one run.")
     ap.add_argument("target", help="a case file, or a case library directory")
     ap.add_argument("--quiet", action="store_true",
                     help="print nothing unless something is wrong (for hooks)")
