@@ -276,6 +276,50 @@ class Thresholds(unittest.TestCase):
         self.assertEqual(0, result.returncode)
 
 
+class BandMemory(unittest.TestCase):
+    """What happens after the reading drops back — a compact, say — and climbs again.
+
+    The doorbell keeps nothing between turns: every run reads the newest record and decides
+    from that alone. So it goes quiet the moment the reading falls under the line, and it rings
+    again the moment the reading is back over one, band already reported or not. "Once per
+    band" is not enforced here at all: it is an instruction to the session, which checks it
+    against its own earlier replies, and the band is named inside that instruction so the
+    question it asks — "have I already said yellow?" — has an answer in the visible thread.
+    """
+
+    def test_a_reading_that_drops_back_under_the_line_prints_nothing(self):
+        # over red, then a compact: the newest record is what counts, so the bell stops
+        path = write_transcript("dropped.ndjson", [
+            assistant(OVER_RED, mid="msg_before_compact"),
+            assistant(UNDER_BOTH, mid="msg_after_compact"),
+        ])
+        result = run(path)
+        self.assertEqual("", result.stdout)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_climbing_back_into_a_band_rings_the_bell_again(self):
+        """The hook has no memory of the earlier crossing, and does not pretend to."""
+        path = write_transcript("climbed-back.ndjson", [
+            assistant(IN_YELLOW, mid="msg_first_crossing"),
+            assistant(UNDER_BOTH, mid="msg_after_compact"),
+            assistant(IN_YELLOW, mid="msg_second_crossing"),
+        ])
+        first = json.loads(run(path).stdout)["systemMessage"]
+        self.assertIn("418k / yellow 400k", first)
+        # and the same transcript read twice gives the same line: nothing is carried over
+        self.assertEqual(first, json.loads(run(path).stdout)["systemMessage"])
+
+    def test_the_instruction_names_the_band_it_is_about(self):
+        """Suppression is the session's to do, so the sentence has to be checkable by it."""
+        for numbers, band in ((IN_YELLOW, "yellow"), (OVER_RED, "red")):
+            with self.subTest(band=band):
+                path = write_transcript("band-%s.ndjson" % band, [assistant(numbers)])
+                context = json.loads(run(path).stdout)["hookSpecificOutput"]["additionalContext"]
+                self.assertIn("already passed a %s reading" % band, context)
+                self.assertIn("until the band changes", context)
+                self.assertIn("Never act unasked", context)
+
+
 class TailRead(unittest.TestCase):
     """The doorbell fires every turn on logs that reach tens of MB. It has to read the tail."""
 

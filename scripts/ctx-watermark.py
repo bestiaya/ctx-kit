@@ -87,7 +87,10 @@ USAGE_KEYS = ("input_tokens", "cache_read_input_tokens", "cache_creation_input_t
 
 
 def parse_threshold(raw, default):
-    """A threshold from the environment. '300000' and '300k' both mean 300000.
+    """A threshold from the environment. '250000' and '250k' both mean 250000.
+
+    The number in that example is deliberately not one of the lines this script ships with:
+    an example that happens to read like a default gets quoted as one.
 
     Anything else — empty, misspelled, negative, zero — falls back to `default` without a
     word, because a typo in a config file must not silence the doorbell or crash the turn.
