@@ -56,7 +56,10 @@ EXCLUDE_NAMES = ("TASKBOARD.md",)
 
 SECTION_RE = re.compile(r"^##\s+([A-Z])\.?(\s|$)")
 
-# A `\|` inside a cell is content, not a separator (ctx-handoff §4 step 2).
+# A `\|` inside a cell is content, not a separator (ctx-handoff §4 step 2). Three more places
+# carry this same split and all four have to agree, or a row that escapes its pipes by the rule
+# reads as one shape here and another there: the loader in `ctx-takeover` §2, the length block in
+# `ctx-handoff` §3, and the same block over a whole library in `ctx-checkup` §4.
 CELL_SPLIT = re.compile(r"(?<!\\)\|")
 
 # The six status words and nothing else, both sides anchored; leading punctuation
@@ -96,7 +99,13 @@ def is_case_file(path):
 # ---------------------------------------------------------------- table reading
 
 def split_cells(line):
-    """Cells of one markdown row, split on unescaped pipes only."""
+    """Cells of one markdown row, split on unescaped pipes only.
+
+    The three python blocks the skills own split the same way, line for line. Measured on one
+    8-column row carrying one `\\|`: they used to split at every `|` they saw and make 9 cells
+    of it against the 8 counted here, so a row written by the rule read as malformed to a
+    takeover and was loaded whole, while this checker never said a word about it.
+    """
     parts = CELL_SPLIT.split(line.strip())
     if parts and not parts[0].strip():
         parts = parts[1:]

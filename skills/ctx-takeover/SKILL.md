@@ -29,7 +29,12 @@ import sys,re
 L=open(sys.argv[1],encoding='utf-8').read().split('\n')
 P=[i for i,l in enumerate(L) if re.match(r'^##\s+[A-Z]\.?(\s|$)',l)]+[len(L)]
 S={L[i].split()[1].rstrip('.'):(i,P[n+1]) for n,i in enumerate(P[:-1])}
-z=lambda r:[c.strip() for c in r.strip().strip('|').split('|')]
+W=re.compile(r'(?<!\\)\|')  # split on unescaped pipes only: a \| inside a cell is content, not a separator (ctx-handoff §4 step 2). The same split is written three more times and the four must agree: the length block in ctx-handoff §3, the same block over the whole library in ctx-checkup §4, and split_cells in scripts/case-lint.py
+def z(r):  # the cells of one markdown row
+    p=[c.strip() for c in W.split(r.strip())]
+    if p and not p[0]: p=p[1:]
+    if p and not p[-1]: p=p[:-1]
+    return p
 q=lambda w:next((i for i,x in enumerate(h) if re.search(w,x,re.I)),-1)  # a column by its header text, never by number
 g=lambda r,i:(z(r)+['']*9)[i]; M=lambda s,n=200:s[:n]+('…' if len(s)>n else '')  # ellipsis at the cut, or "brief: to be written" comes out as "brief:" and reads as the opposite
 T=lambda r:'|'+'|'.join(M(c) for c in z(r))+'|'
@@ -64,22 +69,27 @@ if 'I' in S:
         # longer guesses at what the writer meant: the old fallback took "no waiting word in the cell" for settled,
         # and the ways to word a cell are endless — "shown to the owner, not sent" holds no waiting word, and that
         # live row went missing without a sound. Three agreed openings state the rule in one sentence, and they are
-        # what the docs teach anyway. A row whose cell count differs from the header row's has an unescaped | somewhere
-        # in its own text: every column past that point is out of step, so the cell sitting at the disposition position
-        # is a fragment of somebody's sentence and nothing in that row can be trusted by position. Do not try to guess
-        # which fragment was meant — take the row as undisposed, load it whole, and count it in the note (measured:
-        # two live rows whose disposition column came out as "#" while the real cell said "for my successor to deal
-        # with"). Dropping a live obligation costs far more than carrying one settled row, so write dispositions
-        # starting done / dropped / moved to, and escape a pipe inside your own text as \|.
+        # what the docs teach anyway. A row whose cell count differs from the header row's has a bare | somewhere in
+        # its own text: every column past that point is out of step, so the cell sitting at the disposition position
+        # is a fragment of somebody's sentence and nothing in that row can be trusted by position. A pipe written as
+        # \| is content and splits nothing — here, in the length block of ctx-handoff §3, in ctx-checkup §4 and in
+        # case-lint.py alike — so a row that escapes its pipes by the rule is read as the shape it declares and is
+        # not counted below. Measured on one 8-column row carrying one \|: this line used to split at every | it saw
+        # and made 9 cells of it, against the 8 case-lint counted, which is how a correctly written row came to be
+        # read as malformed. Do not try to guess which fragment was meant — take the row as undisposed, load it
+        # whole, and count it in the note (measured: two live rows whose disposition column came out as "#" while
+        # the real cell said "for my successor to deal with"). Dropping a live obligation costs far more than
+        # carrying one settled row, so write dispositions starting done / dropped / moved to, and escape a pipe
+        # inside your own text as \|.
         n=re.compile(r'^\W*(已办|不办|已转|done|dropped|moved)',re.I)
-        x=lambda r:len(z(r))!=len(h)  # out of step with the header = an unescaped | in the text; position means nothing on that row
+        x=lambda r:len(z(r))!=len(h)  # out of step with the header = a bare | in the text (a \| does not split); position means nothing on that row
         u=lambda r:x(r) or not n.match(g(r,d))
         D=K[2:]; U=[i for i in D if u(L[i])]; V=[i for i in D if not u(L[i])]; C=V[-3:]; X=[i for i in D if x(L[i])]  # newest = last, the inbox is append-only
         o+=['']+[M(T(L[i]),240) if i in C else L[i] for i in range(a,b) if i not in D or i in U or i in C]  # the cap is on the whole rendered row, not per cell: a settled row is a reminder, and 200 a cell over 6 cells is 1,200 characters of it
         if X or len(V)>len(C) or any(len(T(L[i]))>240 for i in C):
             w=f', the other {len(V)-len(C)} left in the case' if len(V)>len(C) else ''
             s=f' + the last {len(C)} of {len(V)} disposed, each cut to 240 chars{w}' if V else ''
-            y=f' Cell count off the header on {len(X)} of them (an unescaped | inside a cell): loaded whole as undisposed, go and check those against the case.' if X else ''
+            y=f' Cell count off the header on {len(X)} of them (a bare | inside a cell — \\| is content and does not split): loaded whole as undisposed, go and check those against the case.' if X else ''
             o+=[f'<!-- inbox {len(D)} rows: all {len(U)} undisposed in full{s} - fetch on target. Undisposed = a blank disposition cell, or one not opening with done / dropped / moved to.{y} -->']
 t='\n'.join(o);print(t);print(f'\n=== characters loaded this time: {len(t)} ===')
 PY

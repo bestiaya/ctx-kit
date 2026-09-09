@@ -46,6 +46,12 @@ Stop there: **closing a case means only this, that nobody takes it over again** 
 ```bash
 python3 - <path to this case file> <<'PY'
 import sys,re
+W=re.compile(r'(?<!\\)\|')  # split on unescaped pipes only: a \| inside a cell is content, not a separator (§4 step 2). Four places carry this same split and must agree — the loader in ctx-takeover §2, this block, the same block over the whole library in ctx-checkup §4, and split_cells in scripts/case-lint.py
+def z(r):  # the cells of one markdown row
+    p=[c.strip() for c in W.split(r.strip())]
+    if p and not p[0]: p=p[1:]
+    if p and not p[-1]: p=p[:-1]
+    return p
 w=[]
 for p in sys.argv[1:]:
     L=open(p,encoding='utf-8').read().split('\n')
@@ -53,10 +59,10 @@ for p in sys.argv[1:]:
     for n,i in enumerate(P[:-1]):
         if L[i].split()[1].rstrip('.')!='E': continue
         R=[(k+1,l) for k,l in enumerate(L[i:P[n+1]],i) if l.lstrip().startswith('|')]
-        h=[c.strip() for c in R[0][1].strip().strip('|').split('|')] if R else []
+        h=z(R[0][1]) if R else []
         C=[x for x,c in enumerate(h) if re.search(r'判定|verdict|影响|impact|plan',c,re.I)]
         for ln,l in R[2:]:
-            c=[x.strip() for x in l.strip().strip('|').split('|')]
+            c=z(l)
             w+=[(len(c[x]),f'{p}:{ln} [{h[x]}] {len(c[x])} chars') for x in C if x<len(c) and len(c[x])>200]
 for n,s in sorted(w,reverse=True): print(s)
 print(f'--- {len(w)} cells over 200 characters (reported, not fixed — the author slims their own) ---')
