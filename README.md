@@ -1,6 +1,6 @@
 # ctx-kit
 
-**Current release: ctx-kit v0.8.0** — the same number `.claude-plugin/plugin.json` carries; `scripts/release-check.py` reports drift if the two disagree.
+**Current release: ctx-kit v0.9.0** — the same number `.claude-plugin/plugin.json` carries; `scripts/release-check.py` reports drift if the two disagree.
 
 中文 / Chinese: [README.zh-CN.md](README.zh-CN.md) · The six skill prompts are English only — each one tells the session to speak the user's language and to write the case file in it, so working in Chinese through the English prompts loses nothing; docs 01–06 are in Chinese for now. The English prompts gloss the nine case-file section names in Chinese — `A Goal (目标)` and so on — so that a case written in either language stays readable to a session working in the other.
 
