@@ -12,10 +12,15 @@ What it is for
   Two further readings ride on the same run, and neither one sets a line either:
     - when the bell rings, one more line saying by which route this context filled up, taken
       from cache-audit.py's own split so the doorbell and the weekly checkup cannot disagree.
-      No bell, no make-up line: a quiet session is not parsed in full;
+      No bell, no make-up line: a quiet session is not parsed in full. The bell fires on the
+      watermark and on nothing else — the make-up rides on it and can never ring it, however
+      large any one route in it grows;
     - a session that started before the ctx-kit files it is running were last written gets told
-      so, once, whatever its watermark. That one is not about spending — the fixes made since a
-      long session opened reach new sessions and not it, and until now nothing said so.
+      so, whatever its watermark. That one is not about spending — the fixes made since a long
+      session opened reach new sessions and not it, and until now nothing said so. This script
+      keeps no state between turns, so it prints that line on every turn the comparison holds;
+      saying it only once is the session's own obligation, the same look-back the watermark
+      bands ask for, and `CTXKIT_UPDATE_HINT=off` switches the line off outright.
 
 The measure, the same one in three places
       watermark = input_tokens + cache_read_input_tokens + cache_creation_input_tokens
@@ -56,10 +61,13 @@ Thresholds
 Where the installed files are
   `${CLAUDE_PLUGIN_ROOT}` when it is set — a plugin install sets it, and it is then the answer,
   found files or not — otherwise `~/.claude`, where the README's manual-install step puts the
-  same tree. Underneath either one the newest mtime among `skills/ctx-*/SKILL.md` and
-  `scripts/*.py` is taken as "when this machine's copy was last written". Nothing there to
-  stat means no reading and nothing printed, which is also what makes this quiet for anybody
-  who keeps the kit somewhere else entirely.
+  same tree. Underneath either one the newest mtime among `skills/ctx-*/SKILL.md` and the
+  kit's own scripts, each named rather than globbed, is taken as "when this machine's copy was
+  last written" — a `scripts/*.py` glob would have read somebody else's script in that same
+  directory as a ctx-kit update. Nothing there to stat means no reading and nothing printed,
+  which is also what makes this quiet for anybody who keeps the kit somewhere else entirely.
+  `CTXKIT_UPDATE_HINT=off` turns that reading off for good, which the two watermark lines do
+  not need because they can be moved instead.
 
 Failure posture
   A doorbell may never break the turn it rings in. Missing file, unreadable file, half-written
@@ -85,8 +93,15 @@ PREFIX = "[ctx-kit watermark]"
 # watermark must not answer to that description. Greppable on its own terms.
 UPDATE_PREFIX = "[ctx-kit update]"
 
-# What counts as "this machine's copy of ctx-kit", under whichever root is found below.
-INSTALLED = (("skills", "ctx-*", "SKILL.md"), ("scripts", "*.py"))
+# What counts as "this machine's copy of ctx-kit", under whichever root is found below. The
+# scripts are named one by one rather than globbed: `scripts/*.py` also matches whatever else
+# the owner keeps in `~/.claude/scripts/`, and editing one of those is not a ctx-kit update.
+INSTALLED = (
+    ("skills", "ctx-*", "SKILL.md"),
+    ("scripts", "cache-audit.py"),
+    ("scripts", "ctx-watermark.py"),
+    ("scripts", "case-lint.py"),
+)
 
 # What the model is told to do about the reading. The durable version of this lives in the
 # rule block (CLAUDE-snippet.md); this sentence is here so the reminder still works for someone
@@ -194,12 +209,28 @@ def last_watermark(path):
 
 
 # Said once per session, not once per band: the fact does not change while the session lives.
+# "Once" is the session's obligation and not this script's: the hook keeps nothing between
+# turns and re-prints the line on every turn the comparison holds, exactly as it re-prints a
+# band. The look-back below is the whole of the mechanism -- and a compact is what removes the
+# replies it looks back over, so a compacted session honestly has nothing to find and may say
+# it again. Anybody who would rather not have the line at all sets CTXKIT_UPDATE_HINT=off.
 UPDATE_ACTION = (
     "Say this once per session: look back over your own earlier replies in this session -- if "
     "you have already told the owner that this session predates the installed files, say "
     "nothing about it this turn. It is a fact to pass on, not something to act on: do not "
     "reinstall anything and do not close the session over it."
 )
+
+
+def update_wanted():
+    """Whether the staleness line is wanted at all. Anything but an off word means yes.
+
+    The two watermark lines need no such switch: they can be moved out of the way instead.
+    This one has no line to move — it holds for the whole life of a session that opened before
+    the last install — so without a switch a long session would carry it every turn to its end.
+    """
+    text = str(os.environ.get("CTXKIT_UPDATE_HINT", "")).strip().lower()
+    return text not in ("off", "0", "no", "false")
 
 
 def installed_root():
@@ -302,10 +333,10 @@ def make_up_reading(path):
         return (
             "%s what filled it, this log on its own: self %.0f%% (of the whole, %.0f%% is"
             " prompts written for a subagent), echo %.0f%%, reports %.0f%%, replies %.0f%%,"
-            " other %.0f%% -- the system prompt and the tool definitions are paid every turn"
-            " and are outside this split"
+            " other %.0f%%, out of %s characters -- the system prompt and the tool definitions"
+            " are paid every turn and are outside this split"
             % (PREFIX, share("self"), share("dispatch"), share("echo"), share("reports"),
-               share("replies"), share("other"))
+               share("replies"), share("other"), format(whole, ","))
         )
     except Exception:
         return None
@@ -346,7 +377,7 @@ def main():
             if made:
                 readings.append(made)
 
-    update = update_reading(path)
+    update = update_reading(path) if update_wanted() else None
     if update:
         readings.append(update)
         actions.append(UPDATE_ACTION)

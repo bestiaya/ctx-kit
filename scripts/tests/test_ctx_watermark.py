@@ -512,6 +512,40 @@ class StaleInstall(unittest.TestCase):
         # A fact to pass on, not something to act on.
         self.assertIn("do not reinstall anything", context)
 
+    def test_the_switch_turns_the_reading_off(self):
+        """`CTXKIT_UPDATE_HINT=off` and there is nothing to say, however stale the session.
+
+        The watermark lines need no such switch — they can be moved instead — but this
+        comparison holds for the whole life of a session that opened before the last install,
+        and the hook re-prints on every turn, so without a switch there is no way out of it.
+        """
+        path = self.quiet_log("stale-switched-off.ndjson")
+        root = installed("install-newer", SESSION_STARTED + HOUR)
+        for word in ("off", "0", "no", "false"):
+            with self.subTest(setting=word):
+                result = run(path, CLAUDE_PLUGIN_ROOT=root, CTXKIT_UPDATE_HINT=word)
+                self.assertEqual("", result.stdout)
+                self.assertEqual(0, result.returncode, result.stderr)
+        # Anything else is not an off word, and the reading comes back.
+        result = run(path, CLAUDE_PLUGIN_ROOT=root, CTXKIT_UPDATE_HINT="on")
+        self.assertTrue(json.loads(result.stdout)["systemMessage"].startswith(UPDATE_PREFIX))
+
+    def test_somebody_elses_script_in_that_directory_is_not_an_update(self):
+        """The scripts are named one by one, so a stray .py next to them moves nothing.
+
+        `~/.claude/scripts/` is the owner's directory, not the kit's. Globbing `*.py` there
+        read every script anybody keeps in it as a ctx-kit file, and editing one of those
+        would have told every older session that ctx-kit had been updated.
+        """
+        root = installed("install-with-a-stray", SESSION_STARTED - HOUR)
+        stray = os.path.join(root, "scripts", "my-own-helper.py")
+        with open(stray, "w") as handle:
+            handle.write("synthetic\n")
+        os.utime(stray, (SESSION_STARTED + HOUR, SESSION_STARTED + HOUR))
+        result = run(self.quiet_log("stale-stray.ndjson"), CLAUDE_PLUGIN_ROOT=root)
+        self.assertEqual("", result.stdout)
+        self.assertEqual(0, result.returncode, result.stderr)
+
     def test_it_rides_along_with_the_bell_as_a_second_line(self):
         path = write_transcript("stale-and-ringing.ndjson", [assistant(OVER_RED)])
         root = installed("install-newer", SESSION_STARTED + HOUR)
@@ -566,6 +600,9 @@ class MakeUp(unittest.TestCase):
         for share in ("self 40%", "echo 53%", "reports 0%", "replies 7%", "other 0%",
                       "27% is prompts written for a subagent"):
             self.assertIn(share, made)
+        # The total the percentages are of, so a reader can recompute any one of them —
+        # the same thing cache-audit.py prints under its own table.
+        self.assertIn("out of 750 characters", made)
         # The part nobody can see in a log is named rather than counted as zero.
         self.assertIn("outside this split", made)
         # It reaches the model as a reading, and brings no instruction of its own with it.
