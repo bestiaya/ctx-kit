@@ -37,16 +37,21 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
   look it up again; (2) read the **target case file's** header Pen-holder cell now — the session named in an
   inbox row is the signature, not the address; (3) **immediately before sending**, check that session with
   get_session / list_sessions — and in the same list ask whether the cell is merely out of date: filter to
-  titles under this project's working directory matching `^(?:✕\s*)?(?:(\d+)-C0N|C0N-(\d+))` (the case
-  number with its hyphen out, either naming form), drop `✕` and archived, and if the **latest** live one is
-  not that cell's session then the cell names an earlier stint — send to the latest and say so in a line
-  (a `C0N-NN` title is later than any `NN-C0N` one; inside one form the larger number is later). That
+  titles under this project's working directory matching `^(?:✕\s*)?(?:(\d+)-CNN|CNN-(\d+))` (`CNN` = the case
+  number with its hyphen out, `C-07`→`C07`; the second form is only for a project that renamed its own
+  convention part way), drop `✕` and archived, and if the **latest** live one is not that cell's session then
+  the cell names an earlier stint — send to the latest and say so in a line (where both forms are in use a
+  `CNN-NN` title is later than any `NN-CNN` one; inside one form the larger number is later). That
   redirects the address; it is not a fourth refusal condition; (4) **refuse to send if any one of these holds**: the title starts with `✕`
   (the retirement mark); `isArchived` is set; or the case header's Pen-holder cell names nobody live (awaiting
   takeover / closing / predecessor retired) — a retired session is not necessarily unreachable, so this check
-  has to come before the send; (5) where you refused, **append** a row to the target file's **inbox** (append
+  has to come before the send. **All three are asked of the address (3) left you**: where the redirect found a
+  live session of this project titled for this case, somebody live does hold it and you send there; (5) where
+  you refused, **append** a row to the target file's **inbox** (append
   only, never touch the body, so two pens never write over each other) and tell the owner in one line that the
-  case has no live pen-holder, asking whether to open a session for it; (6) only once all of it passes, send.
+  case has no live pen-holder, asking whether to open a session for it — **and where you did send, no inbox row
+  is written**: the letterbox is for a case nobody can receive on, not a copy of every delivery; (6) only once all of it passes, send,
+  addressing by title plus working directory (the session id is the signature and the tie-breaker, not the address).
   Those three are the whole of the refusal list — **whether the pen-holder has been active within the hour is
   a cost reading, not a fourth condition**: a session that has gone cold is billed at its watermark × 2 on the
   next request, worth weighing before you ring anybody, and never a reason to hold a delivery back from a live
