@@ -25,6 +25,10 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
   Say in the brief how long the reply may be: **a subagent replies in ≤1,500 characters, in three parts** — one line
   per pre-registered criterion, three key readings, and a pointer to the report. Detail stays in the report file; the
   one limit that matters most ("this reading shows X, not Y") is never the thing cut to save characters.
+  Writing is split by size and by whether it needs a source read, never by being writing: **anything under 1,000
+  characters that needs no read you write yourself** (one dispatch costs more in fixed overhead than it saves), a
+  brief over 3,000 characters or anything needing the sources read goes out — and **the wording of pre-registered
+  criteria and of decisions is always yours**, with a subagent expanding scaffolding and format around it.
 - Cross-case / cross-session delivery — looking the address up and sending are **one indivisible sequence**:
   (1) any address read earlier is **void**, however few minutes ago, and anything coming in between means you
   look it up again; (2) read the **target case file's** header Pen-holder cell now — the session named in an
