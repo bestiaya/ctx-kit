@@ -18,7 +18,7 @@
 
 1. Context overload in long sessions: the money goes into re-writing what has already been said back into cache; let the session go cold, come back, and you pay for the whole thing again; auto-compact keeps the thread and drops the detail.
 2. The information cliff when you change session, model or machine, or get auto-compacted — and have to tell the whole story again.
-3. Recording, tracking and resuming several jobs at once, and passing word between them (this is the cross-session messaging built into claude CLI — SendMessage / ListAgents since v2.1.224 (2026-08-07), idle subscription notify_when_idle since v2.1.236 (2026-08-19)) — no secret sauce, all of it ships with the agent (how to arrange several sessions and pass word between them: [recipe 5](06-RECIPES.md#配方-5多会话并行--跨会话通讯) and [sample B](06-RECIPES.md#样例-ba-会话定标准b-会话执行a-有新想法怎么告诉-b) in 06).
+3. Recording, tracking and resuming several jobs at once, and passing word between them **over the agent's own cross-session messaging** — SendMessage / ListAgents since v2.1.224 (2026-08-07), idle subscription notify_when_idle since v2.1.236 (2026-08-19). No secret sauce: the transport ships with claude CLI, and what this kit adds around it is an address, a letterbox and one check before the send (how to arrange several sessions and pass word between them: [recipe 5](06-RECIPES.md#配方-5多会话并行--跨会话通讯) and [sample B](06-RECIPES.md#样例-ba-会话定标准b-会话执行a-有新想法怎么告诉-b) in 06).
 
 **The data** (four measurements; each link opens the source and the sample):
 
@@ -193,6 +193,8 @@ Third step (manual, required): paste the whole code block from [CLAUDE-snippet.m
 
 **One side effect to know before you install**: closing out (`/ctx-handoff`) doesn't only write files — it `git add`s the files this session edited, commits them and **pushes** to the current branch's upstream. On a protected or shared branch, decide where you want that to land before you start. If it can't push (no remote, no permission, a conflict, not a git project at all) it says "not pushed + why" in the reply rather than going quiet. And if your case library sits in a git-ignored directory — this repository's own does — the case files are written to disk and never committed: close-out reports that too, it is a legitimate setup rather than a failure, and syncing that directory to another machine is then your job.
 
+**The other one is the weekly check**: `/ctx-checkup` does not only read. It writes a dated file to `CHECKUP/<date>.md` beside your case library, fills in section G of the case files it manages to pair up, updates that routine's row on the board, and puts a `✕` on sessions of this project that look abandoned — anything it is unsure of it leaves alone and reports instead. It also **spends money**: measuring the resident floor runs two one-turn headless sessions of your own project, which is two requests you are billed for.
+
 <details><summary>Manual install (no plugin)</summary>
 
 Copy `skills/ctx-*` into `~/.claude/skills/`, `agents/digest.md` into `~/.claude/agents/`, and all three of `scripts/cache-audit.py`, `scripts/ctx-watermark.py` and `scripts/case-lint.py` into `~/.claude/scripts/` (create the directory if it is not there — with no plugin root, that is the one place the kit's scripts are looked for; leave the lint out and the opt-in hook in 04's "install and self-check" finds nothing and stays silent for ever), then merge the `hooks` object from `hooks/hooks.json` into `~/.claude/settings.json` (the compact warning shows a macOS notification and falls back to stderr elsewhere). Paste the rule block as above.
@@ -223,7 +225,7 @@ Six skills, six commands. Saying it in plain words and typing the command are th
 | This session is getting expensive, or a batch of work is done | "close out", or `/ctx-handoff` | Distils the discussion into a takeover-ready case file, persists whatever hasn't been saved, **commits and pushes the files it touched this round**, then retires the session |
 | A fresh session continuing the last one | "take over C-07", or `/ctx-takeover C-NN` | Reads the case file only, old transcripts off-limits; signs as pen-holder, recites goal, case, progress and next step for your spot-check |
 | You want to know where things stand | "what's the status", or `/ctx-status` | Reads the board and the case files, reports the goal chain with its milestones and routines, where each case stands, pending decisions and one-offs in plain language |
-| Once a week, checking the bill | "weekly checkup", or `/ctx-checkup` | Runs the cache audit, flags the sessions over the pre-registered lines, backfills archive pointers in the case files |
+| Once a week, checking the bill | "weekly checkup", or `/ctx-checkup` | Runs the cache audit, flags the sessions over the pre-registered lines, backfills archive pointers in the case files — and writes, see the note below |
 
 Case files live in `_ops/CASES/` when that directory already exists, otherwise in `cases/` — or anywhere you like: put one line, `ctx-kit case library: docs/cases`, in your project `CLAUDE.md` and all six skills read it from there.
 
