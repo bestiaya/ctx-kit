@@ -12,7 +12,8 @@ The measure, the same one in three places
       watermark = input_tokens + cache_read_input_tokens + cache_creation_input_tokens
   read off the last main-thread assistant record in the session transcript. output_tokens is
   not part of it. The same three-term sum is what:
-    - scripts/cache-audit.py in this kit prints as its `ctx` column (the weekly checkup), and
+    - scripts/cache-audit.py in this kit prints in its `p50 ctx` and `peak` columns (the
+      weekly checkup), and
     - the claude CLI status line calls `used_percentage`, which its documentation defines with
       exactly these three terms and explicitly without output_tokens.
   So the doorbell, the weekly checkup and the built-in status line all quote the same number.
