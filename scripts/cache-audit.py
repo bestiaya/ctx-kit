@@ -34,6 +34,18 @@ Measures:
     session can see by which route it filled up. The fixed part (the system prompt and the tool
     definitions) is never written into a jsonl and is paid again every turn, so it sits outside
     that split rather than being counted as zero
+  - floor / entry / at = the entry phase, in three readings. floor = the context the very
+    first billable request read (input + cache_read + cache_creation, the same three-term sum
+    as p50 ctx and peak), which is what a session pays before anybody has said anything.
+    entry = how much the context had grown by the first request after the owner's **second**
+    turn, and at = which request that was. So entry is what the opening job put in front of
+    the model: on a session opened with a takeover, that is the takeover — the case loaded,
+    the skill text, the recite — and the owner's second turn is the spot-check that ends it.
+    They are readings and carry no line. **A session where the owner never spoke a second
+    time has no such boundary and prints `-` for both** rather than a substitute number: a
+    dispatched execution session, given one brief and left to run, is exactly that shape.
+    What the pair does not say is where inside the entry phase the characters went — the
+    self / echo / reports split under the table answers that, and these two do not
   - a rewrite event = not the first request, a single cache_write >150k, and the read collapsing
     to under half the existing context (a read still close to the existing context is "a big new
     block entering for the first time", not a cold rewrite of the whole thing, and does not count).
@@ -157,6 +169,29 @@ def is_report(text):
     """
     head = text.lstrip()[:400]
     return head.startswith("<task-notification>") or "<cross-session-message" in head
+
+
+# Wrappers the client writes as plain-text user records: a slash command and its output, a
+# system reminder, and the two arrival markers is_report already knows. None of them is the
+# owner taking a turn. A slash command writes the command name, its stdout and then the
+# owner's own text, so counting only what is left counts that turn once.
+CLIENT_TAGS = ("<command-name", "<local-command-stdout", "<local-command-stderr",
+               "<system-reminder", "<user-prompt-submit-hook")
+
+
+def is_owner_turn(record, text):
+    """Is this plain-text user record the owner taking a turn, rather than something arriving?
+
+    Everything the client generates is excluded, and so is anything that came from elsewhere
+    (a finished subagent, another session). What is left is somebody typing. The count is used
+    for one thing only: the owner's second turn ends the entry phase.
+    """
+    if record.get("isMeta") or record.get("isCompactSummary") or record.get("isSidechain"):
+        return False
+    head = text.lstrip()[:400]
+    if is_report(text):
+        return False
+    return not head.startswith(CLIENT_TAGS)
 
 
 def input_chars(value):
@@ -328,6 +363,10 @@ def make_up(fp):
 
 def audit(fp):
     main, compacts = {}, 0
+    # The entry phase, counted in file order: how many requests had been billed by the time
+    # the owner spoke for the second time. File order and timestamp order agree on every log
+    # this has been run against; where they would not, this reading is the one that moves.
+    owner_turns, req_seen, entry_at = 0, 0, None
     with open(fp, errors="replace") as f:
         for line in f:
             try:
@@ -336,6 +375,10 @@ def audit(fp):
                 continue
             if o.get("type") == "system" and o.get("subtype") == "compact_boundary":
                 compacts += 1
+            if o.get("type") == "user":
+                content = (o.get("message") or {}).get("content")
+                if isinstance(content, str) and is_owner_turn(o, content):
+                    owner_turns += 1
             if o.get("type") != "assistant" or o.get("isSidechain"):
                 continue
             m = o.get("message") or {}
@@ -350,6 +393,10 @@ def audit(fp):
                 cc=u.get("cache_creation_input_tokens", 0) or 0,
                 ot=u.get("output_tokens", 0) or 0,
             )
+            if mid not in main:
+                req_seen += 1
+                if owner_turns >= 2 and entry_at is None:
+                    entry_at = req_seen
             if mid not in main or rec["ot"] > main[mid]["ot"]:
                 main[mid] = rec
     rows = sorted(main.values(), key=lambda r: r["ts"])
@@ -375,6 +422,10 @@ def audit(fp):
     ]
     eq = sum(r["it"] + 0.1 * r["cr"] + 2 * r["cc"] + 5 * r["ot"] for r in rows)
     rw = sum(r["cc"] for r in rewrites) * 2
+    # The first request after the owner's second turn reads the floor plus everything the
+    # opening job added, so the difference between the two is what that job cost. No second
+    # turn, or a boundary past the last request, leaves both undefined rather than guessed at.
+    entry = ctx[entry_at - 1] - ctx[0] if entry_at and entry_at <= len(ctx) else None
     return dict(
         file=os.path.basename(fp),
         last=last,
@@ -386,6 +437,9 @@ def audit(fp):
         rewrites=len(rewrites),
         rw_share=(rw / eq * 100) if eq else 0.0,
         compacts=compacts,
+        floor=ctx[0],
+        entry=entry,
+        entry_at=entry_at if entry is not None else None,
     )
 
 
@@ -509,8 +563,8 @@ def main():
     # self and reports sit to the left of echo rather than at the end, so a reader taking the
     # last two columns off a row still gets the same pair as before this was added.
     hdr = (f"{'session':34} {'reqs':>5} {'day':>3} {'p50 ctx':>9} {'peak':>9} {'costM':>7}"
-           f" {'rw':>4} {'rw%':>7} {'cmp':>4} {'self':>11} {'reports':>9} {'echo':>12}"
-           f" {'bash%':>6}")
+           f" {'rw':>4} {'rw%':>7} {'cmp':>4} {'floor':>9} {'entry':>9} {'at':>4}"
+           f" {'self':>11} {'reports':>9} {'echo':>12} {'bash%':>6}")
     emit(hdr)
     shown = 0
     for _when, fp, r in read:
@@ -526,9 +580,12 @@ def main():
             else ""
         )
         bash_share = (100.0 * r["bash"] / r["echo"]) if r["echo"] else 0.0
+        entry = f"{r['entry']:,}" if r["entry"] is not None else "-"
+        at = str(r["entry_at"]) if r["entry_at"] is not None else "-"
         emit(
             f"{r['file'][:34]:34} {r['n']:>5} {r['days']:>3} {r['p50']:>9,} {r['peak']:>9,}"
             f" {r['eq_m']:>7.1f} {r['rewrites']:>4} {r['rw_share']:>6.0f}% {r['compacts']:>4}"
+            f" {r['floor']:>9,} {entry:>9} {at:>4}"
             f" {r['make']['self']:>11,} {r['make']['reports']:>9,} {r['echo']:>12,}"
             f" {bash_share:>5.0f}%{flag}"
         )
@@ -538,6 +595,15 @@ def main():
         # single tool result ever reaching it. Nothing passes or fails on either number.
         total_echo = sum(r["echo"] for _w, _f, r in read)
         blind = [r for _w, _f, r in read if r["echo"] > ECHO_GATE and r["biggest"] <= ECHO_GATE]
+        blank = sum(1 for _w, _f, r in read if r["entry"] is None)
+        emit(
+            f"# floor = what the first request read before anybody said anything;"
+            f" entry = how much more the context held by request `at`, the first one after the"
+            f" owner's second turn (on a session opened with a takeover, that is the takeover)."
+            f" Readings, no line is set on either"
+            + (f"; {blank} of {shown} row(s) print `-` because the owner never took a second"
+               f" turn, so those sessions have no such boundary" if blank else "")
+        )
         emit(
             f"# echo across the {shown} session(s) shown: {total_echo:,} characters"
             f" (subagent transcripts included)"

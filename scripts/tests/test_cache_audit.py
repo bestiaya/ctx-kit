@@ -322,6 +322,96 @@ class Echo(unittest.TestCase):
         self.assertIn("--out needs a path", done.stderr)
 
 
+def billed(when, mid, ctx, out=100):
+    """One billable assistant record whose context reads exactly `ctx` tokens."""
+    given = 10
+    read = (ctx - given) // 2
+    return {
+        "type": "assistant", "isSidechain": False, "timestamp": when,
+        "message": {"id": mid, "role": "assistant",
+                    "usage": {"input_tokens": given, "cache_read_input_tokens": read,
+                              "cache_creation_input_tokens": ctx - given - read,
+                              "output_tokens": out}},
+    }
+
+
+class EntryPhase(unittest.TestCase):
+    """floor / entry / at: what a session pays before anybody speaks, and what the opening job added.
+
+    The boundary is the owner's second turn — on a session opened with a takeover, the
+    spot-check that ends the recite. Where there is no second turn there is no boundary, and
+    the two cells say so rather than standing in a number that would be read as a takeover.
+    """
+
+    def setUp(self):
+        self.where = os.path.join(FIXTURES, self._testMethodName)
+        if os.path.isdir(self.where):
+            shutil.rmtree(self.where)
+        os.makedirs(self.where)
+
+    def write(self, stem, records):
+        path = os.path.join(self.where, stem + EXT)
+        with io.open(path, "w", encoding="utf-8") as fh:
+            for r in records:
+                fh.write(json.dumps(r) + "\n")
+        return path
+
+    def cells(self, out, stem):
+        """(floor, entry, at) off one row — echo and bash% stay the last two columns."""
+        for line in out.split("\n"):
+            if line.startswith(stem + EXT):
+                parts = line.split()
+                return parts[-7], parts[-6], parts[-5]
+        self.fail("no row for %s in:\n%s" % (stem, out))
+
+    def test_the_owners_second_turn_ends_the_entry_phase(self):
+        self.write("s", [
+            typed("take over the case"),
+            billed("2026-09-09T10:00:00.000Z", "m0", 10_000),
+            billed("2026-09-09T10:01:00.000Z", "m1", 30_000),
+            typed("looks right, carry on"),
+            billed("2026-09-09T10:02:00.000Z", "m2", 45_000),
+            billed("2026-09-09T10:03:00.000Z", "m3", 60_000),
+        ])
+        done = run(self.where)
+        self.assertEqual(0, done.returncode, done.stderr)
+        self.assertEqual(("10,000", "35,000", "3"), self.cells(done.stdout, "s"))
+
+    def test_with_no_second_turn_both_cells_say_so(self):
+        """A dispatched session is given one brief and left to run: no boundary to measure."""
+        self.write("s", [
+            typed("here is the brief, get on with it"),
+            billed("2026-09-09T10:00:00.000Z", "m0", 12_000),
+            billed("2026-09-09T10:01:00.000Z", "m1", 90_000),
+        ])
+        done = run(self.where)
+        self.assertEqual(("12,000", "-", "-"), self.cells(done.stdout, "s"))
+        self.assertIn("1 of 1 row(s) print `-`", done.stdout)
+
+    def test_what_the_client_writes_is_not_the_owner_taking_a_turn(self):
+        """A slash command writes its own name and its output before the owner's text."""
+        self.write("s", [
+            typed("<command-name>/ctx-takeover</command-name>"),
+            typed("<local-command-stdout>ran it</local-command-stdout>"),
+            typed("take over the case"),
+            billed("2026-09-09T10:00:00.000Z", "m0", 10_000),
+            typed("<task-notification>a subagent finished</task-notification>"),
+            billed("2026-09-09T10:01:00.000Z", "m1", 20_000),
+            typed("now the spot-check"),
+            billed("2026-09-09T10:02:00.000Z", "m2", 50_000),
+        ])
+        done = run(self.where)
+        self.assertEqual(("10,000", "40,000", "3"), self.cells(done.stdout, "s"))
+
+    def test_the_header_and_the_note_carry_the_three_readings(self):
+        self.write("s", [billed("2026-09-09T10:00:00.000Z", "m0", 5_000)])
+        done = run(self.where)
+        head = next(l for l in done.stdout.split("\n") if l.startswith("session"))
+        for word in ("floor", "entry", "at"):
+            self.assertIn(word, head)
+        self.assertIn("no line is set on either", done.stdout)
+
+
 class MakeUp(unittest.TestCase):
     """The self and reports columns, and the line that splits one log five ways.
 
