@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """case-lint.py — health check for case files, run against one file or a library.
 
-Seven checks, each reported on its own (every finding prints as `file:line`):
+Eight checks, each reported on its own (every finding prints as `file:line`):
   1. takeover load   what one takeover has to read in, in characters, in three
                      bands — <=10,000 green / <=15,000 yellow / above that must
                      be slimmed before the case changes hands
@@ -29,6 +29,11 @@ Seven checks, each reported on its own (every finding prints as `file:line`):
                      of the repository the case file itself lives in. A library
                      kept outside git is a legitimate shape and reports a skip,
                      not a finding
+  8. pen-holder form  the header line carries a pen-holder cell, and where that
+                     cell holds a session title it is one of the two naming forms
+                     (`C07-03 …` now, `03-C07… ` before it) with a stint number
+                     agreeing with the header's own `stint` field. Reported only,
+                     never a finding: a title is set by hand and by a person
 
 Checks 1 and 2 keep no second copy of the rule: check 1 runs `scripts/takeover-load.py`
 as it stands — the same script `ctx-takeover` §2 tells a session to run — and check 2
@@ -95,7 +100,22 @@ CHECK_NAMES = [
     "5 inbox disposal",
     "6 table columns",
     "7 archives tracked",
+    "8 pen-holder form",
 ]
+
+# The header line's pen-holder cell. Anything but a session title — nobody signed yet, the
+# case is closed, the predecessor retired, a bare terminal wrote a role instead of a name —
+# is a legitimate cell and is left alone.
+PEN_FIELD_RE = re.compile(r"(?:持笔|pen-holder)\s*[:：]\s*(.*)$", re.I)
+STINT_FIELD_RE = re.compile(r"(?:任期|stint)\s*[:：]\s*(\d+)")
+HEADER_FIELD_RE = re.compile(r"(?:更新|updated|状态|status|任期|stint)\s*[:：]", re.I)
+PEN_PLACEHOLDER_RE = re.compile(
+    r"^[(（]|^\W*(TBD|待定|待继任填|successor to fill in|closed|已关|已收口"
+    r"|lead|exec|导师|执行)\b", re.I)
+# Current form first, the one it replaced second — both are read, because old titles are
+# never renamed and the two stand side by side for as long as their sessions live.
+PEN_TITLE_NEW_RE = re.compile(r"^(?:✕\s*)?C(\d+)-(\d+)(?:\.\d+)*(?:\s|$)")
+PEN_TITLE_OLD_RE = re.compile(r"^(?:✕\s*)?(\d+)(?:\.\d+)*-C\d+")
 
 
 def is_case_file(path):
@@ -272,7 +292,7 @@ CELL_DETAIL_RE = re.compile(r"^(?P<path>.+):(?P<line>\d+)\s+\[(?P<col>.*)\]\s+(?
 CELL_TOTAL_RE = re.compile(r"^---\s+(?P<n>\d+)\s+cells over (?P<limit>\d+) characters")
 
 
-# -------------------------------------------------------------- the seven checks
+# -------------------------------------------------------------- the eight checks
 
 def check_takeover_load(path, rules):
     """1. What one takeover reads in, measured by the loader the skill owns."""
@@ -568,6 +588,59 @@ def check_archives_tracked(path, lines):
                    % (len(cited), "" if len(cited) == 1 else "s", top))], ""
 
 
+def header_line(lines):
+    """The case's header line: the first line above section A carrying a pen-holder field."""
+    for i, line in enumerate(lines):
+        if SECTION_RE.match(line):
+            return -1, ""
+        if PEN_FIELD_RE.search(line):
+            return i + 1, line
+    return -1, ""
+
+
+def check_pen_holder(path, lines):
+    """8. The pen-holder cell, and the stint number a title in it carries (report only).
+
+    A delivery from another case is addressed off this cell, and a successor takes its own
+    stint number off the `stint` field beside it (ctx-takeover §3). Both are written by hand,
+    so this says what looks off and fixes nothing — the cell belongs to whoever holds the pen.
+    """
+    fix = "the pen-holder cell holds either a session title in the current form " \
+          "`C<case><stint> <short name>-<what this stint does>` (中文同形), or one of the " \
+          "stand-ins — (TBD) / (closed <date>) / (successor to fill in; predecessor … " \
+          "retired) / a role where the title tool was unavailable; the `stint` field beside " \
+          "it carries the same number the title does"
+    ln, line = header_line(lines)
+    if ln < 0:
+        first = next((i + 1 for i, l in enumerate(lines) if l.strip()), 1)
+        return "warn", [(first, "no pen-holder field on the header line — a delivery from "
+                                "another case has no address to read")], fix
+    cell = PEN_FIELD_RE.search(line).group(1).strip()
+    cut = HEADER_FIELD_RE.search(cell)
+    if cut:
+        cell = cell[:cut.start()].strip()
+    cell = cell.split("|")[0].strip()
+    if not cell:
+        return "warn", [(ln, "the pen-holder cell is empty — write (TBD) where nobody "
+                             "holds it yet, so an empty cell is never read as an oversight")], fix
+    if PEN_PLACEHOLDER_RE.match(cell):
+        return "ok", [("-", "pen-holder: %s" % excerpt(cell, 40))], ""
+    new = PEN_TITLE_NEW_RE.match(cell)
+    if not new and not PEN_TITLE_OLD_RE.match(cell):
+        return "warn", [(ln, "the pen-holder title is in neither naming form: \"%s\""
+                         % excerpt(cell, 40))], fix
+    if new:
+        said = STINT_FIELD_RE.search(line)
+        if not said:
+            return "warn", [(ln, "the title says stint %s, and the header line has no "
+                                 "stint field to take the next one from" % new.group(2))], fix
+        if int(said.group(1)) != int(new.group(2)):
+            return "warn", [(ln, "the stint field says %s, the pen-holder's title says %s — "
+                                 "the next successor would reuse a number"
+                             % (said.group(1), new.group(2)))], fix
+    return "ok", [("-", "pen-holder: %s" % excerpt(cell, 40))], ""
+
+
 # ---------------------------------------------------------------- running and reporting
 
 def lint_file(path, rules):
@@ -584,6 +657,7 @@ def lint_file(path, rules):
         (CHECK_NAMES[4],) + check_inbox_disposal(path, lines),
         (CHECK_NAMES[5],) + check_table_columns(path, lines),
         (CHECK_NAMES[6],) + check_archives_tracked(path, lines),
+        (CHECK_NAMES[7],) + check_pen_holder(path, lines),
     ]
 
 
@@ -631,7 +705,7 @@ def collect(target):
 def main(argv=None):
     ap = argparse.ArgumentParser(
         prog="case-lint.py", add_help=True,
-        description="Health check for case files: seven rules the docs state, checked in one run.")
+        description="Health check for case files: eight rules the docs state, checked in one run.")
     ap.add_argument("target", help="a case file, or a case library directory")
     ap.add_argument("--quiet", action="store_true",
                     help="print nothing unless something is wrong (for hooks)")

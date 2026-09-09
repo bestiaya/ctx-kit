@@ -57,12 +57,12 @@ def e_row(rid, status, verdict="达成", impact="无", question="does it hold"):
         rid, question, status, verdict, impact)
 
 
-def case(name, e_rows=(), i_rows=(), goal="one synthetic goal", e_header=None):
+def case(name, e_rows=(), i_rows=(), goal="one synthetic goal", e_header=None, header=None):
     """A minimal but complete A~I case file, written under FIXTURES."""
     e_header = e_header or E_HEADER
     body = [
         "# %s" % name,
-        "status: 讨论中   持笔: (TBD)   更新: 2026-09-09",
+        header if header is not None else "status: 讨论中   持笔: (TBD)   更新: 2026-09-09",
         "",
         "## A 目标", goal, "",
         "## B 当前方案快照", "to be discussed", "",
@@ -351,6 +351,70 @@ class ArchivesTracked(unittest.TestCase):
         status, items, _ = self.check(path)
         self.assertEqual("ok", status)
         self.assertIn("no archive file is cited", items[0][1])
+
+
+class PenHolderForm(unittest.TestCase):
+    """Check 8 reports and never fixes: the cell is written by hand, by whoever holds the pen."""
+
+    def check(self, path):
+        with io.open(path, encoding="utf-8") as fh:
+            lines = fh.read().split("\n")
+        return lint.check_pen_holder(path, lines)
+
+    def test_a_stand_in_is_a_legitimate_cell(self):
+        for cell in ("(TBD)", "(closed 2026-09-09)", "（待继任填；前任 X 已退役）",
+                     "lead (title tool unavailable)"):
+            with self.subTest(cell=cell):
+                path = case("pen-standin.md",
+                            header="status: 讨论中   持笔: %s   更新: 2026-09-09" % cell)
+                self.assertEqual("ok", self.check(path)[0])
+
+    def test_the_form_this_kit_produces_passes_when_the_stint_agrees(self):
+        path = case("pen-new.md",
+                    header="status: 讨论中   持笔: C07-03 billing-two-routes @1234abcd   "
+                           "任期: 03   更新: 2026-09-09")
+        self.assertEqual("ok", self.check(path)[0])
+
+    def test_the_form_it_replaced_is_still_read(self):
+        """Old titles are never renamed, so both forms have to pass while their sessions live."""
+        path = case("pen-old.md",
+                    header="status: 讨论中   持笔: 07-C07billing-two-routes @1234abcd   "
+                           "更新: 2026-09-09")
+        self.assertEqual("ok", self.check(path)[0])
+
+    def test_a_stint_field_disagreeing_with_the_title_is_reported(self):
+        path = case("pen-drift.md",
+                    header="status: 讨论中   持笔: C07-03 billing-two-routes   stint: 02   "
+                           "更新: 2026-09-09")
+        status, items, _ = self.check(path)
+        self.assertEqual("warn", status)
+        self.assertIn("reuse a number", items[0][1])
+
+    def test_a_title_with_no_stint_field_to_count_from_is_reported(self):
+        path = case("pen-nostint.md",
+                    header="status: 讨论中   持笔: C07-03 billing-two-routes   更新: 2026-09-09")
+        status, items, _ = self.check(path)
+        self.assertEqual("warn", status)
+        self.assertIn("no stint field", items[0][1])
+
+    def test_a_title_in_neither_form_is_reported(self):
+        path = case("pen-free.md",
+                    header="status: 讨论中   持笔: whatever I felt like calling it   更新: 2026-09-09")
+        status, items, _ = self.check(path)
+        self.assertEqual("warn", status)
+        self.assertIn("neither naming form", items[0][1])
+
+    def test_no_pen_holder_field_at_all_is_reported(self):
+        path = case("pen-missing.md", header="status: 讨论中   更新: 2026-09-09")
+        status, items, _ = self.check(path)
+        self.assertEqual("warn", status)
+        self.assertIn("no pen-holder field", items[0][1])
+
+    def test_it_never_fails_a_file(self):
+        """Report-only: whatever it finds, the exit code is somebody else's to change."""
+        path = case("pen-free-2.md",
+                    header="status: 讨论中   持笔: nothing like a title   更新: 2026-09-09")
+        self.assertNotEqual("bad", self.check(path)[0])
 
 
 class LiftedBlocks(unittest.TestCase):

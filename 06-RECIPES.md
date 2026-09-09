@@ -193,7 +193,7 @@ S="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/scripts/case-lint.py}"; [ -f "$S" ]
 python3 "$S" <案文件或案库目录>
 ```
 
-七项检查各报各的，报到 `文件:行号`；`--quiet` 是没问题就不吭声。想让它在写的当下就响，仓库里备着 `hooks/case-lint.PostToolUse.candidate.json`：把里面那段 `PostToolUse` 并进你自己的 `~/.claude/settings.json`（**本包不替你动 `settings.json`，这段也不在 `hooks/hooks.json` 里**），之后 Write / Edit 落到案库路径下时它跑一遍，有问题打 stderr、exit 2，那几行直接摆到 Claude 面前；其余路径、档案、任务板与干净的案文件一律静默。**手动装机的先把 `scripts/case-lint.py` 拷进 `~/.claude/scripts/`**——脚本不在那儿，这段 hook 找不到它就静默 exit 0，装了等于没装，也不会告诉你为什么。
+八项检查各报各的，报到 `文件:行号`；`--quiet` 是没问题就不吭声。想让它在写的当下就响，仓库里备着 `hooks/case-lint.PostToolUse.candidate.json`：把里面那段 `PostToolUse` 并进你自己的 `~/.claude/settings.json`（**本包不替你动 `settings.json`，这段也不在 `hooks/hooks.json` 里**），之后 Write / Edit 落到案库路径下时它跑一遍，有问题打 stderr、exit 2，那几行直接摆到 Claude 面前；其余路径、档案、任务板与干净的案文件一律静默。**手动装机的先把 `scripts/case-lint.py` 拷进 `~/.claude/scripts/`**——脚本不在那儿，这段 hook 找不到它就静默 exit 0，装了等于没装，也不会告诉你为什么。
 
 **先清库再装**——存量没清完，每写一次案都会响。本仓 2026-09-09 的读数：6 个案文件 0.48 秒，36 项干净、3 项有 finding。**那 3 条全是红档（FAIL）**——表格列数 2 条、收件位处置词 1 条，落在两个案上；照这个状态装上去，**这两个案**每改一次就念一次。**黄档（WARN，接手加载量偏大）另算 2 条，`--quiet` 对黄档不出声、退出码 0，hook 不会为它响。**这段片段的日常用法**还没有人验过**，这里给的是装法，不是"建议装"。
 
