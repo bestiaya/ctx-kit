@@ -87,7 +87,7 @@ The repository: https://github.com/bestiaya/ctx-kit
 
 1. Clone it.
 2. Take any case file written with ctx-kit, or your own state file using the same section letters.
-3. Run the loader block from `skills/ctx-takeover/SKILL.md` against it. It prints the loaded character count on its last line.
+3. Run the loader against it — `scripts/takeover-load.py`, which is what `skills/ctx-takeover/SKILL.md` §2 calls (it was a fenced block inside that file when this was measured). It prints the loaded character count on its last line.
 4. Compare against the full size:
 
 **Run these with a real python3, written out in full** — `/usr/local/bin/python3`, `/opt/homebrew/bin/python3` on Apple silicon, or your virtualenv's — rather than a bare `python3`, which resolves differently from one shell to the next. On macOS it can land on the `/usr/bin/python3` Xcode shim, which fails with an error mentioning `xcodebuild` before it reads a line of the block: that error means the interpreter resolved somewhere else, not that the block is broken. Substitute the path your own machine uses.

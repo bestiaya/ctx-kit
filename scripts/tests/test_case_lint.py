@@ -371,14 +371,14 @@ class PenHolderForm(unittest.TestCase):
 
     def test_the_form_this_kit_produces_passes_when_the_stint_agrees(self):
         path = case("pen-new.md",
-                    header="status: 讨论中   持笔: C07-03 billing-two-routes @1234abcd   "
+                    header="status: 讨论中   持笔: C07-03 billing-two-routes @synthetic   "
                            "任期: 03   更新: 2026-09-09")
         self.assertEqual("ok", self.check(path)[0])
 
     def test_the_form_it_replaced_is_still_read(self):
         """Old titles are never renamed, so both forms have to pass while their sessions live."""
         path = case("pen-old.md",
-                    header="status: 讨论中   持笔: 07-C07billing-two-routes @1234abcd   "
+                    header="status: 讨论中   持笔: 07-C07billing-two-routes @synthetic   "
                            "更新: 2026-09-09")
         self.assertEqual("ok", self.check(path)[0])
 
