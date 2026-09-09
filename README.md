@@ -169,7 +169,7 @@ One measurement sits outside 01: [handing a task to a fresh session, six cases](
 
 ## What gets installed
 
-What goes in: six skills, one CLAUDE.md rule block, two hooks (a warning before an auto-compact, and the once-per-turn watermark doorbell), three scripts (the weekly audit, the doorbell itself, and the case-file lint — whose own hook is opt-in and is not switched on for you) and one `digest` subagent.
+What goes in: six skills, one CLAUDE.md rule block, two hooks (a warning before an auto-compact, and the once-per-turn watermark doorbell), four scripts (the weekly audit, the doorbell itself, and the case-file lint — whose own hook is opt-in and is not switched on for you) and one `digest` subagent.
 
 **Check your version first** — `claude --version`. What each layer needs (versions from the [claude CLI changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)):
 
