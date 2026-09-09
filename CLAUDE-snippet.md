@@ -22,9 +22,12 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
   ④ heavy but certain (long mechanical volume) → its own session, no stop-and-wait point, delivery pulled rather
   than pushed. A subagent cannot talk to anybody mid-run, so any job that might need the owner must never be inline.
   **A high-watermark session is nobody's parent** (the cold tax of waiting on a subagent = the dispatcher's watermark × 2).
-  Say in the brief how long the reply may be: **a subagent replies in ≤1,500 characters, in three parts** — one line
-  per pre-registered criterion, three key readings, and a pointer to the report. Detail stays in the report file; the
-  one limit that matters most ("this reading shows X, not Y") is never the thing cut to save characters.
+  Three lengths, because all three land whole in somebody's context: **the dispatch prompt is ≤800 characters**
+  (brief path + a pointer to the rules + one line of reply contract, and never a retelling of the brief — a retelling
+  is the brief paid twice); **a subagent replies in ≤1,500 characters, in three parts** — one line per pre-registered
+  criterion, three key readings, and a pointer to the report; **a cross-session message is ≤1,500 characters** plus a
+  file pointer. Detail stays in the file; the one limit that matters most ("this reading shows X, not Y") is never
+  the thing cut to save characters.
   Writing is split by size and by whether it needs a source read, never by being writing: **anything under 1,000
   characters that needs no read you write yourself** (one dispatch costs more in fixed overhead than it saves), a
   brief over 3,000 characters or anything needing the sources read goes out — and **the wording of pre-registered
