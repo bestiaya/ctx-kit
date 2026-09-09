@@ -6,8 +6,11 @@ Six checks, each reported on its own (every finding prints as `file:line`):
   1. takeover load   what one takeover has to read in, in characters, in three
                      bands — <=10,000 green / <=15,000 yellow / above that must
                      be slimmed before the case changes hands
-  2. E cell length   the Verdict cell and the Impact-on-plan cell of every
-                     ledger row, each capped at 200 characters
+  2. E cell length   the Verdict cell and the Impact-on-plan cell, each capped at
+                     200 characters — measured on the rows a takeover reads and no
+                     others: the live rows plus the single most recent delivered
+                     row. An older delivered row is never read in, so its length
+                     costs a successor nothing
   3. E status words  every status cell opens with one of the six agreed words
                      (running / awaiting acceptance / queued / to dispatch /
                      delivered / done). A verdict written into the status cell
@@ -252,7 +255,12 @@ def check_takeover_load(path, rules):
 
 
 def check_e_cell_length(path, rules):
-    """2. Verdict / Impact cells over the cap, measured by the block ctx-handoff owns."""
+    """2. Verdict / Impact cells over the cap, measured by the block ctx-handoff owns.
+
+    That block reads only the rows a takeover reads — the live ones plus the newest
+    delivered one — so a library full of old delivered rows no longer reports cells
+    nobody will ever load. Change the scope in the skill and this reading follows.
+    """
     try:
         out = run_py_block(rules.handoff, ["ctx-handoff", path])
     except Exception as exc:
@@ -279,8 +287,9 @@ def check_e_cell_length(path, rules):
                              "readable ones; its output has changed shape and case-lint "
                              "needs updating" % (total.group("n"), len(items)))], ""
     items.sort(key=lambda t: int(t[0]))
-    fix = "keep the cell to %d characters — the account belongs in the results " \
-          "section of the deliverable, and the row only points at it" % limit
+    fix = "put one sentence of verdict in the cell (%d characters at most) and the path to " \
+          "the deliverable beside it — the account belongs in the results section of that " \
+          "deliverable, and the row only points at it" % limit
     return ("bad" if items else "ok"), items, fix
 
 

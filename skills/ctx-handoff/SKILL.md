@@ -37,9 +37,9 @@ Propose `<prefix>-NN_case-name.md`: the prefix is per project (the main project 
 Stop there: **closing a case means only this, that nobody takes it over again** — do not delete the file, do not move the directory; the history stays where it can be looked up.
 
 ## 3. Hard rules
-- **What a takeover actually loads, in three bands: ≤10,000 characters is green; >10,000 and ≤15,000 is yellow — slim it at the next close-out; >15,000 must be slimmed before the case changes hands** — the measure is "how much has to be read in to take it over once", not "up to E": run the extraction command in `ctx-takeover` §2 and read the number it reports on its last line. **That number is characters**, not bytes and not file size: Chinese text is three bytes per character in UTF-8 (this project's mixed-language cases measured about two bytes per character on 2026-09-04), so a size on disk says little about the load — measure characters (`LC_ALL=en_US.UTF-8 wc -m`), never bytes. **Take the reading last, once everything else is written, and record it in F** — the reading counts A~D and I, so a number written into any of those moves the number it is reporting (measured: four measure-and-edit rounds chasing its own tail, and a case that crept back over the line afterwards because two more lines went into the inbox). First choice for slimming = **move the old rows of table C out into this case's decision appendix as a block** — `<case file name without .md>_decision-archive_<date>.md` (中文 `<案文件名去 .md>_决策附录_<日期>.md` — **name it in the language the case is written in**, as with the other two archives) — (moved verbatim, with only the current batch + a pointer left in the case); then rolling old E rows into an archive (next rule), clearing settled items out of D, compressing the chronicle in F; if that is still not enough, promote the plan body into its own numbered document and leave only the top-level diagram + a pointer in section B.
+- **What a takeover actually loads, in three bands: ≤10,000 characters is green; >10,000 and ≤15,000 is yellow — slim it at the next close-out; >15,000 must be slimmed before the case changes hands** — the measure is "how much has to be read in to take it over once", not "up to E": run the extraction command in `ctx-takeover` §2 and read the number it reports on its last line. **That number is characters**, not bytes and not file size: Chinese text is three bytes per character in UTF-8 (this project's mixed-language cases measured about two bytes per character on 2026-09-04), so a size on disk says little about the load — measure characters (`LC_ALL=en_US.UTF-8 wc -m`), never bytes. **Take the reading last, once everything else is written, and record it in F** — the reading counts A~D and I, so a number written into any of those moves the number it is reporting (measured: four measure-and-edit rounds chasing its own tail, and a case that crept back over the line afterwards because two more lines went into the inbox). **The slimming is the pen-holder's own job, done in the stint that crosses the line, not left for the successor** — whoever wrote those rows is the only one who can tell in a glance what is safe to move, and a case handed over above the line makes the successor pay to read the very rows the predecessor could have moved in five minutes (the five steps in `ctx-takeover` §2 are the same five, written out for a session that finds itself over the line mid-stint). First choice for slimming = **move the old rows of table C out into this case's decision appendix as a block** — `<case file name without .md>_decision-archive_<date>.md` (中文 `<案文件名去 .md>_决策附录_<日期>.md` — **name it in the language the case is written in**, as with the other two archives) — (moved verbatim, with only the current batch + a pointer left in the case); then rolling old E rows into an archive (next rule), clearing settled items out of D, compressing the chronicle in F; if that is still not enough, promote the plan body into its own numbered document and leave only the top-level diagram + a pointer in section B.
 - **Rolling E into an archive**: once E passes 5,000 characters or 30 rows, move the rows whose status is delivered and whose "what it changes in the plan" has already been written into B / C **verbatim** into `<case file name without .md>_experiment-archive_<date>.md` (中文 `<案文件名去 .md>_实验档案_<日期>.md` — **name it in the language the case is written in**, so one library does not end up half and half) (same format as the decision appendix, headed "moved verbatim, nothing deleted or altered, stub kept in the case"), leaving one stub row each in the case: `ID | question | verdict in one sentence (≤80 characters) | archive pointer`. **Rows at running / awaiting acceptance / queued / to dispatch always stay in the case**, and so do delivered rows whose impact has not been written back into B / C — that account is still owed.
-- **E row length check (report, do not fix)**: the Verdict cell and the Impact-on-plan cell are each ≤200 characters, and the detail belongs only in the results section of the deliverable. Run it once before closing out; slim an over-long row on the spot if you wrote it, and report without touching it if somebody else did:
+- **E row length check (report, do not fix)**: the Verdict cell and the Impact-on-plan cell are each ≤200 characters — **checked on the rows a takeover actually reads and on no others**: the rows at running / awaiting acceptance / queued / to dispatch, plus the single most recent delivered row, whose verdict is the only one the loader in `ctx-takeover` §2 carries across. An older delivered row never enters a successor's slice, so its length costs the successor nothing and the check leaves it alone. **A cell over the cap: put one sentence of verdict in it (≤200 characters) and the path to the deliverable beside it, and leave the account itself in the deliverable** — the ledger is an index, not a report. Run it once before closing out; slim an over-long row on the spot if you wrote it, and report without touching it if somebody else did (the same block, run over a whole library instead of one case, is what `ctx-checkup` §4 uses):
 
 **Run it with a real python3**: an error mentioning `xcodebuild` or similar means the interpreter resolved somewhere else (the macOS Xcode shim, for instance) — run it again with a real python3; the block is not broken.
 
@@ -52,6 +52,8 @@ def z(r):  # the cells of one markdown row
     if p and not p[0]: p=p[1:]
     if p and not p[-1]: p=p[:-1]
     return p
+A=re.compile(r'^\W*(在跑|待验收|排队|待派|running|awaiting acceptance|queued|to dispatch)',re.I)  # live
+B=re.compile(r'^\W*(已交货|已完|delivered|done)',re.I)                                            # finished
 w=[]
 for p in sys.argv[1:]:
     L=open(p,encoding='utf-8').read().split('\n')
@@ -61,8 +63,19 @@ for p in sys.argv[1:]:
         R=[(k+1,l) for k,l in enumerate(L[i:P[n+1]],i) if l.lstrip().startswith('|')]
         h=z(R[0][1]) if R else []
         C=[x for x,c in enumerate(h) if re.search(r'判定|verdict|影响|impact|plan',c,re.I)]
-        for ln,l in R[2:]:
-            c=z(l)
+        j=next((x for x,c in enumerate(h) if re.search(r'状态|status',c,re.I)),-1)  # a column by its header text, never by number
+        g=lambda c,x:(c+['']*9)[x]
+        D=[(ln,z(l)) for ln,l in R[2:]]
+        # Only the rows a takeover reads in: every live row, plus the one most recent finished
+        # row whose verdict the loader carries across (ctx-takeover §2 picks it exactly this
+        # way — newest by ID, never by table order). An older delivered row never enters a
+        # successor's slice, so its length costs nobody anything and is not measured here.
+        u=[t for t in D if j>=0 and A.match(g(t[1],j))]
+        v=[t for t in D if j>=0 and B.match(g(t[1],j))]
+        y=lambda t:[(1,int(s)) if s.isdigit() else (0,s) for s in re.findall(r'\d+|[a-z]+',g(t[1],1 if j==0 else 0))]
+        S=u+([max(v,key=y) if any(y(t) for t in v) else v[-1]] if v else [])
+        if not S: S=D[-3:]  # no status column, or not one word the loader knows: it falls back to the last three rows, so those are what gets read
+        for ln,c in S:
             w+=[(len(c[x]),f'{p}:{ln} [{h[x]}] {len(c[x])} chars') for x in C if x<len(c) and len(c[x])>200]
 for n,s in sorted(w,reverse=True): print(s)
 print(f'--- {len(w)} cells over 200 characters (reported, not fixed — the author slims their own) ---')

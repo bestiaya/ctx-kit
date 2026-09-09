@@ -55,8 +55,9 @@ def e_row(rid, status, verdict="达成", impact="无", question="does it hold"):
         rid, question, status, verdict, impact)
 
 
-def case(name, e_rows=(), i_rows=(), goal="one synthetic goal"):
+def case(name, e_rows=(), i_rows=(), goal="one synthetic goal", e_header=None):
     """A minimal but complete A~I case file, written under FIXTURES."""
+    e_header = e_header or E_HEADER
     body = [
         "# %s" % name,
         "status: 讨论中   持笔: (TBD)   更新: 2026-09-09",
@@ -65,7 +66,7 @@ def case(name, e_rows=(), i_rows=(), goal="one synthetic goal"):
         "## B 当前方案快照", "to be discussed", "",
         "## C 已拍决策", "",
         "## D 未决与候拍", "| # | 待办/待拍 | 说明 / 建议 |", "|---|---|---|", "",
-        "## E 实验台账", E_HEADER, E_RULE,
+        "## E 实验台账", e_header, "|" + "---|" * len(E_RULE.strip("|").split("|")),
     ]
     body += list(e_rows)
     body += ["", "## F 编年志", "", "## G 档案指针", "", "## H 未落盘清单", "",
@@ -148,6 +149,82 @@ class SplitAgreement(unittest.TestCase):
             with self.subTest(place=where):
                 self.assertIn(pattern, text)
                 self.assertNotIn(naive, text)
+
+
+LONG = "达" * 500
+
+
+class LengthCheckScope(unittest.TestCase):
+    """The cap is measured where a successor pays for it: on the rows a takeover reads.
+
+    Reading before this batch, on a library of six real cases: one finding, on the verdict
+    cell of a delivered row that was neither live nor the newest delivered one — a cell no
+    takeover has loaded since the row was superseded.
+    """
+
+    def scope(self, name, rows, header=None):
+        return results(case(name, e_rows=rows, e_header=header))["2 E cell length"]
+
+    def test_an_old_delivered_row_over_the_cap_is_left_alone(self):
+        status, items, _ = self.scope("scope-old.md", [
+            e_row("E-01", "已交货", verdict=LONG),
+            e_row("E-02", "已交货"),
+            e_row("E-03", "已交货"),
+        ])
+        self.assertEqual("ok", status)
+        self.assertEqual([], items)
+
+    def test_the_same_cell_on_a_live_row_is_reported(self):
+        status, items, _ = self.scope("scope-live.md", [
+            e_row("E-01", "在跑", verdict=LONG),
+            e_row("E-02", "已交货"),
+            e_row("E-03", "已交货"),
+        ])
+        self.assertEqual("bad", status)
+        self.assertEqual(1, len(items), items)
+        self.assertIn("判定", items[0][1])
+        self.assertIn("500 chars", items[0][1])
+
+    def test_the_same_cell_on_the_newest_delivered_row_is_reported(self):
+        status, items, _ = self.scope("scope-newest.md", [
+            e_row("E-01", "已交货"),
+            e_row("E-02", "已交货"),
+            e_row("E-03", "已交货", verdict=LONG),
+        ])
+        self.assertEqual("bad", status)
+        self.assertEqual(1, len(items), items)
+
+    def test_newest_delivered_is_picked_by_id_not_by_table_order(self):
+        """A newest-first ledger has the newest row at the top; the ID decides, not the row."""
+        status, items, _ = self.scope("scope-order.md", [
+            e_row("E-10", "已交货", verdict=LONG),
+            e_row("E-02", "已交货", verdict=LONG),
+            e_row("E-01", "已交货"),
+        ])
+        self.assertEqual("bad", status)
+        self.assertEqual(1, len(items), items)  # E-10 only: E-02 is older whichever way it is listed
+
+    def test_english_status_words_are_read_the_same_way(self):
+        status, items, _ = self.scope("scope-english.md", [
+            e_row("E-01", "delivered", verdict=LONG),
+            e_row("E-02", "running", verdict=LONG),
+            e_row("E-03", "delivered"),
+        ])
+        self.assertEqual("bad", status)
+        self.assertEqual(1, len(items), items)  # the running row; E-01 is an older delivered one
+
+    def test_with_no_status_column_the_last_three_rows_are_measured(self):
+        """No status column: the loader falls back to the last three rows, so those are read."""
+        header = "| ID | 要回答的问题 | 任务书路径 | 载体 | 阶段 | 交货路径 | 判定 | 对方案的影响 |"
+        status, items, _ = self.scope("scope-nostatus.md", [
+            e_row("E-01", "已交货", verdict=LONG),
+            e_row("E-02", "已交货"),
+            e_row("E-03", "已交货"),
+            e_row("E-04", "已交货"),
+            e_row("E-05", "已交货", verdict=LONG),
+        ], header=header)
+        self.assertEqual("bad", status)
+        self.assertEqual(1, len(items), items)  # E-05 is in the last three, E-01 is not
 
 
 class LiftedBlocks(unittest.TestCase):

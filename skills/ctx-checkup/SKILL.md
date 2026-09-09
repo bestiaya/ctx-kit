@@ -48,7 +48,7 @@ The measure = **what a takeover actually loads** (header line + A~D + E's active
 
 Criterion (relaxed by the owner on 2026-08-24, previously 7,000), in three bands: **≤10,000 characters per case is green**; **>10,000 and ≤15,000 is yellow** — name it and say it gets slimmed at that case's next close-out, it is not over the line; **>15,000 must be slimmed before the case changes hands**. The reading is characters, not bytes and not file size (a case written in Chinese runs about twice its character count in bytes). For every case over the line, report the number and name the pen-holding session to do the slimming — **and where the pen-holder cell names nobody** (blank, `(TBD)`, or `predecessor … retired`, which is the ordinary state after a predecessor retires) **there is no session to name: report it to the owner instead**, as a case over the line waiting for a successor, and never appoint one yourself. The slimming itself: move the old rows of table C out into that case's decision appendix / roll the old delivered rows of E into an archive (see `ctx-handoff`) / clear the settled items out of D / compress the chronicle in F; historical detail belongs in the transcript and the archives, not in the case.
 
-**E row length check (report, do not fix)**: the Verdict cell and the Impact-on-plan cell are each ≤200 characters. Run it over the whole case library and list the over-long rows in descending order of length (case file / row number / which cell / character count), reporting them to that case's pen-holding session to slim down themselves — **the checkup never edits somebody else's case**:
+**E row length check (report, do not fix)**: the Verdict cell and the Impact-on-plan cell are each ≤200 characters — **checked on the rows a takeover actually reads and on no others**: the rows at running / awaiting acceptance / queued / to dispatch, plus the single most recent delivered row, whose verdict is the only one the loader in `ctx-takeover` §2 carries across. An older delivered row never enters a successor's slice, so its length costs the successor nothing and the check leaves it alone. **A cell over the cap: put one sentence of verdict in it (≤200 characters) and the path to the deliverable beside it, and leave the account itself in the deliverable** — the ledger is an index, not a report. It is the same block `ctx-handoff` §3 runs on one case, pointed at the whole library instead. List the over-long rows in descending order of length (case file / row number / which cell / character count), reporting them to that case's pen-holding session to slim down themselves — **the checkup never edits somebody else's case**:
 
 **Run it with a real python3**, the same as §1: an error mentioning `xcodebuild` or similar means the interpreter resolved somewhere else (the macOS Xcode shim, for instance) — run it again with a real python3; the block is not broken.
 
@@ -63,6 +63,8 @@ def z(r):  # the cells of one markdown row
     if p and not p[0]: p=p[1:]
     if p and not p[-1]: p=p[:-1]
     return p
+A=re.compile(r'^\W*(在跑|待验收|排队|待派|running|awaiting acceptance|queued|to dispatch)',re.I)  # live
+B=re.compile(r'^\W*(已交货|已完|delivered|done)',re.I)                                            # finished
 w=[];F=[p for p in sys.argv[1:] if os.path.isfile(p)]
 for p in F:
     L=open(p,encoding='utf-8').read().split('\n')
@@ -72,8 +74,19 @@ for p in F:
         R=[(k+1,l) for k,l in enumerate(L[i:P[n+1]],i) if l.lstrip().startswith('|')]
         h=z(R[0][1]) if R else []
         C=[x for x,c in enumerate(h) if re.search(r'判定|verdict|影响|impact|plan',c,re.I)]
-        for ln,l in R[2:]:
-            c=z(l)
+        j=next((x for x,c in enumerate(h) if re.search(r'状态|status',c,re.I)),-1)  # a column by its header text, never by number
+        g=lambda c,x:(c+['']*9)[x]
+        D=[(ln,z(l)) for ln,l in R[2:]]
+        # Only the rows a takeover reads in: every live row, plus the one most recent finished
+        # row whose verdict the loader carries across (ctx-takeover §2 picks it exactly this
+        # way — newest by ID, never by table order). An older delivered row never enters a
+        # successor's slice, so its length costs nobody anything and is not measured here.
+        u=[t for t in D if j>=0 and A.match(g(t[1],j))]
+        v=[t for t in D if j>=0 and B.match(g(t[1],j))]
+        y=lambda t:[(1,int(s)) if s.isdigit() else (0,s) for s in re.findall(r'\d+|[a-z]+',g(t[1],1 if j==0 else 0))]
+        S=u+([max(v,key=y) if any(y(t) for t in v) else v[-1]] if v else [])
+        if not S: S=D[-3:]  # no status column, or not one word the loader knows: it falls back to the last three rows, so those are what gets read
+        for ln,c in S:
             w+=[(len(c[x]),f'{p}:{ln} [{h[x]}] {len(c[x])} chars') for x in C if x<len(c) and len(c[x])>200]
 for n,s in sorted(w,reverse=True): print(s)
 print(f'--- {len(F)} file(s) read from the case library; {len(w)} cells over 200 characters (reported, not fixed — the author slims their own) ---')
