@@ -33,6 +33,8 @@
 
 ### "Now I have to explain it all over again"
 
+**The kind of work**: one job that runs across several days and several sittings — a bug hunt, a design, a migration — picked up again tomorrow, possibly in another session, on another agent, on another machine.
+
 **What it solves**: you hit a usage limit, it died mid-task, the context filled up and got auto-compacted, you moved to another machine, another model, another agent — after any of those the work continues, without you re-telling the story.
 
 **In their words** (typical phrasing from a three-source sampling of public discussion; users' own words, nothing tied to a person):
@@ -55,6 +57,8 @@
 
 ### "The longer I keep this session alive, the more it costs"
 
+**The kind of work**: one long session kept alive because closing it would mean telling the whole story again — a discussion that keeps going, a review, a batch of changes worked through in one stretch.
+
 **What it solves**: three kinds of wasted money — let a session go cold and coming back re-bills the whole context; keep a long session alive and most of the money buys a re-copy of what was already said; let auto-compact take over and the detail goes with it. One move removes all three: close out in time, take over in a fresh session. Being able to see the bill is a side benefit.
 
 **In their words** (same sampling):
@@ -76,6 +80,8 @@
 
 ### "Several sessions in flight — which one is waiting on me, and how far did it get?"
 
+**The kind of work**: several jobs moving side by side, each in its own session, where what one of them settles is a premise the next one is working from — and one person making the calls for all of them.
+
 **What it solves**: when several jobs are moving at once, one place answers "where do things stand" — what is waiting on your decision, what is finished, what got discussed and never landed.
 
 **In their words** (same sampling):
@@ -93,8 +99,9 @@
 1. At the start of a project, say "new project" (`/ctx-init`): it reads your own docs first, proposes what the project is for, which milestones it has and which routines keep running, on a single screen with a source cited per cell, and writes nothing until you nod.
 2. After that you just say what you want (`/ctx-kickoff`): it triages by itself — whatever needs following up gets a file on the spot, whatever one session can finish gets a line.
 3. Park a to-do with "note this down"; it files it where it belongs and tells you where it went.
-4. To find out where things stand, ask (`/ctx-status`): it reads everything on record and reports back in plain language.
-5. When a job is done, "close out" also means closing the case: marked closed, with a last sweep for anything discussed but never written down.
+4. When one job settles something the next one was working from, the case itself is the address: a line goes into the target case's **inbox** — the letterbox at the end of every case file — and that case's header line names the session currently holding the pen. The transport is claude CLI's own cross-session messaging; what this kit adds is the address, the letterbox that keeps a message for a session that is closed or not yet opened, and the check run in the same breath as the send: is that session live, has it retired, is it still the one holding this case. Skip the check and the message goes astray — measured twice, once into a session that had already retired, once to a case that had changed hands forty minutes earlier. The inbox line stands either way, so nothing is lost by not ringing the bell.
+5. To find out where things stand, ask (`/ctx-status`): it reads everything on record and reports back in plain language.
+6. When a job is done, "close out" also means closing the case: marked closed, with a last sweep for anything discussed but never written down.
 
 These three weren't invented at a desk. They were grouped out of what users themselves complain about on X, GitHub and Reddit; how the grouping was done and how big the sample was is the last row of the evidence table below.
 
@@ -251,6 +258,8 @@ Open an issue at [github.com/bestiaya/ctx-kit/issues](https://github.com/bestiay
 - **dispatch** — hand a well-defined job off as a self-contained brief, and only look at what comes back.
 - **compact** — the client's built-in move that squeezes a long session into a summary: it keeps "we can keep talking" and drops the detail.
 - **subagent** — a temporary session the main one sends out for a small job; it returns the result and nothing else.
+- **inbox** — the last section of a case file, and that case's own address: any other session with something for this case appends a line there and touches nothing else. A line stays until the case's holder writes it off, so a case with nobody on it still receives.
+- **scenario** — this file uses the word two ways and keeps them apart. A **business scenario** is what kind of work it is — days long, several sittings, several jobs at once — and it works as the door filter: it answers "is this me?". A **moment scenario** is the moment it hurts, in the words people use for it — "now I have to explain it all over again" — and it works as the hook: it is what you recognise yourself in. Each of the three headings above is a moment scenario, with its business scenario on the line underneath.
 - **watermark** — how much context a session has used (in tokens); a "high watermark" session is one past the line.
 - **agent** — the layer of software that runs the model, carries the tools and keeps the session; claude CLI (Claude Code) is one of them. The model can be swapped; your session lives in this layer.
 
