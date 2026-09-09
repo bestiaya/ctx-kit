@@ -5,8 +5,14 @@ What it is for
   A UserPromptSubmit hook. Once per turn, before the model reads the prompt, this script looks
   up how much context the session is already carrying and — only when that number is past the
   yellow or the red line — prints one line for the owner and one for the model. Under the line
-  it prints nothing at all, so a session nowhere near full pays no attention tax and no tokens.
-  The session gets a reading of itself; deciding what to do with it stays with the owner.
+  it says nothing about the watermark, so a session nowhere near full pays no attention tax and
+  no tokens for it. The session gets a reading of itself; deciding what to do with it stays with
+  the owner.
+
+  One further reading rides on the same run, and it sets no line either: a session that started
+  before the ctx-kit files it is running were last written gets told so, once, whatever its
+  watermark. That one is not about spending — the fixes made since a long session opened reach
+  new sessions and not it, and until now nothing said so.
 
 The measure, the same one in three places
       watermark = input_tokens + cache_read_input_tokens + cache_creation_input_tokens
@@ -44,23 +50,40 @@ Thresholds
   yellow rang on every one of them with work still left in them. What they buy and what staying
   costs: 04-HANDBOOK.
 
+Where the installed files are
+  `${CLAUDE_PLUGIN_ROOT}` when it is set — a plugin install sets it, and it is then the answer,
+  found files or not — otherwise `~/.claude`, where the README's manual-install step puts the
+  same tree. Underneath either one the newest mtime among `skills/ctx-*/SKILL.md` and
+  `scripts/*.py` is taken as "when this machine's copy was last written". Nothing there to
+  stat means no reading and nothing printed, which is also what makes this quiet for anybody
+  who keeps the kit somewhere else entirely.
+
 Failure posture
   A doorbell may never break the turn it rings in. Missing file, unreadable file, half-written
-  JSON, no usage anywhere, junk on stdin, junk in the environment — every one of them means
-  zero bytes on stdout and exit code 0. This script has no failing exit code and no error
-  message; if something is wrong, the bell simply does not ring.
+  JSON, no usage anywhere, no timestamp, no installed copy to compare against, junk on stdin,
+  junk in the environment — every one of them means one reading fewer, and where none is left,
+  zero bytes on stdout. Exit code 0 either way. This script has no failing exit code and no
+  error message; if something is wrong, the bell simply does not ring.
 
 Exit codes
   0  always.
 """
-import json, os, sys
+import datetime, glob, json, os, sys
 
 YELLOW_DEFAULT = 400000
 RED_DEFAULT = 500000
 
-# Every line this script prints starts with this, in both channels, so it is greppable in a
-# transcript, in a stream-json log, and in the owner's terminal.
+# Every watermark line this script prints starts with this, in both channels, so it is
+# greppable in a transcript, in a stream-json log, and in the owner's terminal.
 PREFIX = "[ctx-kit watermark]"
+
+# The other reading gets its own mark rather than borrowing the one above: the docs define the
+# watermark as "the reading on the line starting [ctx-kit watermark]", and a line that is not a
+# watermark must not answer to that description. Greppable on its own terms.
+UPDATE_PREFIX = "[ctx-kit update]"
+
+# What counts as "this machine's copy of ctx-kit", under whichever root is found below.
+INSTALLED = (("skills", "ctx-*", "SKILL.md"), ("scripts", "*.py"))
 
 # What the model is told to do about the reading. The durable version of this lives in the
 # rule block (CLAUDE-snippet.md); this sentence is here so the reminder still works for someone
@@ -167,6 +190,89 @@ def last_watermark(path):
     return None  # past the 8MB cap without a usable record
 
 
+# Said once per session, not once per band: the fact does not change while the session lives.
+UPDATE_ACTION = (
+    "Say this once per session: look back over your own earlier replies in this session -- if "
+    "you have already told the owner that this session predates the installed files, say "
+    "nothing about it this turn. It is a fact to pass on, not something to act on: do not "
+    "reinstall anything and do not close the session over it."
+)
+
+
+def installed_root():
+    """Which directory to look under for this machine's copy of ctx-kit. Always answers.
+
+    `CLAUDE_PLUGIN_ROOT` is set only by a plugin install, and where it is set it is the
+    answer whether or not anything is found underneath it — falling back from it would mean
+    reading one install's mtime against another install's files. Whether the directory it
+    names holds anything is the next function's question, not this one's.
+    """
+    return os.environ.get("CLAUDE_PLUGIN_ROOT") or os.path.expanduser("~/.claude")
+
+
+def installed_at():
+    """The newest mtime among the installed ctx-kit files, or None if there are none to stat."""
+    root = installed_root()
+    newest = None
+    for parts in INSTALLED:
+        for path in glob.glob(os.path.join(root, *parts)):
+            try:
+                stamp = os.path.getmtime(path)
+            except OSError:
+                continue
+            if newest is None or stamp > newest:
+                newest = stamp
+    return newest
+
+
+def started_at(path):
+    """When this session began: the timestamp on the first record in the log that carries one.
+
+    Read from the head, one window, because the first record is the first record. A log whose
+    opening 64KB carries no timestamp this script can parse gets no reading — silence rather
+    than a guess, the same posture as everywhere else here.
+    """
+    try:
+        with open(path, "rb") as handle:
+            head = handle.read(64 * 1024)
+    except OSError:
+        return None
+    for piece in head.split(b"\n"):
+        piece = piece.strip()
+        if not piece.startswith(b"{"):
+            continue
+        try:
+            stamp = json.loads(piece).get("timestamp")
+            return datetime.datetime.fromisoformat(
+                str(stamp).replace("Z", "+00:00")).timestamp()
+        except Exception:
+            continue
+    return None
+
+
+def clock(stamp):
+    """A moment, in the reader's own timezone: the log writes UTC, the owner does not live in it."""
+    return datetime.datetime.fromtimestamp(stamp).strftime("%Y-%m-%d %H:%M")
+
+
+def update_reading(path):
+    """One line if this session opened before the installed files were last written, else None.
+
+    Only the plain fact and its two moments. What it does not say is how far behind the session
+    is or whether that matters: this script has no way of knowing which files changed, and an
+    mtime moves for a re-copy as readily as for a fix.
+    """
+    installed = installed_at()
+    started = started_at(path)
+    if installed is None or started is None or installed <= started:
+        return None
+    return (
+        "%s this session started %s, and the ctx-kit files it is running were last written %s"
+        " -- whatever changed since reaches new sessions, not this one"
+        % (UPDATE_PREFIX, clock(started), clock(installed))
+    )
+
+
 def render(tokens, band, line):
     """The one line both channels carry, e.g.
     `[ctx-kit watermark] 513k / red 500k — time to close out (/ctx-handoff)`."""
@@ -180,23 +286,36 @@ def main():
     path = payload.get("transcript_path") if isinstance(payload, dict) else None
     if not isinstance(path, str) or not path:
         return
-    tokens = last_watermark(os.path.expanduser(path))
-    if tokens is None:
+    path = os.path.expanduser(path)
+
+    readings, actions = [], []  # what the owner is shown, and what the session is to do
+
+    tokens = last_watermark(path)
+    if tokens is not None:
+        yellow = parse_threshold(os.environ.get("CTXKIT_WATERMARK_YELLOW"), YELLOW_DEFAULT)
+        red = parse_threshold(os.environ.get("CTXKIT_WATERMARK_RED"), RED_DEFAULT)
+        band = line = None
+        if tokens >= red:
+            band, line = "red", red
+        elif tokens >= yellow:
+            band, line = "yellow", yellow
+        if band:  # under the line: not one byte about the watermark
+            readings.append(render(tokens, band, line))
+            actions.append(action(band))
+
+    update = update_reading(path)
+    if update:
+        readings.append(update)
+        actions.append(UPDATE_ACTION)
+
+    if not readings:
         return
 
-    yellow = parse_threshold(os.environ.get("CTXKIT_WATERMARK_YELLOW"), YELLOW_DEFAULT)
-    red = parse_threshold(os.environ.get("CTXKIT_WATERMARK_RED"), RED_DEFAULT)
-    if tokens >= red:
-        band, line = "red", red
-    elif tokens >= yellow:
-        band, line = "yellow", yellow
-    else:
-        return  # under the line: not one byte
-
-    reading = render(tokens, band, line)
+    reading = "\n".join(readings)
     # Two channels on purpose: `systemMessage` is the one the owner sees in the terminal (and
     # arrives as an informational message in stream-json), `additionalContext` is the one the
-    # model reads. Neither one alone would reach both.
+    # model reads. Neither one alone would reach both. The model gets the owner's text
+    # verbatim, then what to do about it, so the two readers are never told different things.
     #
     # No trailing newline, and nothing may wrap or re-echo this: claude CLI treats stdout that
     # starts with `{` and ends with `}` as JSON, and stdout it fails to parse is dropped whole
@@ -205,7 +324,7 @@ def main():
         "systemMessage": reading,
         "hookSpecificOutput": {
             "hookEventName": "UserPromptSubmit",
-            "additionalContext": reading + ". " + action(band),
+            "additionalContext": reading + "\n" + "\n".join(actions),
         },
     }))
 

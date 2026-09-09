@@ -14,12 +14,19 @@ Run:
     python3 scripts/tests/test_ctx_watermark.py
 Use a working python3 — on macOS /usr/bin/python3 is an Xcode shim that cannot even import json.
 """
-import json, os, subprocess, sys, time, unittest
+import datetime, json, os, subprocess, sys, time, unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPT = os.path.join(os.path.dirname(HERE), "ctx-watermark.py")
 FIXTURES = os.environ.get("CTXKIT_TEST_DIR") or "/tmp/ctx-watermark-tests"
 PREFIX = "[ctx-kit watermark]"
+UPDATE_PREFIX = "[ctx-kit update]"
+
+# When every fixture session in here opened, as the log spells it and as a number of seconds.
+# The installed copies built below are stamped either side of this moment.
+SESSION_START = "2026-09-05T00:00:00.000Z"
+SESSION_STARTED = datetime.datetime.fromisoformat("2026-09-05T00:00:00+00:00").timestamp()
+HOUR = 3600
 
 # The defaults the script falls back to, restated here so a silent change to either one shows up
 # as a failing test rather than as a doorbell that rings at a line nobody chose.
@@ -31,8 +38,16 @@ IN_YELLOW = (10000, 400000, 8000)       # 418000
 UNDER_BOTH = (40000, 20000, 3000)       # 63000
 
 
+# An install root with nothing ctx-kit-shaped underneath it. Pointing CLAUDE_PLUGIN_ROOT here
+# is what keeps every test below about the one thing it is about: with no installed files to
+# stat, the "this session predates the installed files" reading has nothing to say, and a run
+# under the line stays silent. The tests that are about that reading point it somewhere else.
+NO_INSTALL = os.path.join(FIXTURES, "no-install")
+
+
 def setUpModule():
     os.makedirs(FIXTURES, exist_ok=True)
+    os.makedirs(NO_INSTALL, exist_ok=True)
 
 
 def assistant(numbers, sidechain=False, mid="msg_synthetic"):
@@ -45,7 +60,7 @@ def assistant(numbers, sidechain=False, mid="msg_synthetic"):
     return {
         "type": "assistant",
         "isSidechain": sidechain,
-        "timestamp": "2026-09-05T00:00:00.000Z",
+        "timestamp": SESSION_START,
         "message": {
             "id": mid,
             "role": "assistant",
@@ -70,11 +85,29 @@ def write_transcript(name, records, tail=""):
     return path
 
 
+def installed(name, written_at):
+    """A directory shaped like an installed ctx-kit, every file stamped `written_at`.
+
+    Two files, one of each shape the script looks for, so a run that found only one of the
+    two globs would still be reading a real mtime and the test would go on passing. The
+    bodies are never read — only the mtimes are — so one word in each is enough.
+    """
+    root = os.path.join(FIXTURES, name)
+    for parts in (("skills", "ctx-status", "SKILL.md"), ("scripts", "ctx-watermark.py")):
+        path = os.path.join(root, *parts)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as handle:
+            handle.write("synthetic\n")
+        os.utime(path, (written_at, written_at))
+    return root
+
+
 def run(path, **thresholds):
     """Run the hook the way claude CLI does: the event JSON on stdin, nothing else."""
     env = dict(os.environ)
     env.pop("CTXKIT_WATERMARK_YELLOW", None)  # never inherit the developer's own lines
     env.pop("CTXKIT_WATERMARK_RED", None)
+    env["CLAUDE_PLUGIN_ROOT"] = NO_INSTALL  # nor the developer's own installed copy
     env.update(thresholds)
     event = json.dumps({
         "session_id": "synthetic-session",
@@ -94,6 +127,7 @@ def run_raw(stdin_text):
     env = dict(os.environ)
     env.pop("CTXKIT_WATERMARK_YELLOW", None)
     env.pop("CTXKIT_WATERMARK_RED", None)
+    env["CLAUDE_PLUGIN_ROOT"] = NO_INSTALL
     return subprocess.run(
         [sys.executable, SCRIPT], input=stdin_text, env=env,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True,
@@ -399,6 +433,98 @@ class TailRead(unittest.TestCase):
         self.assertLess(elapsed, 1.0, "took %.3fs on a %.1fMB transcript" % (
             elapsed, os.path.getsize(self.BIG) / 1048576.0))
         print("\n  30MB transcript, one run end to end: %.3fs" % elapsed)
+
+
+def clock(stamp):
+    """The script's own way of printing a moment, restated so the two can be compared."""
+    return datetime.datetime.fromtimestamp(stamp).strftime("%Y-%m-%d %H:%M")
+
+
+class StaleInstall(unittest.TestCase):
+    """A session that opened before the ctx-kit files it is running were last written.
+
+    This reading is not about spending, so it is not about a band either: it rides on whatever
+    the watermark happens to be, a watermark under both lines included. Two moments are
+    compared — the first timestamp in this session's log, and the newest mtime under the
+    install root — and something is said only when the second one is later. Every case below
+    fixes both moments, so nothing here depends on when the suite is run.
+    """
+
+    def quiet_log(self, name):
+        """A transcript under both lines, so the only thing that can print is this reading."""
+        return write_transcript(name, [assistant(UNDER_BOTH)])
+
+    def test_an_install_written_after_the_session_opened_is_reported(self):
+        path = self.quiet_log("stale-newer.ndjson")
+        root = installed("install-newer", SESSION_STARTED + HOUR)
+        result = run(path, CLAUDE_PLUGIN_ROOT=root)
+        self.assertEqual(0, result.returncode, result.stderr)
+        message = json.loads(result.stdout)["systemMessage"]
+        self.assertTrue(message.startswith(UPDATE_PREFIX), message)
+        # Its own mark, not the watermark's: the docs define the watermark as the reading on
+        # the line starting `[ctx-kit watermark]`, and this line is not a watermark.
+        self.assertNotIn(PREFIX, message)
+        # Both moments are in it, so the owner can see how far back the session opened.
+        self.assertIn(clock(SESSION_STARTED), message)
+        self.assertIn(clock(SESSION_STARTED + HOUR), message)
+
+    def test_an_install_no_newer_than_the_session_says_nothing(self):
+        for label, written_at in (
+            ("written an hour before the session opened", SESSION_STARTED - HOUR),
+            ("written in the same second", SESSION_STARTED),
+        ):
+            with self.subTest(install=label):
+                path = self.quiet_log("stale-older.ndjson")
+                root = installed("install-older", written_at)
+                result = run(path, CLAUDE_PLUGIN_ROOT=root)
+                self.assertEqual("", result.stdout)
+                self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_nothing_installed_to_compare_against_says_nothing(self):
+        """An empty root — somebody who keeps the kit somewhere else entirely gets silence."""
+        result = run(self.quiet_log("stale-no-install.ndjson"))  # CLAUDE_PLUGIN_ROOT=NO_INSTALL
+        self.assertEqual("", result.stdout)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_a_log_with_no_timestamp_to_read_says_nothing(self):
+        """One moment missing is no comparison, and no comparison is silence, not a guess."""
+        record = assistant(UNDER_BOTH)
+        del record["timestamp"]
+        path = write_transcript("stale-no-timestamp.ndjson", [record])
+        root = installed("install-newer", SESSION_STARTED + HOUR)
+        result = run(path, CLAUDE_PLUGIN_ROOT=root)
+        self.assertEqual("", result.stdout)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_the_instruction_is_once_per_session_not_once_per_band(self):
+        """The fact does not change while the session lives, so neither does the suppression.
+
+        Same shape as the watermark instruction — the session checks its own earlier replies —
+        but the thing being checked is "have I said this at all", not "have I said this band".
+        """
+        path = self.quiet_log("stale-once.ndjson")
+        root = installed("install-newer", SESSION_STARTED + HOUR)
+        context = json.loads(run(path, CLAUDE_PLUGIN_ROOT=root).stdout)
+        context = context["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("once per session", context)
+        self.assertIn("look back over your own earlier replies", context)
+        self.assertNotIn("band", context)
+        # A fact to pass on, not something to act on.
+        self.assertIn("do not reinstall anything", context)
+
+    def test_it_rides_along_with_the_bell_as_a_second_line(self):
+        path = write_transcript("stale-and-ringing.ndjson", [assistant(OVER_RED)])
+        root = installed("install-newer", SESSION_STARTED + HOUR)
+        payload = json.loads(run(path, CLAUDE_PLUGIN_ROOT=root).stdout)
+        lines = payload["systemMessage"].splitlines()
+        self.assertEqual(2, len(lines), lines)
+        self.assertTrue(lines[0].startswith(PREFIX), lines[0])
+        self.assertIn("513k / red 500k", lines[0])
+        self.assertTrue(lines[1].startswith(UPDATE_PREFIX), lines[1])
+        # Both readings reach the model, and each keeps its own instruction.
+        context = payload["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("already passed a red reading", context)
+        self.assertIn("once per session", context)
 
 
 if __name__ == "__main__":
