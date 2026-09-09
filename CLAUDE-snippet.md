@@ -55,8 +55,10 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
   the reading to the owner in one sentence and suggest closing out; the owner decides, never act unasked
   (ctx-handoff). Say it once per band: before passing a reading on, look back over your own earlier replies in
   this session — if you have already given the owner a reading for this same band, say nothing about it this
-  turn; say it again only when the band changes (yellow → red). A successor opens by reading the case file
-  only, and never reads old session transcripts (ctx-takeover).
+  turn; say it again only when the band changes (yellow → red). **A band once reported stays reported for this
+  session**: a reading that drops back below the line does not re-arm that band, and climbing back into the
+  same band says nothing more. A successor opens by reading the case file only, and never reads old session
+  transcripts (ctx-takeover).
   A discussion / lead session is never compacted; compact is first aid for an exec session nearing the top of the
   window, and nothing else.
 - When asked "where do things stand": read the board + the cases and report in plain language, so the owner never
