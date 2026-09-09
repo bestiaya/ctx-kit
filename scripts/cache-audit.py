@@ -20,6 +20,10 @@ Measures:
   - known blind spot: the compact summary request is not billed into the jsonl, so its cost is
     absent from this table
   - jsonl timestamps are UTC; convert to the local timezone before comparing with a local clock
+  - newest first, ordered by the last timestamp inside each log — not by the file's mtime, which
+    a copy, a restore or a sync resets on every file at once and then orders the table by an
+    accident of the filesystem. mtime is kept only as the fallback for a log whose own
+    timestamps will not parse, and the header line says when that happened
 
 Usage:
   python3 cache-audit.py <jsonl path...>            # named sessions
@@ -124,6 +128,13 @@ def audit(fp):
     rows = sorted(main.values(), key=lambda r: r["ts"])
     if not rows:
         return None
+    try:
+        days, last = (pt(rows[-1]["ts"]) - pt(rows[0]["ts"])).days, rows[-1]["ts"]
+    except Exception:
+        # A timestamp this script cannot read used to end the whole sweep in a traceback, so one
+        # malformed line in one log meant no audit at all. Report the session with no dating
+        # instead: `last=None` sends the ordering below to the file's mtime and says so.
+        days, last = 0, None
     ctx = [r["it"] + r["cr"] + r["cc"] for r in rows]
     # A rewrite = a large write with the read collapsing to under half the existing context
     # (only the shared header is left). A read still close to the existing context is
@@ -139,8 +150,9 @@ def audit(fp):
     rw = sum(r["cc"] for r in rewrites) * 2
     return dict(
         file=os.path.basename(fp),
+        last=last,
         n=len(rows),
-        days=(pt(rows[-1]["ts"]) - pt(rows[0]["ts"])).days,
+        days=days,
         p50=int(statistics.median(ctx)),
         peak=max(ctx),
         eq_m=eq / 1e6,
@@ -226,13 +238,33 @@ def main():
             f"# case library: {cases} — not there. Looked for a `ctx-kit case library:` line in"
             f" {os.path.join(project_root(), 'CLAUDE.md')}, then _ops/CASES/, then cases/"
         )
-    hdr = f"{'session':34} {'reqs':>5} {'day':>3} {'p50 ctx':>9} {'peak':>9} {'costM':>7} {'rw':>4} {'rw%':>7} {'cmp':>4}"
-    print(hdr)
-    shown = 0
-    for fp in sorted(files, key=os.path.getmtime, reverse=True):
+    # Audit first, then order by the last timestamp each log carries. Ordering by mtime instead
+    # has been measured putting the table in the wrong order: a directory copied or restored
+    # gets every mtime rewritten at once, and the newest session then sorts wherever the copy
+    # happened to touch it. A log whose own timestamps will not parse falls back to its mtime,
+    # and the line under the table header says how many did.
+    read, guessed = [], 0
+    for fp in files:
         r = audit(fp)
         if not r:
             continue
+        when = None
+        if r["last"]:
+            when = pt(r["last"])
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=datetime.timezone.utc)
+        if when is None:
+            when = datetime.datetime.fromtimestamp(os.path.getmtime(fp), datetime.timezone.utc)
+            guessed += 1
+        read.append((when, fp, r))
+    read.sort(key=lambda t: t[0], reverse=True)
+    print("# newest first, by the last timestamp inside each log" + (
+        f" ({guessed} of {len(read)} by file mtime instead — no timestamp this script could read)"
+        if guessed else ""))
+    hdr = f"{'session':34} {'reqs':>5} {'day':>3} {'p50 ctx':>9} {'peak':>9} {'costM':>7} {'rw':>4} {'rw%':>7} {'cmp':>4}"
+    print(hdr)
+    shown = 0
+    for _when, fp, r in read:
         shown += 1
         flag = (
             " ⚠️"
