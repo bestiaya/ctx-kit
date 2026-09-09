@@ -9,8 +9,10 @@ Seven checks, each reported on its own (every finding prints as `file:line`):
   2. E cell length   the Verdict cell and the Impact-on-plan cell, each capped at
                      200 characters — measured on the rows a takeover reads and no
                      others: the live rows plus the single most recent delivered
-                     row. An older delivered row is never read in, so its length
-                     costs a successor nothing
+                     row — most recent by ID (E-10b-2 sorts before E-11), never by
+                     the order the rows sit in the table, and a row marked done
+                     counts as delivered here. An older delivered row is never read
+                     in, so its length costs a successor nothing
   3. E status words  every status cell opens with one of the six agreed words
                      (running / awaiting acceptance / queued / to dispatch /
                      delivered / done). A verdict written into the status cell
