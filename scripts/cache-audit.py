@@ -22,6 +22,18 @@ Measures:
     second project -- a Read-only count, ignores Bash, not comparable in size with the first.
     30,000 is the existing read-gate number,
     reused here as the boundary of a count; nothing acts on it
+  - self = the characters this session wrote into its own tool calls: a Bash command and its
+    heredoc, the body of a Write or an Edit, the prompt a dispatched subagent was handed, a
+    cross-session message it sent. reports = what came back from elsewhere into this session's
+    own thread: a subagent's task-notification, a message from another session. Both are
+    readings and carry no line. Unlike echo, both count **this session's own transcript only**
+    -- a subagent's own Bash heredoc was written inside the subagent's context and never
+    entered this one, so folding it in here would answer a different question from the one
+    these two columns are for. The line printed under the table splits those same
+    own-transcript characters five ways -- self / echo / reports / replies / other -- so a
+    session can see by which route it filled up. The fixed part (the system prompt and the tool
+    definitions) is never written into a jsonl and is paid again every turn, so it sits outside
+    that split rather than being counted as zero
   - a rewrite event = not the first request, a single cache_write >150k, and the read collapsing
     to under half the existing context (a read still close to the existing context is "a big new
     block entering for the first time", not a cold rewrite of the whole thing, and does not count).
@@ -123,6 +135,48 @@ def pt(ts):
 ECHO_GATE = 30_000
 
 
+# The five routes characters take into one session's own context, plus one sub-count: how much
+# of `self` is prompts written for a subagent, which is the route with an obvious cheaper form
+# (write the brief to a file, hand over the path). `dispatch` is a part of `self`, not a sixth
+# route, and is not added in anywhere.
+MAKEUP = ("self", "echo", "reports", "replies", "other")
+
+# Tool names that hand a job to a subagent. Two spellings because the same call has gone by
+# both; a name this does not know still counts into `self`, only not into the sub-count.
+DISPATCH = ("Agent", "Task")
+
+
+def is_report(text):
+    """Did this plain-text user record come back from somewhere else, rather than from the owner?
+
+    Two markers, both written by the client at the very start of the message: a subagent that
+    finished arrives as `<task-notification>`, and another session's message arrives wrapped in
+    `<cross-session-message`. Only the opening of the record is looked at — a message that
+    merely quotes one of those words further down is somebody talking about them, not one
+    arriving.
+    """
+    head = text.lstrip()[:400]
+    return head.startswith("<task-notification>") or "<cross-session-message" in head
+
+
+def input_chars(value):
+    """How many characters one tool call's input puts into a context.
+
+    The values, not the JSON scaffolding around them: what is being counted is what somebody
+    wrote, and `{"command": ...}` is the client's wrapper rather than anybody's writing. A
+    number or a boolean counts as what it prints as; None counts zero.
+    """
+    if isinstance(value, str):
+        return len(value)
+    if isinstance(value, dict):
+        return sum(input_chars(v) for v in value.values())
+    if isinstance(value, list):
+        return sum(input_chars(v) for v in value)
+    if value is None:
+        return 0
+    return len(str(value))
+
+
 def echo_chars(block):
     """How many characters one tool_result block puts into the context.
 
@@ -141,7 +195,7 @@ def echo_chars(block):
     return n
 
 
-def echo(fp, per):
+def echo(fp, per, make=None):
     """Add one transcript's tool echo to `per`, a tool name -> characters counter.
 
     One pass. Assistant tool_use blocks give id -> tool name; every tool_result block in a
@@ -153,6 +207,11 @@ def echo(fp, per):
 
     This is the same count that produced the readings quoted at the top of this file, so the
     two can be set side by side rather than argued about.
+
+    Pass a `make` counter and the same pass also splits this file's characters five ways (the
+    MAKEUP routes above). It is handed in only for a session's own transcript, never for a
+    subagent's, which is what keeps `self` and `reports` answering "what filled this context"
+    while `echo` goes on answering "what this whole dispatched job read".
     """
     seen, id2name, pending, biggest = set(), {}, [], 0
     with open(fp, errors="replace") as f:
@@ -165,15 +224,41 @@ def echo(fp, per):
             if not isinstance(m, dict):
                 continue
             content = m.get("content")
+            if make is not None and isinstance(content, str):
+                # A user record carrying plain text: either something that arrived from
+                # elsewhere, or the owner typing.
+                make["reports" if is_report(content) else "other"] += len(content)
             if not isinstance(content, list):
                 continue
             if m.get("role") == "assistant":
                 for item in content:
-                    if isinstance(item, dict) and item.get("type") == "tool_use" and item.get("id"):
+                    if not isinstance(item, dict):
+                        continue
+                    kind = item.get("type")
+                    if kind == "tool_use" and item.get("id"):
                         id2name[item["id"]] = item.get("name") or "?"
+                    if make is None:
+                        continue
+                    if kind == "tool_use":
+                        n = input_chars(item.get("input"))
+                        make["self"] += n
+                        if (item.get("name") or "") in DISPATCH:
+                            make["dispatch"] += n
+                    elif kind == "text":
+                        make["replies"] += len(item.get("text") or "")
+                    elif kind == "thinking":
+                        # Reasoning is neither something read in nor something said to the
+                        # owner; it goes to the remainder rather than inflating either.
+                        make["other"] += len(item.get("thinking") or "")
             elif m.get("role") == "user":
                 for item in content:
-                    if not (isinstance(item, dict) and item.get("type") == "tool_result"):
+                    if not isinstance(item, dict):
+                        continue
+                    if item.get("type") != "tool_result":
+                        if make is not None and item.get("type") == "text":
+                            # A skill body, a system reminder, an owner prompt written as a
+                            # block: not this session's writing and not a tool result.
+                            make["other"] += len(item.get("text") or "")
                         continue
                     tid = item.get("tool_use_id")
                     if tid in seen:
@@ -181,6 +266,8 @@ def echo(fp, per):
                     seen.add(tid)
                     n = echo_chars(item)
                     biggest = max(biggest, n)
+                    if make is not None:
+                        make["echo"] += n
                     if tid in id2name:
                         per[id2name[tid]] = per.get(id2name[tid], 0) + n
                     else:
@@ -192,7 +279,8 @@ def echo(fp, per):
 
 
 def session_echo(fp):
-    """The echo of a session: its own transcript plus every subagent transcript under it.
+    """The echo of a session: its own transcript plus every subagent transcript under it, and
+    the make-up of the session's own transcript alone.
 
     A subagent's results are read in that subagent's context, not in its parent's, so this
     is not a bill the parent paid twice — it is what the whole of one dispatched job put in
@@ -202,7 +290,8 @@ def session_echo(fp):
     joined to it by tool_use_id.
     """
     per, biggest = {}, 0
-    biggest = max(biggest, echo(fp, per))
+    make = dict.fromkeys(MAKEUP + ("dispatch",), 0)
+    biggest = max(biggest, echo(fp, per, make))
     stem = os.path.basename(fp)[: -len(".jsonl")]
     subdir = os.path.join(os.path.dirname(fp), stem, "subagents")
     for here, _dirs, names in os.walk(subdir):
@@ -210,11 +299,13 @@ def session_echo(fp):
             if not name.endswith(".jsonl") or name == "journal.jsonl":
                 continue
             try:
+                # No `make` here on purpose: a subagent's echo is this session's echo, but a
+                # subagent's writing was never in this session's context.
                 biggest = max(biggest, echo(os.path.join(here, name), per))
             except OSError:
                 continue
     total = sum(per.values())
-    return total, per.get("Bash", 0), biggest
+    return total, per.get("Bash", 0), biggest, make
 
 
 def audit(fp):
@@ -383,7 +474,7 @@ def main():
         r = audit(fp)
         if not r:
             continue
-        r["echo"], r["bash"], r["biggest"] = session_echo(fp)
+        r["echo"], r["bash"], r["biggest"], r["make"] = session_echo(fp)
         when = None
         if r["last"]:
             when = pt(r["last"])
@@ -397,8 +488,11 @@ def main():
     emit("# newest first, by the last timestamp inside each log" + (
         f" ({guessed} of {len(read)} by file mtime instead — no timestamp this script could read)"
         if guessed else ""))
+    # self and reports sit to the left of echo rather than at the end, so a reader taking the
+    # last two columns off a row still gets the same pair as before this was added.
     hdr = (f"{'session':34} {'reqs':>5} {'day':>3} {'p50 ctx':>9} {'peak':>9} {'costM':>7}"
-           f" {'rw':>4} {'rw%':>7} {'cmp':>4} {'echo':>12} {'bash%':>6}")
+           f" {'rw':>4} {'rw%':>7} {'cmp':>4} {'self':>11} {'reports':>9} {'echo':>12}"
+           f" {'bash%':>6}")
     emit(hdr)
     shown = 0
     for _when, fp, r in read:
@@ -417,7 +511,8 @@ def main():
         emit(
             f"{r['file'][:34]:34} {r['n']:>5} {r['days']:>3} {r['p50']:>9,} {r['peak']:>9,}"
             f" {r['eq_m']:>7.1f} {r['rewrites']:>4} {r['rw_share']:>6.0f}% {r['compacts']:>4}"
-            f" {r['echo']:>12,} {bash_share:>5.0f}%{flag}"
+            f" {r['make']['self']:>11,} {r['make']['reports']:>9,} {r['echo']:>12,}"
+            f" {bash_share:>5.0f}%{flag}"
         )
     if shown:
         # Two readings, no line: the echo the whole table adds up to, and the count of
@@ -433,6 +528,23 @@ def main():
             f"# {len(blind)} of {shown} session(s) echo more than {ECHO_GATE:,} characters in total"
             f" while no single tool result ever reaches it — a reading, no line is set on it"
         )
+        # A third reading, and the only one that says by which route the characters arrived:
+        # the same rows split five ways. Percentages are rounded to whole numbers on their
+        # own, so the total is printed beside them and any share can be recomputed from it.
+        made = {k: sum(r["make"][k] for _w, _f, r in read) for k in MAKEUP + ("dispatch",)}
+        whole = sum(made[k] for k in MAKEUP)
+        if whole:
+            pct = lambda k: 100.0 * made[k] / whole
+            emit(
+                f"# make-up of those same logs, each one on its own (subagent transcripts are"
+                f" not folded in here, unlike the echo column): self {pct('self'):.0f}%"
+                f" — of the whole, {pct('dispatch'):.0f}% is prompts written for a subagent —"
+                f" echo {pct('echo'):.0f}%, reports {pct('reports'):.0f}%,"
+                f" replies {pct('replies'):.0f}%, other {pct('other'):.0f}%,"
+                f" out of {whole:,} characters. The fixed part — system prompt and tool"
+                f" definitions — is never written into a jsonl and is paid again every turn,"
+                f" so it is outside this split rather than a zero inside it"
+            )
     else:
         # zero rows is not a pass: say so plainly, so the checkup cannot read an empty
         # table as a clean bill of health. "No sessions found" is reserved for the case

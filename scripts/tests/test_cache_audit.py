@@ -57,8 +57,8 @@ def transcript(where, name, stamps, mtime):
     return path
 
 
-def call(when, tid, name, mid):
-    """One assistant record that calls a tool."""
+def call(when, tid, name, mid, inp=None):
+    """One assistant record that calls a tool, optionally with something written into it."""
     return {
         "type": "assistant",
         "isSidechain": False,
@@ -66,7 +66,8 @@ def call(when, tid, name, mid):
         "message": {
             "id": mid,
             "role": "assistant",
-            "content": [{"type": "tool_use", "id": tid, "name": name, "input": {}}],
+            "content": [{"type": "tool_use", "id": tid, "name": name,
+                         "input": {} if inp is None else inp}],
             "usage": {
                 "input_tokens": 10,
                 "cache_read_input_tokens": 20,
@@ -88,6 +89,25 @@ def result(tid, text):
                          "content": [{"type": "text", "text": text}]}],
         },
     }
+
+
+def said(text):
+    """One assistant record that says something back, with no tool call in it."""
+    return {
+        "type": "assistant",
+        "isSidechain": False,
+        "timestamp": "2026-09-09T10:00:00.000Z",
+        "message": {"id": "m_said", "role": "assistant",
+                    "content": [{"type": "text", "text": text}],
+                    "usage": {"input_tokens": 1, "cache_read_input_tokens": 1,
+                              "cache_creation_input_tokens": 1, "output_tokens": 1}},
+    }
+
+
+def typed(text):
+    """One user record carrying plain text — an arrival, or the owner typing."""
+    return {"type": "user", "timestamp": "2026-09-09T10:00:00.000Z",
+            "message": {"role": "user", "content": text}}
 
 
 EXT = ".jsonl"  # what cache-audit globs for; the tests below name stems and let this add it
@@ -300,6 +320,103 @@ class Echo(unittest.TestCase):
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         self.assertEqual(2, done.returncode)
         self.assertIn("--out needs a path", done.stderr)
+
+
+class MakeUp(unittest.TestCase):
+    """The self and reports columns, and the line that splits one log five ways.
+
+    What these two columns are for is the opposite question from the echo column's: echo asks
+    what the whole dispatched job read, so a subagent's results count into the session that
+    sent it; self and reports ask what filled *this* context, so a subagent's own writing does
+    not. The two live side by side in the same table, and the difference is stated in the
+    printed line as well as here.
+    """
+
+    def setUp(self):
+        self.where = os.path.join(FIXTURES, self._testMethodName)
+        if os.path.isdir(self.where):
+            shutil.rmtree(self.where)
+        os.makedirs(self.where)
+
+    def write(self, stem, records):
+        path = os.path.join(self.where, stem + EXT)
+        with io.open(path, "w", encoding="utf-8") as fh:
+            for r in records:
+                fh.write(json.dumps(r) + "\n")
+        return path
+
+    # Counted from the right-hand end, because the header's own `p50 ctx` is two words and
+    # would throw a count from the left off by one. No fixture here crosses a line, so no row
+    # carries the trailing flag that would shift these.
+    FROM_THE_RIGHT = {"self": -4, "reports": -3, "echo": -2}
+
+    def cell(self, out, stem, which):
+        """One numeric cell of a row, by column name."""
+        row = next(l for l in out.split("\n") if l.startswith(stem + EXT))
+        self.assertNotIn("\u26a0", row, "a flagged row shifts the columns counted here")
+        return int(row.split()[self.FROM_THE_RIGHT[which]].replace(",", ""))
+
+    def test_what_the_session_wrote_into_tool_calls_is_counted_as_self(self):
+        # 300 characters of command, 40 of description: the values, not the JSON around them
+        self.write("s", [
+            call("2026-09-09T10:00:00.000Z", "t1", "Bash", "m1",
+                 {"command": "x" * 300, "description": "y" * 40}),
+            result("t1", "z" * 10),
+        ])
+        done = run(self.where)
+        self.assertEqual(0, done.returncode, done.stderr)
+        self.assertEqual(340, self.cell(done.stdout, "s", "self"))
+
+    def test_a_subagents_own_writing_is_not_counted_into_the_parents_self(self):
+        # the subagent's echo is the parent's echo; the subagent's heredoc is not the
+        # parent's self, because it was never in the parent's context
+        self.write("s", [call("2026-09-09T10:00:00.000Z", "t1", "Agent", "m1",
+                              {"prompt": "p" * 100}),
+                         result("t1", "r" * 50)])
+        here = os.path.join(self.where, "s", "subagents")
+        os.makedirs(here)
+        with io.open(os.path.join(here, "agent-one" + EXT), "w", encoding="utf-8") as fh:
+            fh.write(json.dumps(call("2026-09-09T10:01:00.000Z", "t9", "Bash", "m9",
+                                     {"command": "q" * 7000})) + "\n")
+            fh.write(json.dumps(result("t9", "e" * 400)) + "\n")
+        done = run(self.where)
+        self.assertEqual(100, self.cell(done.stdout, "s", "self"))
+        self.assertEqual(450, self.cell(done.stdout, "s", "echo"))
+
+    def test_what_came_back_from_elsewhere_is_counted_as_reports(self):
+        self.write("s", [
+            said("ok"),
+            typed("<task-notification>\n<task-id>abc</task-id>\n" + "n" * 100),
+            typed('Another Claude session sent a message:\n<cross-session-message from="x">'
+                  + "m" * 100),
+            typed("please carry on"),  # the owner: not a report
+        ])
+        done = run(self.where)
+        reports = self.cell(done.stdout, "s", "reports")
+        self.assertEqual(len("<task-notification>\n<task-id>abc</task-id>\n" + "n" * 100)
+                         + len('Another Claude session sent a message:\n'
+                               '<cross-session-message from="x">' + "m" * 100), reports)
+        # the owner's own line lands in `other`, so it is neither self nor reports
+        self.assertIn("other", done.stdout)
+
+    def test_the_make_up_line_names_five_routes_and_the_dispatch_share(self):
+        self.write("s", [
+            call("2026-09-09T10:00:00.000Z", "t1", "Agent", "m1", {"prompt": "p" * 250}),
+            result("t1", "e" * 250),
+            typed("<task-notification>" + "n" * 230),
+            said("s" * 250),
+        ])
+        done = run(self.where)
+        line = next(l for l in done.stdout.split("\n") if l.startswith("# make-up"))
+        for route in ("self", "echo", "reports", "replies", "other"):
+            self.assertIn(route, line)
+        self.assertIn("prompts written for a subagent", line)
+        # the fixed part is named as outside the split rather than silently missing from it
+        self.assertIn("system prompt and tool definitions", line)
+        self.assertIn("outside this split", line)
+        # every character in this fixture went down one of the four routes it exercises
+        self.assertIn("self 25%", line)
+        self.assertIn("echo 25%", line)
 
 
 if __name__ == "__main__":
