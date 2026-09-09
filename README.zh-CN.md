@@ -169,7 +169,7 @@ English: [README.md](README.md) · 六条命令的 skill 只有英文一版，**
 
 ## 装什么
 
-装进去的是 6 个 skill、1 段 CLAUDE.md 条文、2 个 hook（自动压缩前的预警，与每回合一次的水位门铃）、4 支脚本（周检查账、门铃本身，以及案文件体检——它自己那个 hook 是可选的，本包不替你打开）、1 个 digest 子代理。
+装进去的是 6 个 skill、1 段 CLAUDE.md 条文、2 个 hook（自动压缩前的预警，与每回合一次的水位门铃）、4 支脚本（接手装载器、周检查账、门铃本身，以及案文件体检——它自己那个 hook 是可选的，本包不替你打开）、1 个 digest 子代理。
 
 **先看版本**：`claude --version`。哪一层要什么版本（版本出自 [claude CLI 更新日志](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)）：
 
