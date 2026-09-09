@@ -12,6 +12,14 @@ Pre-registered criteria (the checkup measure; a fail is reported as a fail):
 Measures:
   - equivalent = input x1 + cache_read x0.1 + cache_write x2 + output x5
     (writes priced at the measured 2x for the 1h bucket)
+  - echo = the characters this session's tool results put into a context, its own and its
+    subagents' (a subagent's transcript sits in <session id>/subagents/). bash% is the Bash
+    share of that. Both are readings and carry no line: no criterion here passes or fails on
+    them. The reading they exist for is the count printed under the table -- sessions whose
+    echo adds up past 30,000 characters while no single tool result ever reached it, which is
+    the read-gate's blind spot, measured at 167 of 217 contexts in this kit's own project on
+    2026-09-09 and 34 of 150 in a second project. 30,000 is the existing read-gate number,
+    reused here as the boundary of a count; nothing acts on it
   - a rewrite event = not the first request, a single cache_write >150k, and the read collapsing
     to under half the existing context (a read still close to the existing context is "a big new
     block entering for the first time", not a cold rewrite of the whole thing, and does not count).
@@ -30,6 +38,7 @@ Usage:
   python3 cache-audit.py --all [min MB]             # sweep the current project (default floor 2MB)
   python3 cache-audit.py --project <dir> --all      # a named project directory
   python3 cache-audit.py --cases <dir> --all        # a named case library (skips the rule below)
+  python3 cache-audit.py --out <file> --all         # also write this run's output to a file
   python3 cache-audit.py --help                     # this text
 The project directory is derived from cwd by default: ~/.claude/projects/ + cwd with every
 non-alphanumeric character replaced by '-'.
@@ -45,11 +54,16 @@ The MB floor only hides small logs; it never means there are none. When the floo
 every log away, the sweep says how many it found and re-runs itself with no floor, so an
 empty table is reported as "no sessions found" only when the directory really holds none.
 
+--out writes the same text that goes to the terminal, unchanged, into a file, and is off
+unless asked for: the weekly checkup keeps its artifact this way (ctx-checkup section
+"The artifact"). Usage errors go to stderr and are not written to it.
+
 Exit codes:
   0  the audit ran. A zero-row table still exits 0 — read the line printed under the table;
      zero rows is not a pass.
   2  usage error: unknown flag, --project or --cases with no directory, --cases pointing at
-     a directory that is not there, a non-numeric MB floor, or a jsonl path that is not there.
+     a directory that is not there, a non-numeric MB floor, a jsonl path that is not there,
+     --out with no path, or an --out path that cannot be written.
 """
 import json, sys, glob, os, re, datetime, statistics
 
@@ -97,6 +111,104 @@ def resolve_cases(root=None):
 
 def pt(ts):
     return datetime.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+
+
+# The read gate's own number, reused here as the boundary of a count. It is not a criterion
+# line and nothing in this script passes or fails on it: the count under the table is a
+# reading, and the checkup reports it without attaching an action.
+ECHO_GATE = 30_000
+
+
+def echo_chars(block):
+    """How many characters one tool_result block puts into the context.
+
+    content given as a string counts whole; content given as a list counts only its text
+    parts. An image part or a tool_reference part enters the context as something that is not
+    characters, so it counts zero here and the total is an undercount by exactly those parts.
+    """
+    c = block.get("content")
+    if isinstance(c, str):
+        return len(c)
+    n = 0
+    if isinstance(c, list):
+        for item in c:
+            if isinstance(item, dict) and item.get("type") == "text":
+                n += len(item.get("text") or "")
+    return n
+
+
+def echo(fp, per):
+    """Add one transcript's tool echo to `per`, a tool name -> characters counter.
+
+    One pass. Assistant tool_use blocks give id -> tool name; every tool_result block in a
+    user message is charged to the name of the id it answers. A result whose id has not been
+    seen yet is held back and matched at the end, because a resumed or forked log can write
+    the two in the other order. A tool_use_id already counted in this file is not counted
+    again — the same result written twice is one arrival in one context. Sidechain records
+    are counted: a subagent's echo is echo, and this is what the subagent transcript holds.
+
+    The count is the one _internal/tools/readgate-replicate.py used for the readings quoted
+    in the docstring, so the two can be set side by side.
+    """
+    seen, id2name, pending, biggest = set(), {}, [], 0
+    with open(fp, errors="replace") as f:
+        for line in f:
+            try:
+                o = json.loads(line)
+            except Exception:
+                continue
+            m = o.get("message")
+            if not isinstance(m, dict):
+                continue
+            content = m.get("content")
+            if not isinstance(content, list):
+                continue
+            if m.get("role") == "assistant":
+                for item in content:
+                    if isinstance(item, dict) and item.get("type") == "tool_use" and item.get("id"):
+                        id2name[item["id"]] = item.get("name") or "?"
+            elif m.get("role") == "user":
+                for item in content:
+                    if not (isinstance(item, dict) and item.get("type") == "tool_result"):
+                        continue
+                    tid = item.get("tool_use_id")
+                    if tid in seen:
+                        continue
+                    seen.add(tid)
+                    n = echo_chars(item)
+                    biggest = max(biggest, n)
+                    if tid in id2name:
+                        per[id2name[tid]] = per.get(id2name[tid], 0) + n
+                    else:
+                        pending.append((tid, n))
+    for tid, n in pending:
+        name = id2name.get(tid, "?")
+        per[name] = per.get(name, 0) + n
+    return biggest
+
+
+def session_echo(fp):
+    """The echo of a session: its own transcript plus every subagent transcript under it.
+
+    A subagent's results are read in that subagent's context, not in its parent's, so this
+    is not a bill the parent paid twice — it is what the whole of one dispatched job put in
+    front of a model. The subagents of `<id>.jsonl` live in `<id>/subagents/`; a workflow
+    journal in there carries no messages and is skipped, the same as in E-17.
+    """
+    per, biggest = {}, 0
+    biggest = max(biggest, echo(fp, per))
+    stem = os.path.basename(fp)[: -len(".jsonl")]
+    subdir = os.path.join(os.path.dirname(fp), stem, "subagents")
+    for here, _dirs, names in os.walk(subdir):
+        for name in sorted(names):
+            if not name.endswith(".jsonl") or name == "journal.jsonl":
+                continue
+            try:
+                biggest = max(biggest, echo(os.path.join(here, name), per))
+            except OSError:
+                continue
+    total = sum(per.values())
+    return total, per.get("Bash", 0), biggest
 
 
 def audit(fp):
@@ -167,6 +279,23 @@ def main():
     if "-h" in args or "--help" in args:
         print(__doc__.strip())
         return 0
+    out_path = None
+    if "--out" in args:
+        i = args.index("--out")
+        if i + 1 >= len(args):
+            print("usage error: --out needs a path", file=sys.stderr)
+            return 2
+        out_path = os.path.expanduser(args[i + 1])
+        args = args[:i] + args[i + 2:]
+    # Everything the terminal gets is kept, so --out can write the same text unchanged.
+    # Usage errors above go to stderr and stay out of the file: an artifact is a record of
+    # an audit that ran, and a run that never got past its own flags did not audit anything.
+    lines = []
+
+    def emit(text=""):
+        lines.append(text)
+        print(text)
+
     proj = PROJ
     if "--project" in args:
         i = args.index("--project")
@@ -202,17 +331,17 @@ def main():
         found = sorted(glob.glob(proj + "*.jsonl"))
         files = [f for f in found if os.path.getsize(f) > minmb * 1e6]
         filtered = len(found) - len(files)
-        print(f"# project directory: {proj}")
+        emit(f"# project directory: {proj}")
         if found and not files:
             # the floor hid everything: say so and drop it, rather than printing a bare
             # header that reads like "this project has no sessions"
-            print(
+            emit(
                 f"# {len(found)} session log(s) here, all of them under the {minmb:g}MB floor"
                 " — re-running with no floor (same as --all 0)"
             )
             files, filtered, minmb = found, 0, 0.0
         elif filtered:
-            print(
+            emit(
                 f"# {filtered} of {len(found)} session log(s) are under the {minmb:g}MB floor"
                 " and are not shown — `--all 0` includes them"
             )
@@ -232,9 +361,9 @@ def main():
         found = len(files)
     if os.path.isdir(cases):
         n_md = len(glob.glob(os.path.join(cases, "*.md")))
-        print(f"# case library: {cases} ({n_md} .md file(s), the board and any archives included)")
+        emit(f"# case library: {cases} ({n_md} .md file(s), the board and any archives included)")
     else:
-        print(
+        emit(
             f"# case library: {cases} — not there. Looked for a `ctx-kit case library:` line in"
             f" {os.path.join(project_root(), 'CLAUDE.md')}, then _ops/CASES/, then cases/"
         )
@@ -248,6 +377,7 @@ def main():
         r = audit(fp)
         if not r:
             continue
+        r["echo"], r["bash"], r["biggest"] = session_echo(fp)
         when = None
         if r["last"]:
             when = pt(r["last"])
@@ -258,11 +388,12 @@ def main():
             guessed += 1
         read.append((when, fp, r))
     read.sort(key=lambda t: t[0], reverse=True)
-    print("# newest first, by the last timestamp inside each log" + (
+    emit("# newest first, by the last timestamp inside each log" + (
         f" ({guessed} of {len(read)} by file mtime instead — no timestamp this script could read)"
         if guessed else ""))
-    hdr = f"{'session':34} {'reqs':>5} {'day':>3} {'p50 ctx':>9} {'peak':>9} {'costM':>7} {'rw':>4} {'rw%':>7} {'cmp':>4}"
-    print(hdr)
+    hdr = (f"{'session':34} {'reqs':>5} {'day':>3} {'p50 ctx':>9} {'peak':>9} {'costM':>7}"
+           f" {'rw':>4} {'rw%':>7} {'cmp':>4} {'echo':>12} {'bash%':>6}")
+    emit(hdr)
     shown = 0
     for _when, fp, r in read:
         shown += 1
@@ -276,24 +407,48 @@ def main():
             )
             else ""
         )
-        print(
+        bash_share = (100.0 * r["bash"] / r["echo"]) if r["echo"] else 0.0
+        emit(
             f"{r['file'][:34]:34} {r['n']:>5} {r['days']:>3} {r['p50']:>9,} {r['peak']:>9,}"
-            f" {r['eq_m']:>7.1f} {r['rewrites']:>4} {r['rw_share']:>6.0f}% {r['compacts']:>4}{flag}"
+            f" {r['eq_m']:>7.1f} {r['rewrites']:>4} {r['rw_share']:>6.0f}% {r['compacts']:>4}"
+            f" {r['echo']:>12,} {bash_share:>5.0f}%{flag}"
         )
-    if not shown:
+    if shown:
+        # Two readings, no line: the echo the whole table adds up to, and the count of
+        # sessions the per-call read gate cannot see — echo past 30,000 characters with no
+        # single tool result ever reaching it. Nothing passes or fails on either number.
+        total_echo = sum(r["echo"] for _w, _f, r in read)
+        blind = [r for _w, _f, r in read if r["echo"] > ECHO_GATE and r["biggest"] <= ECHO_GATE]
+        emit(
+            f"# echo across the {shown} session(s) shown: {total_echo:,} characters"
+            f" (subagent transcripts included)"
+        )
+        emit(
+            f"# {len(blind)} of {shown} session(s) echo more than {ECHO_GATE:,} characters in total"
+            f" while no single tool result ever reaches it — a reading, no line is set on it"
+        )
+    else:
         # zero rows is not a pass: say so plainly, so the checkup cannot read an empty
         # table as a clean bill of health. "No sessions found" is reserved for the case
         # where the directory really is empty — a floor that hid them all is a different
         # sentence, and was read as "this project has none" once already.
         if not allmode:
-            print("(no sessions found in the files given)")
+            emit("(no sessions found in the files given)")
         elif not found:
-            print(f"(no sessions found under {proj})")
+            emit(f"(no sessions found under {proj})")
         else:
-            print(
+            emit(
                 f"({found} session log(s) under {proj} read, none of them holds a billable"
                 " request — nothing to judge)"
             )
+    if out_path:
+        try:
+            with open(out_path, "w", encoding="utf-8") as fh:
+                fh.write("\n".join(lines) + "\n")
+        except OSError as e:
+            print(f"usage error: --out: cannot write {out_path}: {e}", file=sys.stderr)
+            return 2
+        print(f"# written to {out_path}")
     return 0
 
 
