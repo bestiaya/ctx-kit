@@ -22,6 +22,9 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
   ④ heavy but certain (long mechanical volume) → its own session, no stop-and-wait point, delivery pulled rather
   than pushed. A subagent cannot talk to anybody mid-run, so any job that might need the owner must never be inline.
   **A high-watermark session is nobody's parent** (the cold tax of waiting on a subagent = the dispatcher's watermark × 2).
+  Say in the brief how long the reply may be: **a subagent replies in ≤1,500 characters, in three parts** — one line
+  per pre-registered criterion, three key readings, and a pointer to the report. Detail stays in the report file; the
+  one limit that matters most ("this reading shows X, not Y") is never the thing cut to save characters.
 - Cross-case / cross-session delivery — looking the address up and sending are **one indivisible sequence**:
   (1) any address read earlier is **void**, however few minutes ago, and anything coming in between means you
   look it up again; (2) read the **target case file's** header Pen-holder cell now — the session named in an
