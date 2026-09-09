@@ -225,9 +225,15 @@ def echo(fp, per, make=None):
                 continue
             content = m.get("content")
             if make is not None and isinstance(content, str):
-                # A user record carrying plain text: either something that arrived from
-                # elsewhere, or the owner typing.
-                make["reports" if is_report(content) else "other"] += len(content)
+                if m.get("role") == "user":
+                    # A user record carrying plain text: either something that arrived from
+                    # elsewhere, or the owner typing.
+                    make["reports" if is_report(content) else "other"] += len(content)
+                else:
+                    # An assistant record whose reply is a bare string rather than blocks:
+                    # still this session talking, so it belongs with the other replies and
+                    # not in the remainder.
+                    make["replies"] += len(content)
             if not isinstance(content, list):
                 continue
             if m.get("role") == "assistant":
