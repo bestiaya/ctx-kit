@@ -759,7 +759,7 @@ class WatchedFiles(unittest.TestCase):
     a red test, instead of a hint that quietly stops seeing things.
     """
 
-    def watched(self):
+    def patterns(self):
         """`INSTALLED` read out of the script's source — parsed, never imported or run."""
         with open(SCRIPT, encoding="utf-8") as handle:
             tree = ast.parse(handle.read())
@@ -767,12 +767,16 @@ class WatchedFiles(unittest.TestCase):
             if isinstance(node, ast.Assign) and any(
                     isinstance(target, ast.Name) and target.id == "INSTALLED"
                     for target in node.targets):
-                names = set()
-                for parts in ast.literal_eval(node.value):
-                    for path in glob.glob(os.path.join(REPO, *parts)):
-                        names.add(os.path.relpath(path, REPO))
-                return names
+                return list(ast.literal_eval(node.value))
         self.fail("no INSTALLED assignment found in %s" % SCRIPT)
+
+    def watched(self):
+        """Those patterns resolved against the repository, the way the script resolves them."""
+        names = set()
+        for parts in self.patterns():
+            for path in glob.glob(os.path.join(REPO, *parts)):
+                names.add(os.path.relpath(path, REPO))
+        return names
 
     def synced(self):
         """What `--check` names, from a real run of the shipped script against an empty root."""
@@ -805,6 +809,21 @@ class WatchedFiles(unittest.TestCase):
         watched = self.watched()
         self.assertIn(os.path.join("scripts", "takeover-load.py"), watched)
         self.assertIn(os.path.join("agents", "digest.md"), watched)
+
+    def test_every_watched_pattern_matches_something_in_the_repository(self):
+        """A pattern matching nothing would drop out of both sides and pass unnoticed.
+
+        The comparison above globs `INSTALLED` before comparing it, so a name that is not in
+        the repository any more contributes nothing to either set: they stay equal while the
+        doorbell watches one file fewer than the list claims. Each pattern is therefore held
+        to matching something on its own, which is the only direction the equality is blind to.
+        """
+        for parts in self.patterns():
+            pattern = os.path.join(*parts)
+            with self.subTest(pattern=pattern):
+                self.assertTrue(
+                    glob.glob(os.path.join(REPO, *parts)),
+                    "INSTALLED names %s, which matches nothing in the repository" % pattern)
 
 
 class MakeUp(unittest.TestCase):
