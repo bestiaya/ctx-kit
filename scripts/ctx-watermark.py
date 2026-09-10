@@ -97,13 +97,18 @@ PREFIX = "[ctx-kit watermark]"
 UPDATE_PREFIX = "[ctx-kit update]"
 
 # What counts as "this machine's copy of ctx-kit", under whichever root is found below. The
-# scripts are named one by one rather than globbed: `scripts/*.py` also matches whatever else
+# files are named one by one rather than globbed: `scripts/*.py` also matches whatever else
 # the owner keeps in `~/.claude/scripts/`, and editing one of those is not a ctx-kit update.
+# This list is every file `scripts/sync-installed.sh` copies, and a test holds the two to each
+# other: a file the sync script installs but this list does not name is a file whose update
+# nobody would be told about, which is how the loader and the digest agent went unwatched.
 INSTALLED = (
     ("skills", "ctx-*", "SKILL.md"),
+    ("agents", "digest.md"),
     ("scripts", "cache-audit.py"),
     ("scripts", "ctx-watermark.py"),
     ("scripts", "case-lint.py"),
+    ("scripts", "takeover-load.py"),
 )
 
 # What the model is told to do about the reading. The durable version of this lives in the
