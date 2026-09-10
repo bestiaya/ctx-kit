@@ -13,7 +13,7 @@ description: Weekly cache audit — use on "weekly checkup", "where did the toke
 
 ```bash
 S="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/scripts/cache-audit.py}"; [ -f "$S" ] || S="${CLAUDE_CONFIG_DIR:+$CLAUDE_CONFIG_DIR/scripts/cache-audit.py}"; [ -f "$S" ] || S="$HOME/.claude/scripts/cache-audit.py"
-if [ -f "$S" ]; then python3 "$S" --all; else echo "cache-audit.py is in none of the three places ctx-checkup looks (plugin root, then $CLAUDE_CONFIG_DIR, then ~/.claude/scripts/) — nothing was audited. Manual install: copy scripts/cache-audit.py out of the ctx-kit repository into ~/.claude/scripts/, as the README manual-install step says (repository: github.com/bestiaya/ctx-kit)."; fi
+if [ -f "$S" ]; then python3 "$S" --all; else echo "cache-audit.py is in none of the three places ctx-checkup looks (plugin root, then \$CLAUDE_CONFIG_DIR, then ~/.claude/scripts/) — nothing was audited. Manual install: copy scripts/cache-audit.py out of the ctx-kit repository into ~/.claude/scripts/, as the README manual-install step says (repository: github.com/bestiaya/ctx-kit)."; fi
 ```
 
 **To keep the run as an artifact (§6), add `--out <path>` to that command**; without it the script writes nothing, and the file it writes is the same text the terminal got, unchanged. A directory on that path that is not there yet is created for you, so a project's first checkup can point straight at its `CHECKUP/`.
