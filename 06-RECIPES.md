@@ -189,7 +189,7 @@
 手动这样查（脚本在哪，跟别处一样解析两处；`python3` 得是一支真跑得起来的——macOS 的 `/usr/bin/python3` 是 Xcode 垫片，报 `xcodebuild` 就是解释器走错了，不是脚本坏了）：
 
 ```bash
-S="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/scripts/case-lint.py}"; [ -f "$S" ] || S="$HOME/.claude/scripts/case-lint.py"
+S="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/scripts/case-lint.py}"; [ -f "$S" ] || S="${CLAUDE_CONFIG_DIR:+$CLAUDE_CONFIG_DIR/scripts/case-lint.py}"; [ -f "$S" ] || S="$HOME/.claude/scripts/case-lint.py"
 python3 "$S" <案文件或案库目录>
 ```
 

@@ -47,10 +47,10 @@
 
 三条里有一条不灵 → [第四节 故障排查](#四故障排查)。
 
-**可选装法：写案文件后自动体检。** 工具包里另有一支 `case-lint.py`，对一个案或整个案库跑八项检查（接手加载量 / E 行判定与影响两格的长度 / E 状态词 / D 划掉没删的行 / 收件位处置词 / 表格列数对不对得上表头 / 案里点名的档案文件入没入库 / 头行持笔格的写法与任期号对不对得上），各项各报各的，报到 `文件:行号`。**手动跑它，跟别处一样先解析脚本在哪**（插件装在插件根下，手动装在 `~/.claude/scripts/`；手上有仓库就直接用仓库里那份）：
+**可选装法：写案文件后自动体检。** 工具包里另有一支 `case-lint.py`，对一个案或整个案库跑八项检查（接手加载量 / E 行判定与影响两格的长度 / E 状态词 / D 划掉没删的行 / 收件位处置词 / 表格列数对不对得上表头 / 案里点名的档案文件入没入库 / 头行持笔格的写法与任期号对不对得上），各项各报各的，报到 `文件:行号`。**手动跑它，跟别处一样先解析脚本在哪**（三处一个固定顺序：插件根 → `$CLAUDE_CONFIG_DIR` → `~/.claude/scripts/`——插件装在插件根下，claude CLI 配置不放默认路径的人设了 `CLAUDE_CONFIG_DIR`、手动装机跟着搬过去，两个都没有才是 `~/.claude/scripts/`；手上有仓库就直接用仓库里那份）：
 
 ```bash
-S="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/scripts/case-lint.py}"; [ -f "$S" ] || S="$HOME/.claude/scripts/case-lint.py"
+S="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/scripts/case-lint.py}"; [ -f "$S" ] || S="${CLAUDE_CONFIG_DIR:+$CLAUDE_CONFIG_DIR/scripts/case-lint.py}"; [ -f "$S" ] || S="$HOME/.claude/scripts/case-lint.py"
 python3 "$S" <案文件或案库目录>
 ```
 

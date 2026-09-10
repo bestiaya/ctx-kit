@@ -195,7 +195,9 @@ claude plugin install ctx-kit@ctx-kit
 
 <details><summary>手动安装（不走 plugin）</summary>
 
-把 `skills/ctx-*` 拷进 `~/.claude/skills/`、`agents/digest.md` 拷进 `~/.claude/agents/`、`scripts/cache-audit.py`、`scripts/ctx-watermark.py`、`scripts/case-lint.py` 与 `scripts/takeover-load.py` 四支脚本都拷进 `~/.claude/scripts/`（目录没有就建；没有插件根时，工具包只到这里找脚本。体检那支漏了，04 手册里那个可选 hook 就永远找不到它、永远静默；接手加载那支漏了，每次接手都会报"找不到要跑的脚本"）、`hooks/hooks.json` 的 `hooks` 段并进 `~/.claude/settings.json`（压缩预警在 macOS 弹通知，其它平台回落 stderr）；条文照上面粘贴。
+把 `skills/ctx-*` 拷进 `~/.claude/skills/`、`agents/digest.md` 拷进 `~/.claude/agents/`、`scripts/cache-audit.py`、`scripts/ctx-watermark.py`、`scripts/case-lint.py` 与 `scripts/takeover-load.py` 四支脚本都拷进 `~/.claude/scripts/`（目录没有就建；没有插件根、也没设 `CLAUDE_CONFIG_DIR` 时，工具包只到这里找脚本。体检那支漏了，04 手册里那个可选 hook 就永远找不到它、永远静默；接手加载那支漏了，每次接手都会报"找不到要跑的脚本"）、`hooks/hooks.json` 的 `hooks` 段并进 `~/.claude/settings.json`（压缩预警在 macOS 弹通知，其它平台回落 stderr）；条文照上面粘贴。
+
+**claude CLI 的配置不放在 `~/.claude` 的人**——也就是设了 `CLAUDE_CONFIG_DIR` 的——装进那个目录，本节余下所有 `~/.claude` 都读成 `$CLAUDE_CONFIG_DIR`。工具包里凡是要解析"装机根"的地方都按同一个固定顺序试三处：插件根 → `CLAUDE_CONFIG_DIR` → `~/.claude`；hook、两个要跑脚本的 skill、体检那支与同步脚本一律如此，同步脚本还会在 `# installed:` 那行把它选中的根打出来。
 
 每次 `git pull` 之后：`scripts/sync-installed.sh --check` 列出安装态与仓库源码的差异，`--apply` 把仓库源码同步过去——覆盖前先把旧件备份到 `~/.claude/ctx-kit-backup-<时间戳>/`，只加不删。（维护者另有 `scripts/release-check.py`：发版前查版本号、skill 件数与 skill 名在插件清单、两份 README 与文档里是否一致。）
 </details>
