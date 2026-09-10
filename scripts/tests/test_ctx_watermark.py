@@ -624,6 +624,39 @@ class InstallRootOrder(unittest.TestCase):
         self.assertNotIn(clock(self.PLUGIN_AT), message)
         self.assertNotIn(clock(self.CONFIG_AT), message)
 
+    def silence(self, name, **env):
+        """A run with nothing to say: under both lines, and no install newer than the session."""
+        result = run(write_transcript(name, [assistant(UNDER_BOTH)]), **env)
+        self.assertEqual("", result.stdout)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_a_config_dir_holding_nothing_reads_nothing_rather_than_the_next_root(self):
+        """A tier answers because it is set, not because something was found underneath it.
+
+        Somebody who sets `CLAUDE_CONFIG_DIR` and installs into `~/.claude` anyway has a
+        half-moved install, and this line goes quiet for them: `~/.claude` here holds files
+        three hours newer than the session, so a fallback would print a reading. Silence is
+        the intended answer, not a gap -- reading the next root down would put a directory
+        the session does not name up against the session's own clock. The `sh` chain in
+        hooks.json does fall back and still finds a script to run, because it is answering
+        whether there is anything to run, not which install this session is running.
+        """
+        plugin, config, home = self.roots()
+        self.silence("root-order-config-empty.ndjson", CLAUDE_PLUGIN_ROOT="",
+                     CLAUDE_CONFIG_DIR=NO_INSTALL, HOME=home)
+
+    def test_the_plugin_root_answers_over_a_config_dir_even_holding_nothing(self):
+        """Both set: the plugin root wins, and it does not hand over when it is empty.
+
+        The direction `test_the_plugin_root_answers_first` cannot see, because there the
+        plugin root has files of its own and would win either way. Here it has none, while
+        the config dir below it holds files two hours newer than the session -- so anything
+        printed at all would be the config dir's reading, and the run is held to silence.
+        """
+        plugin, config, home = self.roots()
+        self.silence("root-order-plugin-empty.ndjson", CLAUDE_PLUGIN_ROOT=NO_INSTALL,
+                     CLAUDE_CONFIG_DIR=config, HOME=home)
+
 
 class ShippedHookCommand(unittest.TestCase):
     """The shell one-liner in hooks.json, run the way a shell runs it.

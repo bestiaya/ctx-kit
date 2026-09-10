@@ -253,6 +253,21 @@ def installed_root():
     and it moves the manual install with it; reading `~/.claude` for one of them would be
     reading a directory that is not their install at all. Whether the directory it names
     holds anything is the next function's question, not this one's.
+
+    So the answer is the first root that is set, found or not — no tier here falls back.
+    The `sh` chain in `hooks/hooks.json` walks the same three in the same order and does
+    fall back, stopping at the first root that has a script in it. The two do not disagree;
+    they answer different questions. The chain asks whether there is a script to run at all,
+    and any copy that runs will do. This asks which install this session is running, and only
+    one directory can be that — taking a second one because the first held nothing would put
+    a stranger's mtime up against this session's clock, which is the one comparison this
+    reading must never make.
+
+    The cost of that is worth naming, because it is silence rather than noise: somebody who
+    sets `CLAUDE_CONFIG_DIR` and still installs into `~/.claude` gets the chain's fallback
+    (the doorbell runs) and nothing from this line (there is nothing to stat under the root
+    they named). A half-moved install is reported as no reading at all, never as some other
+    directory's reading.
     """
     return (os.environ.get("CLAUDE_PLUGIN_ROOT")
             or os.environ.get("CLAUDE_CONFIG_DIR")
