@@ -20,7 +20,7 @@ S="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/scripts/takeover-load.py}"; [ -f "$
 if [ -f "$S" ]; then python3 "$S" <case file path>; else echo "takeover-load.py is in none of the three places ctx-takeover looks (plugin root, then \$CLAUDE_CONFIG_DIR, then ~/.claude/scripts/) — nothing loaded. Copy scripts/takeover-load.py out of the ctx-kit repository into ~/.claude/scripts/, as the README manual-install step says."; fi
 ```
 
-Those three places in that order, as `ctx-checkup` §1 does; never type a plugin path by hand. Where it says the script is in neither, **say exactly that — nothing was loaded**, pass on that one fix, and never recite off a case you did not load. **Run it with a real python3**: an `xcodebuild` error means the interpreter resolved somewhere else (the macOS Xcode shim), not that the script is broken.
+Those three places in that order, as `ctx-checkup` §1 does; never type a plugin path by hand. Where it says the script is in none of them, **say exactly that — nothing was loaded**, pass on that one fix, and never recite off a case you did not load. **Run it with a real python3**: an `xcodebuild` error means the interpreter resolved somewhere else (the macOS Xcode shim), not that the script is broken.
 
 **The inbox must be read, never skipped**: other cases' messages and your predecessor's to-dos live there, and an empty disposition cell means it waits on you (measured: 6 items in, 3 starred, and a successor who skipped §I lost the lot). **Write every disposition opening with done (已办) / dropped (不办) / moved to (已转)** — nothing reads past the opening — and escape a pipe in your own text as `\|`. **Do not read deliverables end to end to be "thorough"**; fetch on target.
 
