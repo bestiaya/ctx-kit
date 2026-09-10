@@ -59,13 +59,16 @@ Thresholds
   costs: 04-HANDBOOK.
 
 Where the installed files are
-  `${CLAUDE_PLUGIN_ROOT}` when it is set — a plugin install sets it, and it is then the answer,
-  found files or not — otherwise `~/.claude`, where the README's manual-install step puts the
-  same tree. Underneath either one the newest mtime among `skills/ctx-*/SKILL.md` and the
-  kit's own scripts, each named rather than globbed, is taken as "when this machine's copy was
-  last written" — a `scripts/*.py` glob would have read somebody else's script in that same
-  directory as a ctx-kit update. Nothing there to stat means no reading and nothing printed,
-  which is also what makes this quiet for anybody who keeps the kit somewhere else entirely.
+  Three places in one fixed order: `${CLAUDE_PLUGIN_ROOT}` when it is set — a plugin install
+  sets it, and it is then the answer, found files or not — then `${CLAUDE_CONFIG_DIR}`, which
+  is where a manual install lives for anybody who keeps their claude CLI configuration
+  somewhere other than the default, then `~/.claude`, where the README's manual-install step
+  puts the same tree. Underneath whichever one answers, the newest mtime among
+  `skills/ctx-*/SKILL.md` and the kit's own files, each named rather than globbed, is taken as
+  "when this machine's copy was last written" — a `scripts/*.py` glob would have read somebody
+  else's script in that same directory as a ctx-kit update. Nothing there to stat means no
+  reading and nothing printed, which is also what makes this quiet for anybody who keeps the
+  kit somewhere else entirely.
   `CTXKIT_UPDATE_HINT=off` turns that reading off for good, which the two watermark lines do
   not need because they can be moved instead.
 
@@ -236,12 +239,19 @@ def update_wanted():
 def installed_root():
     """Which directory to look under for this machine's copy of ctx-kit. Always answers.
 
+    Three places in one fixed order — `CLAUDE_PLUGIN_ROOT`, then `CLAUDE_CONFIG_DIR`, then
+    `~/.claude` — the same order every other place in this kit resolves an install root.
     `CLAUDE_PLUGIN_ROOT` is set only by a plugin install, and where it is set it is the
     answer whether or not anything is found underneath it — falling back from it would mean
-    reading one install's mtime against another install's files. Whether the directory it
-    names holds anything is the next function's question, not this one's.
+    reading one install's mtime against another install's files. `CLAUDE_CONFIG_DIR` is set
+    by anybody who keeps their claude CLI configuration somewhere other than `~/.claude`,
+    and it moves the manual install with it; reading `~/.claude` for one of them would be
+    reading a directory that is not their install at all. Whether the directory it names
+    holds anything is the next function's question, not this one's.
     """
-    return os.environ.get("CLAUDE_PLUGIN_ROOT") or os.path.expanduser("~/.claude")
+    return (os.environ.get("CLAUDE_PLUGIN_ROOT")
+            or os.environ.get("CLAUDE_CONFIG_DIR")
+            or os.path.expanduser("~/.claude"))
 
 
 def installed_at():

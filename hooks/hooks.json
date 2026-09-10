@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "s=\"${CLAUDE_PLUGIN_ROOT:-}/scripts/ctx-watermark.py\"; [ -f \"$s\" ] || s=\"$HOME/.claude/scripts/ctx-watermark.py\"; [ -f \"$s\" ] || exit 0; for c in ${CTXKIT_PYTHON:-} python3 /usr/local/bin/python3 /opt/homebrew/bin/python3; do if command -v \"$c\" >/dev/null 2>&1 && \"$c\" -c 'import json' >/dev/null 2>&1; then \"$c\" \"$s\"; break; fi; done; exit 0"
+            "command": "s=\"${CLAUDE_PLUGIN_ROOT:-}/scripts/ctx-watermark.py\"; [ -f \"$s\" ] || s=\"${CLAUDE_CONFIG_DIR:-}/scripts/ctx-watermark.py\"; [ -f \"$s\" ] || s=\"$HOME/.claude/scripts/ctx-watermark.py\"; [ -f \"$s\" ] || exit 0; for c in ${CTXKIT_PYTHON:-} python3 /usr/local/bin/python3 /opt/homebrew/bin/python3; do if command -v \"$c\" >/dev/null 2>&1 && \"$c\" -c 'import json' >/dev/null 2>&1; then \"$c\" \"$s\"; break; fi; done; exit 0"
           }
         ]
       }

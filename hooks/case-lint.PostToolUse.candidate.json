@@ -6,7 +6,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "s=\"${CLAUDE_PLUGIN_ROOT:-}/scripts/case-lint.py\"; [ -f \"$s\" ] || s=\"$HOME/.claude/scripts/case-lint.py\"; [ -f \"$s\" ] || exit 0; for c in ${CTXKIT_PYTHON:-} python3 /usr/local/bin/python3 /opt/homebrew/bin/python3; do if command -v \"$c\" >/dev/null 2>&1 && \"$c\" -c 'import json' >/dev/null 2>&1; then p=\"$c\"; break; fi; done; [ -n \"${p:-}\" ] || exit 0; f=$(\"$p\" -c 'import json,sys;d=json.load(sys.stdin);print((d.get(\"tool_input\") or {}).get(\"file_path\") or \"\")' 2>/dev/null); case \"$f\" in */CASES/*.md|*/cases/*.md) ;; *) exit 0;; esac; o=$(\"$p\" \"$s\" --quiet \"$f\" 2>&1); rc=$?; [ \"$rc\" = 1 ] || exit 0; printf '%s\\n' \"$o\" >&2; exit 2"
+          "command": "s=\"${CLAUDE_PLUGIN_ROOT:-}/scripts/case-lint.py\"; [ -f \"$s\" ] || s=\"${CLAUDE_CONFIG_DIR:-}/scripts/case-lint.py\"; [ -f \"$s\" ] || s=\"$HOME/.claude/scripts/case-lint.py\"; [ -f \"$s\" ] || exit 0; for c in ${CTXKIT_PYTHON:-} python3 /usr/local/bin/python3 /opt/homebrew/bin/python3; do if command -v \"$c\" >/dev/null 2>&1 && \"$c\" -c 'import json' >/dev/null 2>&1; then p=\"$c\"; break; fi; done; [ -n \"${p:-}\" ] || exit 0; f=$(\"$p\" -c 'import json,sys;d=json.load(sys.stdin);print((d.get(\"tool_input\") or {}).get(\"file_path\") or \"\")' 2>/dev/null); case \"$f\" in */CASES/*.md|*/cases/*.md) ;; *) exit 0;; esac; o=$(\"$p\" \"$s\" --quiet \"$f\" 2>&1); rc=$?; [ \"$rc\" = 1 ] || exit 0; printf '%s\\n' \"$o\" >&2; exit 2"
         }
       ]
     }

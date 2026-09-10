@@ -239,12 +239,21 @@ def run_py_block(code, argv):
 
 
 def find_skills_dir(explicit):
+    """Where this machine's skills are, after the repository copy beside this script.
+
+    The install roots come in the one fixed order the whole kit uses — `CLAUDE_PLUGIN_ROOT`,
+    then `CLAUDE_CONFIG_DIR`, then `~/.claude` — so somebody who keeps their claude CLI
+    configuration somewhere other than the default is not read against a `~/.claude` that
+    holds nothing of theirs.
+    """
     if explicit:
         return explicit
     here = os.path.dirname(os.path.abspath(__file__))
     plugin_root = os.environ.get("CLAUDE_PLUGIN_ROOT", "")
+    config_dir = os.environ.get("CLAUDE_CONFIG_DIR", "")
     for cand in (os.path.join(os.path.dirname(here), "skills"),
                  os.path.join(plugin_root, "skills") if plugin_root else None,
+                 os.path.join(config_dir, "skills") if config_dir else None,
                  os.path.expanduser("~/.claude/skills")):
         if cand and os.path.isfile(os.path.join(cand, "ctx-handoff", "SKILL.md")):
             return cand
@@ -256,8 +265,9 @@ def find_loader(skills_dir):
 
     A `scripts/` beside the skills directory first, so `--skills` picks up a whole second
     copy of the kit; then the directory this script itself sits in. Every layout the kit
-    installs into keeps the two beside each other — repository, plugin root, `~/.claude/` —
-    so the sibling rule covers all three and nothing has to be typed by hand.
+    installs into keeps the two beside each other — repository, plugin root, a
+    `CLAUDE_CONFIG_DIR`, `~/.claude/` — so the sibling rule covers all of them and nothing
+    has to be typed by hand.
     """
     here = os.path.dirname(os.path.abspath(__file__))
     for cand in (os.path.join(os.path.dirname(os.path.abspath(skills_dir)), "scripts")
