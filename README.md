@@ -25,7 +25,7 @@
 - A fresh session's **opening round** costs **7-8%** of one cold re-entry into the old session; the switch as a whole, closing out included, comes to **132-138%** of one such re-entry, so it only saves money if the old session would otherwise have been re-entered cold more than once ([01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生))
 - **56-57%** of a long session's total spend bought one thing: saying again what was already said — that is a share of where the bill went, not a saving anyone has banked ([01 §3.3](01-BACKGROUND.md#33-对照-5调缓存参数--改生命周期纪律))
 - One auto-compact shrank the context by **98.8%** by volume — what that cost in task information was not measured ([01 §3.6](01-BACKGROUND.md#36-auto-compact-实录与-compact-的账面盲区))
-- A session grown to 830k tokens: everything needed to take it over fit in **one ~14KB file** ([01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生))
+- A session grown to 830k tokens closed out into **one ~14KB case file** — enough state for that takeover, which passed its spot-check, though the same pilot listed 7 things that had not made it onto disk ([01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生))
 
 ---
 
@@ -45,7 +45,7 @@
 > - "Every session starts cold", so I keep my own note about "where I left off".
 > - Move to another machine and it can't pick up — the memory is written into a local directory, and the transcript itself goes stale.
 
-**The data**: a fresh session's opening round costs 7-8% of one cold re-entry into the old one, and the whole switch — closing out plus taking over — comes to 132-138% of one; a session grown to 830k tokens fit its entire takeover-ready state into one ~14KB file (both readings from 01 §3.4, Claude taking over from Claude).
+**The data**: a fresh session's opening round costs 7-8% of one cold re-entry into the old one, and the whole switch — closing out plus taking over — comes to 132-138% of one; a session grown to 830k tokens closed out into one ~14KB case file, which carried enough state for that takeover (readings from 01 §3.4, Claude taking over from Claude; the two pilots also listed 7 and 14 things that had not made it onto disk).
 
 **How it goes**:
 
