@@ -22,7 +22,7 @@
 
 **The data** (four measurements; each link opens the source and the sample):
 
-- A fresh session's **opening round** costs **7-8%** of one cold re-entry into the old session; the switch as a whole, closing out included, comes to **132-138%** of one such re-entry, so it only saves money if the old session would otherwise have been re-entered cold more than once ([01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生))
+- A fresh session's **opening round** costs **7-8%** of one cold re-entry into the old session; the switch as a whole, closing out included, comes to **132-138%** of one such re-entry, so on that ledger alone it pays only if the old session would otherwise have been re-entered cold more than once ([01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生))
 - **56-57%** of a long session's total spend bought one thing: saying again what was already said — that is a share of where the bill went, not a saving anyone has banked ([01 §3.3](01-BACKGROUND.md#33-对照-5调缓存参数--改生命周期纪律))
 - One auto-compact shrank the context by **98.8%** by volume — what that cost in task information was not measured ([01 §3.6](01-BACKGROUND.md#36-auto-compact-实录与-compact-的账面盲区))
 - A session grown to 830k tokens closed out into **one ~14KB case file** — enough state for that takeover, which passed its spot-check, though the same pilot listed 7 things that had not made it onto disk ([01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生))
