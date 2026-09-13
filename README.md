@@ -22,10 +22,10 @@
 
 **The data** (four measurements; each link opens the source and the sample):
 
-- A fresh session's **opening round** costs **7-8%** of one cold re-entry into the old session; the switch as a whole, closing out included, comes to **132-138%** of one such re-entry, so on that ledger alone it pays only if the old session would otherwise have been re-entered cold more than once ([01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生))
+- A fresh session picking the work up spends **7-8%** of one cold re-entry into the old session on its opening round — the switch as a whole, closing out included, costs more than one such re-entry, so what it saves is the re-entries you no longer make (the arithmetic is in [01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生), and priced out in comparison 2 below)
 - **56-57%** of a long session's total spend bought one thing: saying again what was already said — that is a share of where the bill went, not a saving anyone has banked ([01 §3.3](01-BACKGROUND.md#33-对照-5调缓存参数--改生命周期纪律))
-- One auto-compact shrank the context by **98.8%** by volume — what that cost in task information was not measured ([01 §3.6](01-BACKGROUND.md#36-auto-compact-实录与-compact-的账面盲区))
-- A session grown to 830k tokens closed out into **one ~14KB case file** — enough state for that takeover, which passed its spot-check, though the same pilot listed 7 things that had not made it onto disk ([01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生))
+- One auto-compact fired at a 999k context, and the first request after it rebuilt at **~61k** — how much task information the compaction dropped was not measured ([01 §3.6](01-BACKGROUND.md#36-auto-compact-实录与-compact-的账面盲区))
+- A session grown to 830k tokens closed out into **one ~14KB case file** — enough state for that takeover, all four spot-checks passed, though the same pilot honestly listed a batch of things that had not made it onto disk (the list is in [01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生))
 
 ---
 
@@ -45,7 +45,7 @@
 > - "Every session starts cold", so I keep my own note about "where I left off".
 > - Move to another machine and it can't pick up — the memory is written into a local directory, and the transcript itself goes stale.
 
-**The data**: a fresh session's opening round costs 7-8% of one cold re-entry into the old one, and the whole switch — closing out plus taking over — comes to 132-138% of one; a session grown to 830k tokens closed out into one ~14KB case file, which carried enough state for that takeover (readings from 01 §3.4, Claude taking over from Claude; the two pilots also listed 7 and 14 things that had not made it onto disk).
+**The data**: a fresh session's opening round costs 7-8% of one cold re-entry into the old one, though the whole switch — closing out plus taking over — costs more than one such re-entry; a session grown to 830k tokens closed out into one ~14KB case file, which carried enough state for that takeover (readings from 01 §3.4, Claude taking over from Claude; both pilots also listed, honestly, a batch of things that had not made it onto disk).
 
 **How it goes**:
 
@@ -69,7 +69,7 @@
 > - You hit a limit and still can't see where the tokens went ("Real cost, no visibility").
 > - "Spending more time managing the AI" than doing the actual work.
 
-**The data**: leave a session for an hour or so, come back, and the whole context is paid for again — that one re-entry costs your watermark × 2 (01 §3.2). Audit two long-lived sessions and 56-57% of the total spend went into re-writing the same content into cache — that is where the money went, not a net saving on offer (01 §3.3). Compact preserves "we can keep talking" and drops detail on the way — one measured run shrank the context by 98.8% by volume, and how much task information went with it was not measured (01 §3.6). Close out and take over instead, and the successor's opening round costs 7-8% of one cold re-entry — the switch as a whole is 132-138% of one, so what you save is the re-entries you no longer make (01 §3.4). That is what those three leaks look like once they are plugged.
+**The data**: leave a session for an hour or so, come back, and the whole context is paid for again — that one re-entry costs your watermark × 2 (01 §3.2). Audit two long-lived sessions and 56-57% of the total spend went into re-writing the same content into cache — that is where the money went, not a net saving on offer (01 §3.3). Compact preserves "we can keep talking" and drops detail on the way — one measured run fired at a 999k context and rebuilt at ~61k on the first request after, and how much task information went with it was not measured (01 §3.6). Close out and take over instead, and the successor's opening round costs 7-8% of one cold re-entry — the switch as a whole costs more than one, so what you save is the re-entries you no longer make (01 §3.4). That is what those three leaks look like once they are plugged.
 
 **How it goes**:
 
