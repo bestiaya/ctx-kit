@@ -22,7 +22,7 @@
 
 **The data** (four measurements; each link opens the source and the sample):
 
-- A fresh session picking the work up spends **7-8%** of what one cold re-entry into the old session costs ([01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生))
+- A fresh session's **opening round** costs **7-8%** of one cold re-entry into the old session; the switch as a whole, closing out included, comes to **132-138%** of one such re-entry, so it only saves money if the old session would otherwise have been re-entered cold more than once ([01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生))
 - **56-57%** of a long session's total spend buys one thing: saying again what was already said ([01 §3.3](01-BACKGROUND.md#33-对照-5调缓存参数--改生命周期纪律))
 - One auto-compact shrank the context by **98.8%** by volume — what that cost in task information was not measured ([01 §3.6](01-BACKGROUND.md#36-auto-compact-实录与-compact-的账面盲区))
 - A session grown to 830k tokens: everything needed to take it over fit in **one ~14KB file** ([01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生))
@@ -45,7 +45,7 @@
 > - "Every session starts cold", so I keep my own note about "where I left off".
 > - Move to another machine and it can't pick up — the memory is written into a local directory, and the transcript itself goes stale.
 
-**The data**: a fresh session picking the work up spends 7-8% of one cold re-entry into the old one; a session grown to 830k tokens fit its entire takeover-ready state into one ~14KB file (both readings from 01 §3.4, Claude taking over from Claude).
+**The data**: a fresh session's opening round costs 7-8% of one cold re-entry into the old one, and the whole switch — closing out plus taking over — comes to 132-138% of one; a session grown to 830k tokens fit its entire takeover-ready state into one ~14KB file (both readings from 01 §3.4, Claude taking over from Claude).
 
 **How it goes**:
 
@@ -69,7 +69,7 @@
 > - You hit a limit and still can't see where the tokens went ("Real cost, no visibility").
 > - "Spending more time managing the AI" than doing the actual work.
 
-**The data**: leave a session for an hour or so, come back, and the whole context is paid for again — that one re-entry costs your watermark × 2 (01 §3.2). Audit two long-lived sessions and 56-57% of the total spend went into re-writing the same content into cache (01 §3.3). Compact preserves "we can keep talking" and drops detail on the way — one measured run shrank the context by 98.8% by volume, and how much task information went with it was not measured (01 §3.6). Close out and take over instead, and the successor's opening round costs 7-8% of one cold re-entry (01 §3.4). That is what those three leaks look like once they are plugged.
+**The data**: leave a session for an hour or so, come back, and the whole context is paid for again — that one re-entry costs your watermark × 2 (01 §3.2). Audit two long-lived sessions and 56-57% of the total spend went into re-writing the same content into cache (01 §3.3). Compact preserves "we can keep talking" and drops detail on the way — one measured run shrank the context by 98.8% by volume, and how much task information went with it was not measured (01 §3.6). Close out and take over instead, and the successor's opening round costs 7-8% of one cold re-entry — the switch as a whole is 132-138% of one, so what you save is the re-entries you no longer make (01 §3.4). That is what those three leaks look like once they are plugged.
 
 **How it goes**:
 
@@ -155,7 +155,7 @@ Eight comparisons; click a row and you land on that subsection of 01, with its r
 | Comparison | One side | The other | Verdict |
 |---|---|---|---|
 | [1 warm re-entry \| cold re-entry](01-BACKGROUND.md#32-对照-1热回访--冷回访) | back within 15 minutes: all warm | after an hour away: 147 of 160 cold | the tax is on the watermark, not on how long you were gone |
-| [2 keeping the old session \| closing out into a new one](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生) | one cold re-entry into the old session: 1.38M / 1.62M equivalent units | the successor's opening round: 101k / 125k | taking over costs 7-8% of going back once |
+| [2 keeping the old session \| closing out into a new one](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生) | one cold re-entry into the old session: 1.38M / 1.62M equivalent units | the successor's opening round: 101k / 125k | the opening round is 7-8% of going back once; the whole switch, closing out included, is 132-138% of it |
 | [3 no compact \| compact and keep going](01-BACKGROUND.md#35-对照-34压缩到底划不划算) | six requests, ~478k equivalent units | ~283k after compacting | it pays back on the 2nd request |
 | [4 compact then leave \| compact then keep going](01-BACKGROUND.md#35-对照-34压缩到底划不划算) | a rebuild paid for and never used | see the row above | compacting then leaving is a pure loss; close out and take over instead |
 | [5 tuning cache settings \| changing the lifecycle discipline](01-BACKGROUND.md#33-对照-5调缓存参数--改生命周期纪律) | in-session hit rate already above 99% | repeated re-writes are 56-57% of total spend | all the leverage is on the discipline side |
