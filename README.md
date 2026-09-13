@@ -24,7 +24,7 @@
 
 - A fresh session picking the work up spends **7-8%** of what one cold re-entry into the old session costs ([01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生))
 - **56-57%** of a long session's total spend buys one thing: saying again what was already said ([01 §3.3](01-BACKGROUND.md#33-对照-5调缓存参数--改生命周期纪律))
-- One auto-compact dropped **98.8%** of the detail ([01 §3.6](01-BACKGROUND.md#36-auto-compact-实录与-compact-的账面盲区))
+- One auto-compact shrank the context by **98.8%** by volume — what that cost in task information was not measured ([01 §3.6](01-BACKGROUND.md#36-auto-compact-实录与-compact-的账面盲区))
 - A session grown to 830k tokens: everything needed to take it over fit in **one ~14KB file** ([01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生))
 
 ---
@@ -69,7 +69,7 @@
 > - You hit a limit and still can't see where the tokens went ("Real cost, no visibility").
 > - "Spending more time managing the AI" than doing the actual work.
 
-**The data**: leave a session for an hour or so, come back, and the whole context is paid for again — that one re-entry costs your watermark × 2 (01 §3.2). Audit two long-lived sessions and 56-57% of the total spend went into re-writing the same content into cache (01 §3.3). Compact preserves "we can keep talking" and drops the detail — one measured run lost 98.8% (01 §3.6). Close out and take over instead, and the successor's opening round costs 7-8% of one cold re-entry (01 §3.4). That is what those three leaks look like once they are plugged.
+**The data**: leave a session for an hour or so, come back, and the whole context is paid for again — that one re-entry costs your watermark × 2 (01 §3.2). Audit two long-lived sessions and 56-57% of the total spend went into re-writing the same content into cache (01 §3.3). Compact preserves "we can keep talking" and drops detail on the way — one measured run shrank the context by 98.8% by volume, and how much task information went with it was not measured (01 §3.6). Close out and take over instead, and the successor's opening round costs 7-8% of one cold re-entry (01 §3.4). That is what those three leaks look like once they are plugged.
 
 **How it goes**:
 
