@@ -99,17 +99,17 @@ PY
    A non-git project, or a failed push (no remote / no permission / a conflict): **write "not pushed + why" plainly in the reply**; never skip it silently.
    **A case library that git ignores or has never tracked is a legitimate shape, not a failure**: the case files stay on disk and out of the repository, so commit and push only whatever else this round touched — and if that leaves nothing to commit, nothing is wrong. Say so in one line in the reply — the case file is saved on disk but is not in git, so taking it over on another machine means syncing that directory yourself — and **never report that as a failed push**.
 
-## 5. Reply: five sections for people first, then four items
+## 5. Reply: written for the owner first, then four items
 
-**The five sections for people first** — one or two lines each, written for the owner:
+**Written for the owner first**, and as a report for the owner it follows the project's own rules for those: **lead with where this case now stands and what would change that reading** — the verdict, the failures, what is still unproven. Then give as much of the following as the owner needs in order to act, **organised by what bears on that judgement rather than as a fixed set of headings, and with no line count to fill**; whatever carries nothing this time is left out rather than written up as "none".
 
-- ① **Position and reason**: how far this case has pushed the top-level goal, and what this stint did;
-- ② **What was verified, how it was tested, what counts as a pass**;
-- ③ **Result**: the verdict first, expected vs actual;
-- ④ **Conclusion**: what it means for the goal, which premise was confirmed or refuted, what is still unproven;
-- ⑤ **The next step, derived from the conclusion** (every item awaiting decision carries a recommendation).
+- **Position and reason**: how far this case has pushed the top-level goal, and what this stint did;
+- **What was verified, how it was tested, what counted as a pass** — where anything was verified at all: a stint that ran no experiment says so in a clause and does not manufacture the section;
+- **Result**: the verdict first, expected vs actual;
+- **Conclusion**: what it means for the goal, which premise was confirmed or refuted, **what is still unproven**;
+- **The next step, derived from the conclusion** (every item awaiting decision carries a recommendation).
 
-Item numbers, station ids and reading codes stay out of the sections written for people — the codes, not the readings: a measurement with its baseline is exactly what those sections are for. If you must hand something to the execution layer, put it on one line at the end.
+Item numbers, station ids and reading codes stay out of what is written for the owner — the codes, not the readings: a measurement with its baseline is exactly what that part is for. If you must hand something to the execution layer, put it on one line at the end.
 
 **Then four items** (for the successor to take over with):
 
