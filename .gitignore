@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 _internal/
 CLAUDE.md
+
+# claude CLI 写的本机权限文件：逐机不同，且含本机绝对路径，不进公开树
+.claude/settings.local.json
