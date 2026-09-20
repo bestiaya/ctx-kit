@@ -59,13 +59,16 @@ Thresholds
   costs: 04-HANDBOOK.
 
 Where the installed files are
-  `${CLAUDE_PLUGIN_ROOT}` when it is set — a plugin install sets it, and it is then the answer,
-  found files or not — otherwise `~/.claude`, where the README's manual-install step puts the
-  same tree. Underneath either one the newest mtime among `skills/ctx-*/SKILL.md` and the
-  kit's own scripts, each named rather than globbed, is taken as "when this machine's copy was
-  last written" — a `scripts/*.py` glob would have read somebody else's script in that same
-  directory as a ctx-kit update. Nothing there to stat means no reading and nothing printed,
-  which is also what makes this quiet for anybody who keeps the kit somewhere else entirely.
+  Three places in one fixed order: `${CLAUDE_PLUGIN_ROOT}` when it is set — a plugin install
+  sets it, and it is then the answer, found files or not — then `${CLAUDE_CONFIG_DIR}`, which
+  is where a manual install lives for anybody who keeps their claude CLI configuration
+  somewhere other than the default, then `~/.claude`, where the README's manual-install step
+  puts the same tree. Underneath whichever one answers, the newest mtime among
+  `skills/ctx-*/SKILL.md` and the kit's own files, each named rather than globbed, is taken as
+  "when this machine's copy was last written" — a `scripts/*.py` glob would have read somebody
+  else's script in that same directory as a ctx-kit update. Nothing there to stat means no
+  reading and nothing printed, which is also what makes this quiet for anybody who keeps the
+  kit somewhere else entirely.
   `CTXKIT_UPDATE_HINT=off` turns that reading off for good, which the two watermark lines do
   not need because they can be moved instead.
 
@@ -94,13 +97,18 @@ PREFIX = "[ctx-kit watermark]"
 UPDATE_PREFIX = "[ctx-kit update]"
 
 # What counts as "this machine's copy of ctx-kit", under whichever root is found below. The
-# scripts are named one by one rather than globbed: `scripts/*.py` also matches whatever else
+# files are named one by one rather than globbed: `scripts/*.py` also matches whatever else
 # the owner keeps in `~/.claude/scripts/`, and editing one of those is not a ctx-kit update.
+# This list is every file `scripts/sync-installed.sh` copies, and a test holds the two to each
+# other: a file the sync script installs but this list does not name is a file whose update
+# nobody would be told about, which is how the loader and the digest agent went unwatched.
 INSTALLED = (
     ("skills", "ctx-*", "SKILL.md"),
+    ("agents", "digest.md"),
     ("scripts", "cache-audit.py"),
     ("scripts", "ctx-watermark.py"),
     ("scripts", "case-lint.py"),
+    ("scripts", "takeover-load.py"),
 )
 
 # What the model is told to do about the reading. The durable version of this lives in the
@@ -236,12 +244,34 @@ def update_wanted():
 def installed_root():
     """Which directory to look under for this machine's copy of ctx-kit. Always answers.
 
+    Three places in one fixed order — `CLAUDE_PLUGIN_ROOT`, then `CLAUDE_CONFIG_DIR`, then
+    `~/.claude` — the same order every other place in this kit resolves an install root.
     `CLAUDE_PLUGIN_ROOT` is set only by a plugin install, and where it is set it is the
     answer whether or not anything is found underneath it — falling back from it would mean
-    reading one install's mtime against another install's files. Whether the directory it
-    names holds anything is the next function's question, not this one's.
+    reading one install's mtime against another install's files. `CLAUDE_CONFIG_DIR` is set
+    by anybody who keeps their claude CLI configuration somewhere other than `~/.claude`,
+    and it moves the manual install with it; reading `~/.claude` for one of them would be
+    reading a directory that is not their install at all. Whether the directory it names
+    holds anything is the next function's question, not this one's.
+
+    So the answer is the first root that is set, found or not — no tier here falls back.
+    The `sh` chain in `hooks/hooks.json` walks the same three in the same order and does
+    fall back, stopping at the first root that has a script in it. The two do not disagree;
+    they answer different questions. The chain asks whether there is a script to run at all,
+    and any copy that runs will do. This asks which install this session is running, and only
+    one directory can be that — taking a second one because the first held nothing would put
+    a stranger's mtime up against this session's clock, which is the one comparison this
+    reading must never make.
+
+    The cost of that is worth naming, because it is silence rather than noise: somebody who
+    sets `CLAUDE_CONFIG_DIR` and still installs into `~/.claude` gets the chain's fallback
+    (the doorbell runs) and nothing from this line (there is nothing to stat under the root
+    they named). A half-moved install is reported as no reading at all, never as some other
+    directory's reading.
     """
-    return os.environ.get("CLAUDE_PLUGIN_ROOT") or os.path.expanduser("~/.claude")
+    return (os.environ.get("CLAUDE_PLUGIN_ROOT")
+            or os.environ.get("CLAUDE_CONFIG_DIR")
+            or os.path.expanduser("~/.claude"))
 
 
 def installed_at():

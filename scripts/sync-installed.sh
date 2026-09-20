@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# sync-installed.sh — keep the installed copy under $HOME/.claude in step with this repository.
+# sync-installed.sh — keep this machine's installed copy in step with this repository.
 #
 # A manual install leaves a second copy of every file on disk. Editing the repository and
 # forgetting the copy (or overwriting a newer copy with an older one) has cost real work,
@@ -10,29 +10,34 @@
 #   scripts/sync-installed.sh --apply     # back up, then copy repository -> installed
 #   scripts/sync-installed.sh --help
 #
-# What is synced (repository -> $HOME/.claude):
-#   skills/ctx-*/SKILL.md   ->  $HOME/.claude/skills/<skill>/SKILL.md
-#   agents/digest.md        ->  $HOME/.claude/agents/digest.md
-#   scripts/cache-audit.py  ->  $HOME/.claude/scripts/cache-audit.py
-#   scripts/ctx-watermark.py -> $HOME/.claude/scripts/ctx-watermark.py
-#   scripts/case-lint.py    ->  $HOME/.claude/scripts/case-lint.py
-#   scripts/takeover-load.py -> $HOME/.claude/scripts/takeover-load.py
+# Where "installed" is — three places in the one fixed order the whole kit resolves an
+# install root: $CLAUDE_PLUGIN_ROOT, then $CLAUDE_CONFIG_DIR, then $HOME/.claude. The run
+# prints the root it picked on its `# installed:` line, so you never have to guess.
+#
+# What is synced (repository -> <install root>):
+#   skills/ctx-*/SKILL.md    ->  <install root>/skills/<skill>/SKILL.md
+#   agents/digest.md         ->  <install root>/agents/digest.md
+#   scripts/cache-audit.py   ->  <install root>/scripts/cache-audit.py
+#   scripts/ctx-watermark.py ->  <install root>/scripts/ctx-watermark.py
+#   scripts/case-lint.py     ->  <install root>/scripts/case-lint.py
+#   scripts/takeover-load.py ->  <install root>/scripts/takeover-load.py
 #
 # What is only reported, never written:
-#   hooks/hooks.json vs the `hooks` section of $HOME/.claude/settings.json — that file is
+#   hooks/hooks.json vs the `hooks` section of <install root>/settings.json — that file is
 #   yours and holds settings of your own, so merge the section by hand (README, manual
 #   install). The hook line never affects the exit code.
 #
 # --apply copies only what differs, and every file it is about to overwrite is copied first
-# into $HOME/.claude/ctx-kit-backup-<timestamp>/ (same relative path), with a MANIFEST.txt
+# into <install root>/ctx-kit-backup-<timestamp>/ (same relative path), with a MANIFEST.txt
 # listing every action. Nothing is ever deleted.
 #
-# $HOME decides where "installed" is: run it with `HOME=/tmp/somewhere` to rehearse safely.
+# With neither variable set $HOME decides, so `HOME=/tmp/somewhere` still rehearses safely —
+# unset both first if you have them set and want the rehearsal to land under that $HOME.
 #
 # Exit codes:
 #   0  in sync (or --apply finished and everything now matches)
 #   1  --check found differences (file drift only; the hooks line does not count)
-#   2  usage error, or the repository/HOME could not be resolved
+#   2  usage error, or the repository/install root could not be resolved
 set -u
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
@@ -53,11 +58,18 @@ if [ -z "$MODE" ]; then
   echo "usage: sync-installed.sh [--check|--apply|--help]" >&2
   exit 2
 fi
-if [ -z "${HOME:-}" ] || [ ! -d "${HOME:-/nonexistent}" ]; then
-  echo "cannot run: HOME is not set to a directory" >&2
-  exit 2
+# The install root, in the one fixed order the whole kit uses: a plugin install sets
+# CLAUDE_PLUGIN_ROOT; anybody keeping their claude CLI configuration off the default path sets
+# CLAUDE_CONFIG_DIR and their manual install moves with it; otherwise $HOME/.claude. Copying
+# into $HOME/.claude for one of the first two would write a directory that is not their install.
+DEST="${CLAUDE_PLUGIN_ROOT:-${CLAUDE_CONFIG_DIR:-}}"
+if [ -z "$DEST" ]; then
+  if [ -z "${HOME:-}" ] || [ ! -d "${HOME:-/nonexistent}" ]; then
+    echo "cannot run: no CLAUDE_PLUGIN_ROOT, no CLAUDE_CONFIG_DIR, and HOME is not set to a directory" >&2
+    exit 2
+  fi
+  DEST="$HOME/.claude"
 fi
-DEST="$HOME/.claude"
 
 pick_python() {
   # the macOS /usr/bin/python3 shim fails on `import json` with an xcodebuild error;
@@ -78,11 +90,12 @@ pairs() {
   [ -f "$ROOT/agents/digest.md" ] && printf '%s\tagents/digest.md\n' "$ROOT/agents/digest.md"
   [ -f "$ROOT/scripts/cache-audit.py" ] && printf '%s\tscripts/cache-audit.py\n' "$ROOT/scripts/cache-audit.py"
   [ -f "$ROOT/scripts/ctx-watermark.py" ] && printf '%s\tscripts/ctx-watermark.py\n' "$ROOT/scripts/ctx-watermark.py"
-  # The opt-in case-file lint: its hook resolves the plugin root first and this path second,
-  # so a manual install without it leaves that hook silently finding nothing.
+  # The opt-in case-file lint: its hook resolves the plugin root, then CLAUDE_CONFIG_DIR, then
+  # this path, so a manual install without it leaves that hook silently finding nothing.
   [ -f "$ROOT/scripts/case-lint.py" ] && printf '%s\tscripts/case-lint.py\n' "$ROOT/scripts/case-lint.py"
-  # The loader a takeover runs: ctx-takeover §2 looks for it under the plugin root and then in
-  # ~/.claude/scripts/, so a manual install without it leaves every takeover with nothing to run.
+  # The loader a takeover runs: ctx-takeover §2 looks for it under the plugin root, then under
+  # CLAUDE_CONFIG_DIR, then in ~/.claude/scripts/, so a manual install without it leaves every
+  # takeover with nothing to run.
   [ -f "$ROOT/scripts/takeover-load.py" ] && printf '%s\tscripts/takeover-load.py\n' "$ROOT/scripts/takeover-load.py"
   return 0
 }

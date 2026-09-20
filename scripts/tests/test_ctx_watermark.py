@@ -14,10 +14,16 @@ Run:
     python3 scripts/tests/test_ctx_watermark.py
 Use a working python3 — on macOS /usr/bin/python3 is an Xcode shim that cannot even import json.
 """
-import datetime, json, os, subprocess, sys, time, unittest
+import ast, datetime, glob, json, os, re, shutil, subprocess, sys, time, unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPT = os.path.join(os.path.dirname(HERE), "ctx-watermark.py")
+# The rest of the kit this file also holds to account: the sync script names which files an
+# install is made of, and the two hook files carry the same install-root chain in `sh`.
+REPO = os.path.dirname(os.path.dirname(HERE))
+SYNC = os.path.join(REPO, "scripts", "sync-installed.sh")
+HOOKS = os.path.join(REPO, "hooks", "hooks.json")
+CANDIDATE_HOOK = os.path.join(REPO, "hooks", "case-lint.PostToolUse.candidate.json")
 FIXTURES = os.environ.get("CTXKIT_TEST_DIR") or "/tmp/ctx-watermark-tests"
 PREFIX = "[ctx-kit watermark]"
 UPDATE_PREFIX = "[ctx-kit update]"
@@ -108,6 +114,7 @@ def run(path, **thresholds):
     env.pop("CTXKIT_WATERMARK_YELLOW", None)  # never inherit the developer's own lines
     env.pop("CTXKIT_WATERMARK_RED", None)
     env["CLAUDE_PLUGIN_ROOT"] = NO_INSTALL  # nor the developer's own installed copy
+    env.pop("CLAUDE_CONFIG_DIR", None)      # nor a config dir they moved off the default path
     env.update(thresholds)
     event = json.dumps({
         "session_id": "synthetic-session",
@@ -128,6 +135,7 @@ def run_raw(stdin_text):
     env.pop("CTXKIT_WATERMARK_YELLOW", None)
     env.pop("CTXKIT_WATERMARK_RED", None)
     env["CLAUDE_PLUGIN_ROOT"] = NO_INSTALL
+    env.pop("CLAUDE_CONFIG_DIR", None)
     return subprocess.run(
         [sys.executable, SCRIPT], input=stdin_text, env=env,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True,
@@ -559,6 +567,263 @@ class StaleInstall(unittest.TestCase):
         context = payload["hookSpecificOutput"]["additionalContext"]
         self.assertIn("already passed a red reading", context)
         self.assertIn("once per session", context)
+
+
+class InstallRootOrder(unittest.TestCase):
+    """Which of the three install roots answers, and in what order.
+
+    `installed_root()` is never called directly — the contract this suite tests is what the
+    hook prints — so each tier is read off the moment carried in the `[ctx-kit update]` line:
+    three roots are laid down an hour apart and the one whose mtime comes back is the one that
+    won. `CLAUDE_CONFIG_DIR` is the tier the kit had no case for until 2026-09-10: a session
+    belonging to somebody who keeps their claude CLI configuration off the default path was
+    being compared against a `~/.claude` holding none of their files.
+    """
+
+    PLUGIN_AT = SESSION_STARTED + HOUR
+    CONFIG_AT = SESSION_STARTED + 2 * HOUR
+    HOME_AT = SESSION_STARTED + 3 * HOUR
+
+    def roots(self):
+        """One installed copy per tier, each stamped a different hour after the session opened."""
+        plugin = installed("root-plugin", self.PLUGIN_AT)
+        config = installed("root-config", self.CONFIG_AT)
+        installed(os.path.join("root-home", ".claude"), self.HOME_AT)
+        return plugin, config, os.path.join(FIXTURES, "root-home")
+
+    def reading(self, name, **env):
+        """The staleness line from a transcript that is under both watermark lines."""
+        result = run(write_transcript(name, [assistant(UNDER_BOTH)]), **env)
+        self.assertEqual(0, result.returncode, result.stderr)
+        message = json.loads(result.stdout)["systemMessage"]
+        self.assertTrue(message.startswith(UPDATE_PREFIX), message)
+        return message
+
+    def test_the_plugin_root_answers_first(self):
+        plugin, config, home = self.roots()
+        message = self.reading("root-order-plugin.ndjson", CLAUDE_PLUGIN_ROOT=plugin,
+                               CLAUDE_CONFIG_DIR=config, HOME=home)
+        self.assertIn(clock(self.PLUGIN_AT), message)
+        self.assertNotIn(clock(self.CONFIG_AT), message)
+        self.assertNotIn(clock(self.HOME_AT), message)
+
+    def test_the_config_dir_answers_when_there_is_no_plugin_root(self):
+        """The tier that was missing: set it, and it is read instead of `~/.claude`."""
+        plugin, config, home = self.roots()
+        message = self.reading("root-order-config.ndjson", CLAUDE_PLUGIN_ROOT="",
+                               CLAUDE_CONFIG_DIR=config, HOME=home)
+        self.assertIn(clock(self.CONFIG_AT), message)
+        self.assertNotIn(clock(self.PLUGIN_AT), message)
+        self.assertNotIn(clock(self.HOME_AT), message)
+
+    def test_home_answers_when_neither_variable_is_set(self):
+        plugin, config, home = self.roots()
+        message = self.reading("root-order-home.ndjson", CLAUDE_PLUGIN_ROOT="",
+                               CLAUDE_CONFIG_DIR="", HOME=home)
+        self.assertIn(clock(self.HOME_AT), message)
+        self.assertNotIn(clock(self.PLUGIN_AT), message)
+        self.assertNotIn(clock(self.CONFIG_AT), message)
+
+    def silence(self, name, **env):
+        """A run with nothing to say: under both lines, and no install newer than the session."""
+        result = run(write_transcript(name, [assistant(UNDER_BOTH)]), **env)
+        self.assertEqual("", result.stdout)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_a_config_dir_holding_nothing_reads_nothing_rather_than_the_next_root(self):
+        """A tier answers because it is set, not because something was found underneath it.
+
+        Somebody who sets `CLAUDE_CONFIG_DIR` and installs into `~/.claude` anyway has a
+        half-moved install, and this line goes quiet for them: `~/.claude` here holds files
+        three hours newer than the session, so a fallback would print a reading. Silence is
+        the intended answer, not a gap -- reading the next root down would put a directory
+        the session does not name up against the session's own clock. The `sh` chain in
+        hooks.json does fall back and still finds a script to run, because it is answering
+        whether there is anything to run, not which install this session is running.
+        """
+        plugin, config, home = self.roots()
+        self.silence("root-order-config-empty.ndjson", CLAUDE_PLUGIN_ROOT="",
+                     CLAUDE_CONFIG_DIR=NO_INSTALL, HOME=home)
+
+    def test_the_plugin_root_answers_over_a_config_dir_even_holding_nothing(self):
+        """Both set: the plugin root wins, and it does not hand over when it is empty.
+
+        The direction `test_the_plugin_root_answers_first` cannot see, because there the
+        plugin root has files of its own and would win either way. Here it has none, while
+        the config dir below it holds files two hours newer than the session -- so anything
+        printed at all would be the config dir's reading, and the run is held to silence.
+        """
+        plugin, config, home = self.roots()
+        self.silence("root-order-plugin-empty.ndjson", CLAUDE_PLUGIN_ROOT=NO_INSTALL,
+                     CLAUDE_CONFIG_DIR=config, HOME=home)
+
+
+class ShippedHookCommand(unittest.TestCase):
+    """The shell one-liner in hooks.json, run the way a shell runs it.
+
+    The script resolves an install root in python and the hook resolves the path to the script
+    in `sh`, separately. A tier added to one and forgotten in the other leaves the hook finding
+    nothing to run and the doorbell silent for good, with every test above still green — so the
+    shipped string is run here rather than read.
+    """
+
+    def command(self, path=HOOKS):
+        with open(path, encoding="utf-8") as handle:
+            wired = json.load(handle)
+        if path == HOOKS:
+            return wired["hooks"]["UserPromptSubmit"][0]["hooks"][0]["command"]
+        return wired["PostToolUse"][0]["hooks"][0]["command"]
+
+    def stub(self, name):
+        """An install root whose `scripts/ctx-watermark.py` only says which root it is."""
+        path = os.path.join(FIXTURES, name, "scripts", "ctx-watermark.py")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as handle:
+            handle.write("print(%r)\n" % name)
+        return os.path.join(FIXTURES, name)
+
+    def shell(self, stdin_text="{}", **overrides):
+        env = dict(os.environ)
+        for name in ("CLAUDE_PLUGIN_ROOT", "CLAUDE_CONFIG_DIR"):
+            env.pop(name, None)
+        # Which interpreter the command settles on is not what is under test here, and the
+        # macOS shim in the search list makes the answer machine-dependent. Pin it.
+        env["CTXKIT_PYTHON"] = sys.executable
+        env.update(overrides)
+        return subprocess.run(
+            ["sh", "-c", self.command()], input=stdin_text, env=env,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True,
+        )
+
+    def test_each_tier_wins_in_the_shipped_order(self):
+        plugin, config = self.stub("hook-plugin"), self.stub("hook-config")
+        home_root = os.path.join("hook-home", ".claude")
+        self.stub(home_root)
+        home = os.path.join(FIXTURES, "hook-home")
+        for label, env, expected in (
+            ("plugin root first",
+             dict(CLAUDE_PLUGIN_ROOT=plugin, CLAUDE_CONFIG_DIR=config, HOME=home), "hook-plugin"),
+            ("config dir second", dict(CLAUDE_CONFIG_DIR=config, HOME=home), "hook-config"),
+            ("home last", dict(HOME=home), home_root),
+        ):
+            with self.subTest(tier=label):
+                result = self.shell(**env)
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertEqual(expected, result.stdout.strip())
+
+    def test_the_config_dir_tier_runs_the_real_script(self):
+        """The finding this closes: with only `CLAUDE_CONFIG_DIR` set, nothing was found to run.
+
+        Not a stub — the shipped command finds the real script under that root and the real
+        reading comes back out of it. The copy is stamped before the session opened so the
+        staleness line stays out of the way and the watermark is the only thing printed.
+        """
+        root = os.path.join(FIXTURES, "hook-real-config")
+        target = os.path.join(root, "scripts", "ctx-watermark.py")
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        shutil.copyfile(SCRIPT, target)
+        os.utime(target, (SESSION_STARTED - HOUR, SESSION_STARTED - HOUR))
+        empty_home = os.path.join(FIXTURES, "hook-empty-home")
+        os.makedirs(empty_home, exist_ok=True)
+        event = json.dumps({
+            "session_id": "synthetic-session",
+            "transcript_path": write_transcript("hook-real.ndjson", [assistant(OVER_RED)]),
+            "cwd": FIXTURES,
+            "hook_event_name": "UserPromptSubmit",
+            "prompt": "synthetic prompt",
+        })
+        result = self.shell(event, CLAUDE_CONFIG_DIR=root, HOME=empty_home)
+        self.assertEqual(0, result.returncode, result.stderr)
+        message = json.loads(result.stdout)["systemMessage"]
+        self.assertTrue(message.startswith(PREFIX), message)
+        self.assertIn("513k / red 500k", message)
+
+    def test_both_hook_files_name_the_three_tiers_in_the_same_order(self):
+        """The opt-in lint hook ships the same chain; a reader should not find two orders."""
+        for path in (HOOKS, CANDIDATE_HOOK):
+            with self.subTest(hook=os.path.basename(path)):
+                command = self.command(path)
+                where = [command.find(marker) for marker in
+                         ("${CLAUDE_PLUGIN_ROOT:-}", "${CLAUDE_CONFIG_DIR:-}", "$HOME/.claude")]
+                self.assertNotIn(-1, where, command)
+                self.assertEqual(sorted(where), where, command)
+
+
+class WatchedFiles(unittest.TestCase):
+    """`INSTALLED` against the list `scripts/sync-installed.sh` actually copies.
+
+    The two are hand-written in two files and they had drifted: the sync script installed
+    `scripts/takeover-load.py` and `agents/digest.md` while `INSTALLED` named neither, so an
+    update touching only those two moved no mtime the doorbell could see and told nobody.
+    Holding one list to the other makes the next file added to one and forgotten in the other
+    a red test, instead of a hint that quietly stops seeing things.
+    """
+
+    def patterns(self):
+        """`INSTALLED` read out of the script's source — parsed, never imported or run."""
+        with open(SCRIPT, encoding="utf-8") as handle:
+            tree = ast.parse(handle.read())
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and any(
+                    isinstance(target, ast.Name) and target.id == "INSTALLED"
+                    for target in node.targets):
+                return list(ast.literal_eval(node.value))
+        self.fail("no INSTALLED assignment found in %s" % SCRIPT)
+
+    def watched(self):
+        """Those patterns resolved against the repository, the way the script resolves them."""
+        names = set()
+        for parts in self.patterns():
+            for path in glob.glob(os.path.join(REPO, *parts)):
+                names.add(os.path.relpath(path, REPO))
+        return names
+
+    def synced(self):
+        """What `--check` names, from a real run of the shipped script against an empty root."""
+        empty = os.path.join(FIXTURES, "sync-empty-home")
+        os.makedirs(empty, exist_ok=True)
+        env = dict(os.environ)
+        for name in ("CLAUDE_PLUGIN_ROOT", "CLAUDE_CONFIG_DIR"):
+            env.pop(name, None)
+        env["HOME"] = empty
+        result = subprocess.run(
+            ["bash", SYNC, "--check"], env=env, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, universal_newlines=True,
+        )
+        # 1 = differences found, which is the whole point of pointing it at an empty root.
+        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
+        found = set()
+        for line in result.stdout.splitlines():
+            match = re.match(r"^ {2}(?:same|differs|not installed) +(\S.*)$", line)
+            if match:
+                found.add(match.group(1))
+        return found
+
+    def test_installed_names_every_file_the_sync_script_copies(self):
+        synced = self.synced()
+        self.assertTrue(synced, "the sync script listed no files at all")
+        self.assertEqual(synced, self.watched())
+
+    def test_the_loader_and_the_digest_agent_are_watched(self):
+        """Named outright, because these two are the files the hint was blind to."""
+        watched = self.watched()
+        self.assertIn(os.path.join("scripts", "takeover-load.py"), watched)
+        self.assertIn(os.path.join("agents", "digest.md"), watched)
+
+    def test_every_watched_pattern_matches_something_in_the_repository(self):
+        """A pattern matching nothing would drop out of both sides and pass unnoticed.
+
+        The comparison above globs `INSTALLED` before comparing it, so a name that is not in
+        the repository any more contributes nothing to either set: they stay equal while the
+        doorbell watches one file fewer than the list claims. Each pattern is therefore held
+        to matching something on its own, which is the only direction the equality is blind to.
+        """
+        for parts in self.patterns():
+            pattern = os.path.join(*parts)
+            with self.subTest(pattern=pattern):
+                self.assertTrue(
+                    glob.glob(os.path.join(REPO, *parts)),
+                    "INSTALLED names %s, which matches nothing in the repository" % pattern)
 
 
 class MakeUp(unittest.TestCase):

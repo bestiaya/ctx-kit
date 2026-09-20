@@ -186,10 +186,10 @@
 
 这不是一套节奏，是一个开关，所以不占配方号。案库一大、并行的会话一多，案文件的毛病（判定格写成一段话、状态词写成判定、收件位处置栏写了却不以那三个词开头、表格里一根裸 `|` 把整行的列错开、案里点名的档案文件根本没入库）就会一条条攒起来，而**每一条都要下一个接手的人替你付**。
 
-手动这样查（脚本在哪，跟别处一样解析两处；`python3` 得是一支真跑得起来的——macOS 的 `/usr/bin/python3` 是 Xcode 垫片，报 `xcodebuild` 就是解释器走错了，不是脚本坏了）：
+手动这样查（脚本在哪，跟别处一样解析三处，一个固定顺序：插件根 → `$CLAUDE_CONFIG_DIR` → `~/.claude/scripts/`；`python3` 得是一支真跑得起来的——macOS 的 `/usr/bin/python3` 是 Xcode 垫片，报 `xcodebuild` 就是解释器走错了，不是脚本坏了）：
 
 ```bash
-S="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/scripts/case-lint.py}"; [ -f "$S" ] || S="$HOME/.claude/scripts/case-lint.py"
+S="${CLAUDE_PLUGIN_ROOT:+$CLAUDE_PLUGIN_ROOT/scripts/case-lint.py}"; [ -f "$S" ] || S="${CLAUDE_CONFIG_DIR:+$CLAUDE_CONFIG_DIR/scripts/case-lint.py}"; [ -f "$S" ] || S="$HOME/.claude/scripts/case-lint.py"
 python3 "$S" <案文件或案库目录>
 ```
 
