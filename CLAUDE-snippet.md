@@ -2,7 +2,7 @@
 
 Paste the whole of the first code block below into your project `CLAUDE.md`, or into the user-level `~/.claude/CLAUDE.md` (put it at user level if you want every project to run under this discipline).
 
-The rules only say *what* to do; *how* lives in the six skills — **a skill's body enters the context only when it is invoked, whereas the rule block is resident**, so the shorter the rules the better. Do not copy skill content into them.
+The rules only say *what* to do; *how* lives in the seven skills — **a skill's body enters the context only when it is invoked, whereas the rule block is resident**, so the shorter the rules the better. Do not copy skill content into them.
 
 ```markdown
 ## Context and workflow
@@ -134,6 +134,6 @@ In English, for readers who do not read Chinese — **what you paste is the Chin
 
 ## Trimming it per project
 
-- A differently named case directory: add one line of its own to this `CLAUDE.md` — `ctx-kit case library: docs/cases`, the path relative to the project root — which is what all six skills read; the rules above need no editing.
+- A differently named case directory: add one line of its own to this `CLAUDE.md` — `ctx-kit case library: docs/cases`, the path relative to the project root — which is what all seven skills read; the rules above need no editing.
 - No "owner" role (you are working alone): delete the last rule and keep the rest.
 - Team settings: add a name convention to the "pen-holder" cell (`name @<first 8 of the session id>`, say — the `sessionId` the session tools hand back, never the name of the transcript file, which is a different id) so two people never take the same case at once.

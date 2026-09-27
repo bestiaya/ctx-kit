@@ -10,7 +10,7 @@ assignees: ""
      the fields are here so you do not have to guess what would help. -->
 
 **What you did**
-The command or the sentence you said (`/ctx-takeover C-NN`, "close out", …), and which of the six skills it ran.
+The command or the sentence you said (`/ctx-takeover C-NN`, "close out", …), and which of the seven skills it ran.
 
 **What you expected, and what happened instead**
 One line each. If a block errored, paste the error rather than describing it.
