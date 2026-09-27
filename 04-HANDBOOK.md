@@ -35,7 +35,7 @@
 
 1. 加市场：`claude plugin marketplace add bestiaya/ctx-kit`
 2. 装插件：`claude plugin install ctx-kit@ctx-kit`
-3. **手动第三步，必做**：把 [CLAUDE-snippet.md](CLAUDE-snippet.md) 里的代码块整段拷进项目 `CLAUDE.md`（或 `~/.claude/CLAUDE.md`）。插件装得进那六条命令，**装不进常驻条文**——"说事先分诊、大料自动下放、过线提醒收口"这三件它主动做的事，全靠这段条文。
+3. **手动第三步，必做**：把 [CLAUDE-snippet.md](CLAUDE-snippet.md) 里的两个代码块都整段拷进项目 `CLAUDE.md`（或 `~/.claude/CLAUDE.md`）。插件装得进那七条命令，**装不进常驻条文**——"说事先分诊、大料自动下放、过线提醒收口"这三件它主动做的事，全靠这段条文。
 
 装完自查三条（新开一个会话做，两分钟）。**三条都在你自己开的交互会话里跑；无头 `claude -p` 的读数不算这三条**——本项目 2026-09-09 用无头跑过，1、2 判负、3 通过，交互那一侧没人跑过，所以那几个读数说的是"无头会怎样"，说不了你面前这个会话会怎样。
 
