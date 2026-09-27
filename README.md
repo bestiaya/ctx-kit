@@ -169,7 +169,7 @@ One measurement sits outside 01: [handing a task to a fresh session, six cases](
 
 ## What gets installed
 
-What goes in: six skills, one CLAUDE.md rule block, two hooks (a warning before an auto-compact, and the once-per-turn watermark doorbell), four scripts (the weekly audit, the doorbell itself, the takeover loader, and the case-file lint — whose own hook is opt-in and is not switched on for you) and one `digest` subagent.
+What goes in: six skills, two CLAUDE.md rule blocks, two hooks (a warning before an auto-compact, and the once-per-turn watermark doorbell), four scripts (the weekly audit, the doorbell itself, the takeover loader, and the case-file lint — whose own hook is opt-in and is not switched on for you) and one `digest` subagent.
 
 **Check your version first** — `claude --version`. What each layer needs (versions from the [claude CLI changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)):
 
@@ -189,7 +189,7 @@ claude plugin marketplace add bestiaya/ctx-kit
 claude plugin install ctx-kit@ctx-kit
 ```
 
-Third step (manual, required): paste the whole code block from [CLAUDE-snippet.md](CLAUDE-snippet.md) into your project `CLAUDE.md` (or `~/.claude/CLAUDE.md`). A plugin can ship skills, a hook, a script and a subagent — it **cannot ship a resident rule block**, and the proactive behaviour — triage before acting, hand big reads to a subagent, offer to close out past the line — depends on those rules being resident.
+Third step (manual, required): paste both code blocks from [CLAUDE-snippet.md](CLAUDE-snippet.md), each one whole, into your project `CLAUDE.md` (or `~/.claude/CLAUDE.md`). A plugin can ship skills, a hook, a script and a subagent — it **cannot ship a resident rule block**, and the proactive behaviour — triage before acting, hand big reads to a subagent, offer to close out past the line — depends on those rules being resident.
 
 **One side effect to know before you install**: closing out (`/ctx-handoff`) doesn't only write files — it `git add`s the files this session edited, commits them and **pushes** to the current branch's upstream. On a protected or shared branch, decide where you want that to land before you start. If it can't push (no remote, no permission, a conflict, not a git project at all) it says "not pushed + why" in the reply rather than going quiet. And if your case library sits in a git-ignored directory — this repository's own does — the case files are written to disk and never committed: close-out reports that too, it is a legitimate setup rather than a failure, and syncing that directory to another machine is then your job.
 
@@ -197,7 +197,7 @@ Third step (manual, required): paste the whole code block from [CLAUDE-snippet.m
 
 <details><summary>Manual install (no plugin)</summary>
 
-Copy `skills/ctx-*` into `~/.claude/skills/`, `agents/digest.md` into `~/.claude/agents/`, and all four of `scripts/cache-audit.py`, `scripts/ctx-watermark.py`, `scripts/case-lint.py` and `scripts/takeover-load.py` into `~/.claude/scripts/` (create the directory if it is not there — with no plugin root and no `CLAUDE_CONFIG_DIR`, that is the one place the kit's scripts are looked for; leave the lint out and the opt-in hook in 04's "install and self-check" finds nothing and stays silent for ever, and leave the loader out and every takeover says it cannot find the script to run), then merge the `hooks` object from `hooks/hooks.json` into `~/.claude/settings.json` (the compact warning shows a macOS notification and falls back to stderr elsewhere). Paste the rule block as above.
+Copy `skills/ctx-*` into `~/.claude/skills/`, `agents/digest.md` into `~/.claude/agents/`, and all four of `scripts/cache-audit.py`, `scripts/ctx-watermark.py`, `scripts/case-lint.py` and `scripts/takeover-load.py` into `~/.claude/scripts/` (create the directory if it is not there — with no plugin root and no `CLAUDE_CONFIG_DIR`, that is the one place the kit's scripts are looked for; leave the lint out and the opt-in hook in 04's "install and self-check" finds nothing and stays silent for ever, and leave the loader out and every takeover says it cannot find the script to run), then merge the `hooks` object from `hooks/hooks.json` into `~/.claude/settings.json` (the compact warning shows a macOS notification and falls back to stderr elsewhere). Paste the rule blocks as above.
 
 **If your claude CLI configuration lives somewhere other than `~/.claude`** — that is, you have `CLAUDE_CONFIG_DIR` set — install into that directory instead and read `$CLAUDE_CONFIG_DIR` for `~/.claude` throughout this section. Every place the kit resolves an install root tries three, in one fixed order: the plugin root, then `CLAUDE_CONFIG_DIR`, then `~/.claude`. That holds for the hook, both skills that run a script, the lint and the sync script alike, and the sync script prints the root it picked on its `# installed:` line.
 

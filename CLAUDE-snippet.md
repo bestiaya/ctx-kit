@@ -1,6 +1,6 @@
-# A rule block to copy: context and workflow
+# Rule blocks to copy: context and workflow, and output for the owner
 
-Paste the whole code block below into your project `CLAUDE.md`, or into the user-level `~/.claude/CLAUDE.md` (put it at user level if you want every project to run under this discipline).
+Paste the whole of the first code block below into your project `CLAUDE.md`, or into the user-level `~/.claude/CLAUDE.md` (put it at user level if you want every project to run under this discipline).
 
 The rules only say *what* to do; *how* lives in the six skills — **a skill's body enters the context only when it is invoked, whereas the rule block is resident**, so the shorter the rules the better. Do not copy skill content into them.
 
@@ -94,6 +94,35 @@ The rules only say *what* to do; *how* lives in the six skills — **a skill's b
 - The owner has only three moves: name a job / ask where things stand / decide — plus two housekeeping calls,
   close out and the weekly check. Everything else you do without asking, and report once it is done.
 ```
+
+## A second rule block: output for the owner
+
+This one is about what the session writes to the owner in the conversation — plain language by default, with five rules always on — and about which files have to come with a version written for a person to read. It is written in Chinese, in the owner's own words, and it is kept verbatim. Paste it into `~/.claude/CLAUDE.md` if you want every project to report to you this way; otherwise into the project `CLAUDE.md`.
+
+```markdown
+## 给负责人的输出（2026-09-27 第三版，整节替换 09-15 版）
+
+对话里写给负责人的字**默认就是人话**，下面五条常开；文件默认给 agent，有格有框随意，例外只有标明"给人看"的文件。要负责人**亲手执行、批准或审核**的内容（命令、授权范围、改动影响）一律写在人读段，不得只说"贴到哪"；要负责人审的文件必须有"给人看"版，没有就不算交付。对话里混有给 agent 的内容（发车 prompt、任务书、给别案的信、命令串）时**分两段**：先"给你看的"，再"给 agent 的"整块代码块，两段不混写。
+
+1. 首段是判断，先答他问的那一层。
+2. 用他的词；编号只进括号或"案里叫"一列；发前遮住编号自读一遍。
+3. 关键读数带口径与局限（跟什么比、证什么不证什么）；他只问数就只答数；没有基线写"未测"；估时标"估计"。
+4. 状态与结论都标来源：验了什么、谁验、还等谁；实验证实的写读数，负责人拍的写"拍"，不混。
+5. 要他做的、要他拍的，每件带为什么、做完能看到什么；讨论先给方向（判定、选项、建议、要拍什么）让他拍，拍了再深挖。
+
+精简删的是重复与套话，不删影响判断的失败、未知与证据边界。"总结一下 / 到哪了"没有触发词，答法与接手复述同一形状：判断 → 到哪 → 下一步 → 要他做什么，十行以内。人话词表在项目 `_ops/人话词表.md`（没有就建，agent 提名、负责人认名）；负责人说过的目标或场景原话逐字记进案，一行，没说过不编。
+负责人问"我们讨论过 X 吗 / X 定了什么"：先查 `~/.claude/TOPICS.md`（议题索引），再按它指的路径读；讨论出结论时持笔在该索引追加一行。
+
+**Why**：09-15 版八条外加一个汇报 skill 仍失守，病根是规矩长到只能靠 skill 点名加载、接手模板更具体赢了原则；本版 2026-09-27。
+```
+
+In English, for readers who do not read Chinese — **what you paste is the Chinese block above; the English here is only a paraphrase.** What the session writes to the owner in the conversation is plain language by default, with the five rules below always on; files are for agents by default, tables and boxes as you please, the one exception being a file marked for-human (给人看). Anything the owner has to run, approve or review personally (commands, the scope of an authorisation, what a change affects) is written in the part meant for people, never left as a line saying where to paste it; a file the owner is to review must have a for-human version, or it does not count as delivered. Where the conversation carries something for an agent as well (a dispatch prompt, a task brief, a letter to another case, a string of commands), it comes in two parts: first "for you", then "for the agent" as one whole code block, the two never mixed.
+
+1. The first paragraph is the judgement, answering first the layer the owner asked about.
+2. Use the owner's words; IDs go only in brackets or in a "called … in the case" column; before sending, cover the IDs and read it through yourself.
+3. Key readings carry their basis and their limits (compared with what; what they prove and what they do not); asked only for a number, give only the number; with no baseline, write "not measured"; a time estimate is marked "estimate".
+4. Statuses and conclusions both name their source: what was checked, who checked it, who is still awaited; what an experiment confirmed is written as its reading, what the owner decided is written as "decided", and the two are never mixed.
+5. Whatever the owner has to do or decide comes with why, and with what they will see once it is done; a discussion first gives the direction (judgement, options, recommendation, what needs deciding) for the owner to decide, and goes deeper only once it is decided.
 
 ## Three self-checks after installing
 

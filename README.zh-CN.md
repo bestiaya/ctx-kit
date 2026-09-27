@@ -169,7 +169,7 @@ English: [README.md](README.md) · 六条命令的 skill 只有英文一版，**
 
 ## 装什么
 
-装进去的是 6 个 skill、1 段 CLAUDE.md 条文、2 个 hook（自动压缩前的预警，与每回合一次的水位门铃）、4 支脚本（接手装载器、周检查账、门铃本身，以及案文件体检——它自己那个 hook 是可选的，本包不替你打开）、1 个 digest 子代理。
+装进去的是 6 个 skill、2 段 CLAUDE.md 条文、2 个 hook（自动压缩前的预警，与每回合一次的水位门铃）、4 支脚本（接手装载器、周检查账、门铃本身，以及案文件体检——它自己那个 hook 是可选的，本包不替你打开）、1 个 digest 子代理。
 
 **先看版本**：`claude --version`。哪一层要什么版本（版本出自 [claude CLI 更新日志](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)）：
 
@@ -189,7 +189,7 @@ claude plugin marketplace add bestiaya/ctx-kit
 claude plugin install ctx-kit@ctx-kit
 ```
 
-第三步（手动，必做）：把 [CLAUDE-snippet.md](CLAUDE-snippet.md) 里的代码块整段拷进项目 `CLAUDE.md`（或 `~/.claude/CLAUDE.md`）。plugin 装得进 skill、hook、脚本和子代理，**装不进常驻条文**——而"说事先分诊、大料自动下放、过线提醒收口"这些主动行为全靠条文常驻。
+第三步（手动，必做）：把 [CLAUDE-snippet.md](CLAUDE-snippet.md) 里的两个代码块都整段拷进项目 `CLAUDE.md`（或 `~/.claude/CLAUDE.md`）。plugin 装得进 skill、hook、脚本和子代理，**装不进常驻条文**——而"说事先分诊、大料自动下放、过线提醒收口"这些主动行为全靠条文常驻。
 
 **装之前先知道一个副作用**：收口（`/ctx-handoff`）不只是写文件——它会把这个会话改过的文件 `git add` 上、提交，并**推送**到当前分支的上游。在受保护分支或多人共用分支上干活，先想好你要它推到哪里。推不上去（没远端、没权限、有冲突、压根不是 git 项目），它会在回复里明写"未推送 + 原因"，不会闷着。案库要是落在被 git 忽略的目录里（本仓自己就是这样），案文件只落盘、不入库：收口照样明写这一句，这是合法姿势、不算失败；那个目录想跨电脑接手，得你自己同步过去。
 
