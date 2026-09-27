@@ -1,8 +1,8 @@
 # ctx-kit
 
-**当前版本：ctx-kit v0.11.0** —— 与 `.claude-plugin/plugin.json` 里的号一致；两边对不上，`scripts/release-check.py` 会报出来。
+**当前版本：ctx-kit v0.12.0** —— 与 `.claude-plugin/plugin.json` 里的号一致；两边对不上，`scripts/release-check.py` 会报出来。
 
-English: [README.md](README.md) · 六条命令的 skill 只有英文一版，**正文以英文为准**，不再另出中文副本。skill 正文自己就写着"说用户的语言、案文件按用户的语言写"，所以中文用户用英文 skill，功能上不缺什么；文档 01–06 目前是中文。英文正文里九个案节名都带中文括注（`A Goal (目标)` 这样），为的是中英两种语言写出来的案能互读。
+English: [README.md](README.md) · 七条命令的 skill 只有英文一版，**正文以英文为准**，不再另出中文副本。skill 正文自己就写着"说用户的语言、案文件按用户的语言写"，所以中文用户用英文 skill，功能上不缺什么；文档 01–06 目前是中文。英文正文里九个案节名都带中文括注（`A Goal (目标)` 这样），为的是中英两种语言写出来的案能互读。
 
 **一次会话装不下的活，才需要 ctx-kit；一次会话能出货的活，用不上。**
 
@@ -10,7 +10,7 @@ English: [README.md](README.md) · 六条命令的 skill 只有英文一版，**
 
 **一句话**：claude CLI 的会话生命周期工具包——把"状态写在文件里、会话随时能扔"变成默认动作，让活比会话活得久。（claude CLI 就是你用的那个 agent：跑模型、带工具、管会话；模型可以换，你的会话住在它这一层。）
 
-**适用**：给 claude CLI（Claude Code）做的——六条命令是它的 skill，钩子与审计脚本读的是它的会话日志。案文件是纯 markdown，别的 agent 也能读：换 Codex 接手实走过一次；但给 Codex 用的命令那一层还没做，要另做一版。
+**适用**：给 claude CLI（Claude Code）做的——七条命令是它的 skill，钩子与审计脚本读的是它的会话日志。案文件是纯 markdown，别的 agent 也能读：换 Codex 接手实走过一次；但给 Codex 用的命令那一层还没做，要另做一版。
 
 **给谁用**：拿 agent 干"比一次会话大"的活的人——写代码、做产品设计、做调研、写东西都算。这种活的会话会越养越贵，活要跨会话、跨 agent、跨电脑，手上还不止一件事。一次会话内就能出货的快活（写个 PRD、生成用户故事、出一段代码），用不上。
 
@@ -169,17 +169,17 @@ English: [README.md](README.md) · 六条命令的 skill 只有英文一版，**
 
 ## 装什么
 
-装进去的是 6 个 skill、1 段 CLAUDE.md 条文、2 个 hook（自动压缩前的预警，与每回合一次的水位门铃）、4 支脚本（接手装载器、周检查账、门铃本身，以及案文件体检——它自己那个 hook 是可选的，本包不替你打开）、1 个 digest 子代理。
+装进去的是 7 个 skill、2 段 CLAUDE.md 条文、2 个 hook（自动压缩前的预警，与每回合一次的水位门铃）、4 支脚本（接手装载器、周检查账、门铃本身，以及案文件体检——它自己那个 hook 是可选的，本包不替你打开）、1 个 digest 子代理。
 
 **先看版本**：`claude --version`。哪一层要什么版本（版本出自 [claude CLI 更新日志](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)）：
 
 | 这一层 | 最低版本 | 版本不够会怎样 |
 |---|---|---|
-| skill 机制（六条命令的底座） | v2.0.20（"Added support for Claude Skills"） | 整套都不生效，先 `claude update` |
+| skill 机制（七条命令的底座） | v2.0.20（"Added support for Claude Skills"） | 整套都不生效，先 `claude update` |
 | 按插件装（`claude plugin …`） | v2.0.12 插件机制上线——更新日志没写 `claude plugin` 这个命令行形式是哪一版加的 | 改用会话里的 `/plugin`，或按下面手动安装 |
 | 跨会话消息 `SendMessage` / `ListAgents` | v2.1.224（macOS / Linux）；原生 Windows 要 v2.1.239（官方日志该节写明 Windows 跨会话消息可用）| 只影响"多会话并行"那一套（06 配方 5），其余照跑 |
 | 空闲通知 `notify_when_idle` | v2.1.236（macOS / Linux） | 得你自己去问"跑完没"，没人叫你 |
-| 周检脚本（`cache-audit.py`） | PATH 上有任一 python3 即可——其余全是 markdown 与 shell | 五条命令照跑，只有 `/ctx-checkup` 没数可读 |
+| 周检脚本（`cache-audit.py`） | PATH 上有任一 python3 即可——其余全是 markdown 与 shell | 六条命令照跑，只有 `/ctx-checkup` 没数可读 |
 | UI 会话标题 | 没有版本门槛：桌面版才有设标题的工具，纯终端没有 | 它跳过设标题并说明一句；案里的"持笔"才是唯一的交接信号 |
 
 三步，两条命令加一次粘贴：
@@ -189,7 +189,7 @@ claude plugin marketplace add bestiaya/ctx-kit
 claude plugin install ctx-kit@ctx-kit
 ```
 
-第三步（手动，必做）：把 [CLAUDE-snippet.md](CLAUDE-snippet.md) 里的代码块整段拷进项目 `CLAUDE.md`（或 `~/.claude/CLAUDE.md`）。plugin 装得进 skill、hook、脚本和子代理，**装不进常驻条文**——而"说事先分诊、大料自动下放、过线提醒收口"这些主动行为全靠条文常驻。
+第三步（手动，必做）：把 [CLAUDE-snippet.md](CLAUDE-snippet.md) 里的两个代码块都整段拷进项目 `CLAUDE.md`（或 `~/.claude/CLAUDE.md`）。plugin 装得进 skill、hook、脚本和子代理，**装不进常驻条文**——而"说事先分诊、大料自动下放、过线提醒收口"这些主动行为全靠条文常驻。
 
 **装之前先知道一个副作用**：收口（`/ctx-handoff`）不只是写文件——它会把这个会话改过的文件 `git add` 上、提交，并**推送**到当前分支的上游。在受保护分支或多人共用分支上干活，先想好你要它推到哪里。推不上去（没远端、没权限、有冲突、压根不是 git 项目），它会在回复里明写"未推送 + 原因"，不会闷着。案库要是落在被 git 忽略的目录里（本仓自己就是这样），案文件只落盘、不入库：收口照样明写这一句，这是合法姿势、不算失败；那个目录想跨电脑接手，得你自己同步过去。
 
@@ -214,9 +214,9 @@ claude plugin install ctx-kit@ctx-kit
 
 **卸载**：plugin 在 `/plugin` 里移除，手动装的 `rm -rf ~/.claude/skills/ctx-* ~/.claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/scripts/ctx-watermark.py ~/.claude/scripts/case-lint.py ~/.claude/scripts/takeover-load.py ~/.claude/ctx-kit-backup-*`（最后一项是同步脚本留的备份）；再从 `CLAUDE.md` 与 `~/.claude/settings.json` 删掉对应段落——装到你机器上的件就这些，删干净了。**设了 `CLAUDE_CONFIG_DIR` 的人，上面那条命令里的每一个 `~/.claude` 都读成 `$CLAUDE_CONFIG_DIR`，贴进去的段落也在 `$CLAUDE_CONFIG_DIR/settings.json` 里**：装机就在那儿，上面手动安装那节也是这么说的，但那段折叠在 `<details>` 块里，管不到这一行。hook 命令自己写的那个 `$HOME/.claude` 不是装机路径，是命令的最后一档回落，原样留着。留下来的是你自己的东西：`/ctx-init` 建的任务板与案库、`/ctx-handoff` 提交并推上去的历史，这两样不会替你删，留着还是清掉你自己定。
 
-## 六条命令
+## 七条命令
 
-六个 skill 六条命令，说大白话和打命令是一回事：
+七个 skill 七条命令，说大白话和打命令是一回事：
 
 | 什么时候 | 说一句 |
 |---|---|
@@ -226,10 +226,11 @@ claude plugin install ctx-kit@ctx-kit
 | 新会话接着上个会话干 | "接手 C-07"，或 `/ctx-takeover C-NN` |
 | 想知道现在什么情况 | "现在什么情况"，或 `/ctx-status` |
 | 一周查一次账 | "周检"，或 `/ctx-checkup` |
+| 要一份给人看的文档或页面 | "给人看的" / "人读版" / "给我一个 html 看看"，或 `/ctx-forhuman` |
 
-六条里有两条不只是读：**"收口"会动你的仓库**——把这轮动过的文件提交并推送，推不上去会在回复里明写"未推送 + 原因"；**"周检"会写盘、也会花钱**——它在案库旁边落一个 `CHECKUP/<日期>.md` 产物件、把配对上的档案路径回填进案的 G 节、更新板上例行那一行、给本项目里看起来已废弃的会话打上 `✕` 退役标（拿不准的一律不动、只报给你），并且为了量"地板"会跑两次一轮的无头会话——那是两次实打实计费的请求。其余四条只读，或只改案文件。
+七条里有三条不只是读：**"收口"会动你的仓库**——把这轮动过的文件提交并推送，推不上去会在回复里明写"未推送 + 原因"；**"周检"会写盘、也会花钱**——它在案库旁边落一个 `CHECKUP/<日期>.md` 产物件、把配对上的档案路径回填进案的 G 节、更新板上例行那一行、给本项目里看起来已废弃的会话打上 `✕` 退役标（拿不准的一律不动、只报给你），并且为了量"地板"会跑两次一轮的无头会话——那是两次实打实计费的请求。**`/ctx-forhuman` 会生成你点名要的那份件**，词表缺词时往人话词表里提名（没有词表就建一份）。其余四条只读，或只改案文件。
 
-案文件放哪：优先已存在的 `_ops/CASES/`，否则 `cases/`；想放别处就在项目 `CLAUDE.md` 里写一行 `ctx-kit case library: docs/cases`，六个 skill 都照这行找。
+案文件放哪：优先已存在的 `_ops/CASES/`，否则 `cases/`；想放别处就在项目 `CLAUDE.md` 里写一行 `ctx-kit case library: docs/cases`，七个 skill 都照这行找。
 
 ## 阅读顺序
 

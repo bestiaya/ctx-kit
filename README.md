@@ -1,8 +1,8 @@
 # ctx-kit
 
-**Current release: ctx-kit v0.11.0** — the same number `.claude-plugin/plugin.json` carries; `scripts/release-check.py` reports drift if the two disagree.
+**Current release: ctx-kit v0.12.0** — the same number `.claude-plugin/plugin.json` carries; `scripts/release-check.py` reports drift if the two disagree.
 
-中文 / Chinese: [README.zh-CN.md](README.zh-CN.md) · The six skill prompts are English only — each one tells the session to speak the user's language and to write the case file in it, so working in Chinese through the English prompts loses nothing; docs 01–06 are in Chinese for now. The English prompts gloss the nine case-file section names in Chinese — `A Goal (目标)` and so on — so that a case written in either language stays readable to a session working in the other.
+中文 / Chinese: [README.zh-CN.md](README.zh-CN.md) · The seven skill prompts are English only — each one tells the session to speak the user's language and to write the case file in it, so working in Chinese through the English prompts loses nothing; docs 01–06 are in Chinese for now. The English prompts gloss the nine case-file section names in Chinese — `A Goal (目标)` and so on — so that a case written in either language stays readable to a session working in the other.
 
 **ctx-kit is for work that doesn't fit in one session. If your work ships inside one session, you don't need it.**
 
@@ -10,7 +10,7 @@
 
 **In one line**: a session lifecycle toolkit for claude CLI — it makes "state lives on disk, the session is disposable" the default action, so the work outlives the session. (claude CLI is the agent you talk to: it runs the model, carries the tools, keeps the session. The model can be swapped; your session lives in that layer.)
 
-**Where it works**: built for claude CLI (Claude Code) — the six commands are its skills, and the hook and the audit script read its session logs. Case files are plain markdown, so another agent can read them: Codex took over a live case once. The command layer for Codex doesn't exist, though; that would be a separate build.
+**Where it works**: built for claude CLI (Claude Code) — the seven commands are its skills, and the hook and the audit script read its session logs. Case files are plain markdown, so another agent can read them: Codex took over a live case once. The command layer for Codex doesn't exist, though; that would be a separate build.
 
 **Who it's for**: people who use an agent for work bigger than one session — writing code, product design, research, writing. Work like that gets more expensive the longer a session runs, has to survive a change of session, of agent, even of machine, and rarely arrives one job at a time. Quick work that ships inside a single session — a PRD, a set of user stories, a chunk of code — doesn't need any of this.
 
@@ -169,17 +169,17 @@ One measurement sits outside 01: [handing a task to a fresh session, six cases](
 
 ## What gets installed
 
-What goes in: six skills, one CLAUDE.md rule block, two hooks (a warning before an auto-compact, and the once-per-turn watermark doorbell), four scripts (the weekly audit, the doorbell itself, the takeover loader, and the case-file lint — whose own hook is opt-in and is not switched on for you) and one `digest` subagent.
+What goes in: seven skills, two CLAUDE.md rule blocks, two hooks (a warning before an auto-compact, and the once-per-turn watermark doorbell), four scripts (the weekly audit, the doorbell itself, the takeover loader, and the case-file lint — whose own hook is opt-in and is not switched on for you) and one `digest` subagent.
 
 **Check your version first** — `claude --version`. What each layer needs (versions from the [claude CLI changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)):
 
 | What it powers | Minimum version | If yours is older |
 |---|---|---|
-| Skills — the six commands themselves | v2.0.20 ("Added support for Claude Skills") | Nothing here runs; `claude update` first |
+| Skills — the seven commands themselves | v2.0.20 ("Added support for Claude Skills") | Nothing here runs; `claude update` first |
 | Installing as a plugin (`claude plugin …`) | v2.0.12, when the plugin system shipped — the changelog doesn't date the `claude plugin` command-line form itself | Use `/plugin` inside a session, or install by hand (below) |
 | Cross-session messaging — `SendMessage` / `ListAgents` | v2.1.224 on macOS and Linux; native Windows v2.1.239 (the changelog entry "Windows: cross-session messaging is now available") | Only the several-sessions-at-once recipe is affected; everything else runs |
 | Idle notice — `notify_when_idle` | v2.1.236, macOS and Linux | You go and ask "done yet?" instead of being told |
-| The weekly audit script (`cache-audit.py`) | Any python3 on your PATH — the kit is otherwise plain markdown and shell | The five commands still run; only `/ctx-checkup` has nothing to read |
+| The weekly audit script (`cache-audit.py`) | Any python3 on your PATH — the kit is otherwise plain markdown and shell | The six commands still run; only `/ctx-checkup` has nothing to read |
 | Session titles in the UI | No version line — the Desktop app has the title tool, a plain terminal doesn't | Titles are skipped and it says so; the pen-holder line in the case file is the real handoff signal |
 
 Three steps — two commands and one paste:
@@ -189,7 +189,7 @@ claude plugin marketplace add bestiaya/ctx-kit
 claude plugin install ctx-kit@ctx-kit
 ```
 
-Third step (manual, required): paste the whole code block from [CLAUDE-snippet.md](CLAUDE-snippet.md) into your project `CLAUDE.md` (or `~/.claude/CLAUDE.md`). A plugin can ship skills, a hook, a script and a subagent — it **cannot ship a resident rule block**, and the proactive behaviour — triage before acting, hand big reads to a subagent, offer to close out past the line — depends on those rules being resident.
+Third step (manual, required): paste both code blocks from [CLAUDE-snippet.md](CLAUDE-snippet.md), each one whole, into your project `CLAUDE.md` (or `~/.claude/CLAUDE.md`). A plugin can ship skills, a hook, a script and a subagent — it **cannot ship a resident rule block**, and the proactive behaviour — triage before acting, hand big reads to a subagent, offer to close out past the line — depends on those rules being resident.
 
 **One side effect to know before you install**: closing out (`/ctx-handoff`) doesn't only write files — it `git add`s the files this session edited, commits them and **pushes** to the current branch's upstream. On a protected or shared branch, decide where you want that to land before you start. If it can't push (no remote, no permission, a conflict, not a git project at all) it says "not pushed + why" in the reply rather than going quiet. And if your case library sits in a git-ignored directory — this repository's own does — the case files are written to disk and never committed: close-out reports that too, it is a legitimate setup rather than a failure, and syncing that directory to another machine is then your job.
 
@@ -197,7 +197,7 @@ Third step (manual, required): paste the whole code block from [CLAUDE-snippet.m
 
 <details><summary>Manual install (no plugin)</summary>
 
-Copy `skills/ctx-*` into `~/.claude/skills/`, `agents/digest.md` into `~/.claude/agents/`, and all four of `scripts/cache-audit.py`, `scripts/ctx-watermark.py`, `scripts/case-lint.py` and `scripts/takeover-load.py` into `~/.claude/scripts/` (create the directory if it is not there — with no plugin root and no `CLAUDE_CONFIG_DIR`, that is the one place the kit's scripts are looked for; leave the lint out and the opt-in hook in 04's "install and self-check" finds nothing and stays silent for ever, and leave the loader out and every takeover says it cannot find the script to run), then merge the `hooks` object from `hooks/hooks.json` into `~/.claude/settings.json` (the compact warning shows a macOS notification and falls back to stderr elsewhere). Paste the rule block as above.
+Copy `skills/ctx-*` into `~/.claude/skills/`, `agents/digest.md` into `~/.claude/agents/`, and all four of `scripts/cache-audit.py`, `scripts/ctx-watermark.py`, `scripts/case-lint.py` and `scripts/takeover-load.py` into `~/.claude/scripts/` (create the directory if it is not there — with no plugin root and no `CLAUDE_CONFIG_DIR`, that is the one place the kit's scripts are looked for; leave the lint out and the opt-in hook in 04's "install and self-check" finds nothing and stays silent for ever, and leave the loader out and every takeover says it cannot find the script to run), then merge the `hooks` object from `hooks/hooks.json` into `~/.claude/settings.json` (the compact warning shows a macOS notification and falls back to stderr elsewhere). Paste the rule blocks as above.
 
 **If your claude CLI configuration lives somewhere other than `~/.claude`** — that is, you have `CLAUDE_CONFIG_DIR` set — install into that directory instead and read `$CLAUDE_CONFIG_DIR` for `~/.claude` throughout this section. Every place the kit resolves an install root tries three, in one fixed order: the plugin root, then `CLAUDE_CONFIG_DIR`, then `~/.claude`. That holds for the hook, both skills that run a script, the lint and the sync script alike, and the sync script prints the root it picked on its `# installed:` line.
 
@@ -216,9 +216,9 @@ The yellow and red lines — 400k and 500k by default — are **a spending prefe
 
 **Uninstall**: remove ctx-kit in `/plugin`, or for a manual install `rm -rf ~/.claude/skills/ctx-* ~/.claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/scripts/ctx-watermark.py ~/.claude/scripts/case-lint.py ~/.claude/scripts/takeover-load.py ~/.claude/ctx-kit-backup-*` (the last one is the backups the sync script keeps). Then delete the blocks you pasted into `CLAUDE.md` and `~/.claude/settings.json` — that is everything the kit puts on your machine. **With `CLAUDE_CONFIG_DIR` set, every `~/.claude` in that command is `$CLAUDE_CONFIG_DIR`, and the pasted block sits in `$CLAUDE_CONFIG_DIR/settings.json`**: that is where the install went, and the manual-install note saying so sits inside the collapsed block above, out of this line's reach. The `$HOME/.claude` written inside the hook command is not an install path — it is the command's last fallback, and it stays as it is. What stays behind is yours, not the kit's: the board and the case library `/ctx-init` created, and the commits and remote history `/ctx-handoff` pushed. Nothing deletes those for you; keep them or clear them yourself.
 
-## The six commands
+## The seven commands
 
-Six skills, six commands. Saying it in plain words and typing the command are the same thing.
+Seven skills, seven commands. Saying it in plain words and typing the command are the same thing.
 
 | When | Say | What it does |
 |---|---|---|
@@ -228,8 +228,9 @@ Six skills, six commands. Saying it in plain words and typing the command are th
 | A fresh session continuing the last one | "take over C-07", or `/ctx-takeover C-NN` | Reads the case file only, old transcripts off-limits; signs as pen-holder, saves its checks in a takeover record, recites just this case in at most ten lines for your spot-check |
 | You want to know where things stand | "what's the status", or `/ctx-status` | Reads the board and the case files, reports the goal chain with its milestones and routines, where each case stands, pending decisions and one-offs in plain language |
 | Once a week, checking the bill | "weekly checkup", or `/ctx-checkup` | Runs the cache audit, flags the sessions over the pre-registered lines, backfills archive pointers in the case files — and writes, see the note below |
+| You want a document or a page a person can read | "for human" / "give me an html to look at", or `/ctx-forhuman` | Derives a human-readable layer of at most one screen from what is already on record — what it is and who it is for first, a plain sentence per step, IDs kept to brackets or their own column — and runs three self-checks before handing it over |
 
-Case files live in `_ops/CASES/` when that directory already exists, otherwise in `cases/` — or anywhere you like: put one line, `ctx-kit case library: docs/cases`, in your project `CLAUDE.md` and all six skills read it from there.
+Case files live in `_ops/CASES/` when that directory already exists, otherwise in `cases/` — or anywhere you like: put one line, `ctx-kit case library: docs/cases`, in your project `CLAUDE.md` and all seven skills read it from there.
 
 ## Reading order
 

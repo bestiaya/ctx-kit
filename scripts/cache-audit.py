@@ -70,7 +70,7 @@ The project directory is derived from cwd by default: ~/.claude/projects/ + cwd 
 non-alphanumeric character replaced by '-'.
 
 The case library is printed under `# case library:` so the checkup sweeps the same directory
-this script resolved, and it is resolved by the rule the six ctx-kit skills use, in this
+this script resolved, and it is resolved by the rule the seven ctx-kit skills use, in this
 order: the path on the line `ctx-kit case library: <path relative to the project root>` in
 the project root's CLAUDE.md if there is one, otherwise an existing _ops/CASES/, otherwise
 cases/ (project root = the git root above cwd if there is one, otherwise cwd). Nothing in
@@ -121,7 +121,7 @@ def project_root(start=None):
 
 
 def resolve_cases(root=None):
-    """The case library, by the same three-step rule the six ctx-kit skills use."""
+    """The case library, by the same three-step rule the seven ctx-kit skills use."""
     root = root or project_root()
     claude_md = os.path.join(root, "CLAUDE.md")
     if os.path.isfile(claude_md):
