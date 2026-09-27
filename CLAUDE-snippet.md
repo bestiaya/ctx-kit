@@ -97,7 +97,7 @@ The rules only say *what* to do; *how* lives in the seven skills — **a skill's
 
 ## A second rule block: output for the owner
 
-This one is about what the session writes to the owner in the conversation — plain language by default, with five rules always on — and about which files have to come with a version written for a person to read. It is written in Chinese, in the owner's own words, and it is kept verbatim. Paste it into `~/.claude/CLAUDE.md` if you want every project to report to you this way; otherwise into the project `CLAUDE.md`.
+This one is about what the session writes to the owner in the conversation — plain language by default, with five rules always on — and about which files have to come with a version written for a person to read. It is written in Chinese, in the owner's own words: the channel paragraph and the five numbered rules are kept verbatim; the heading's source note, an internal reference, is left out, and the Why paragraph is cut to one sentence. Paste it into `~/.claude/CLAUDE.md` if you want every project to report to you this way; otherwise into the project `CLAUDE.md`.
 
 ```markdown
 ## 给负责人的输出（2026-09-27 第三版，整节替换 09-15 版）
