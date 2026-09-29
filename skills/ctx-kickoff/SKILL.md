@@ -19,8 +19,8 @@ description: Triage and open a case — use on "I want to do X", "plan this", "s
 |---|---|
 | Part of a case already on the books — same problem area, and one plan would settle both | **Merge into that case**, do not open a second one: the case **you** hold the pen on takes it in section D (something to decide) or as an E row (status `queued`); **any other case takes it as one appended row in its inbox** (§4 ④), never as an edit to their body text. Either way, name the case you merged it into |
 | Needs discussion, needs several rounds of experiment, needs a ruling | **Open a case** (step 2) |
-| Executable in one pass, criteria are clear | **One-off**: no case; one row on the board (**the milestone tag is required**, see below), plus a self-contained task brief |
-| A quick fix (change a setting, change one line, answer a question) | **Just do it**, no case and no task brief |
+| Executable in one pass by a cold session from what is on disk (inputs bounded, the decisions it rests on written down, acceptance stated), **and** dispatching buys something — money, waiting time, or noise kept out of this context | **One-off**: no case; one row on the board (**the milestone tag is required**, see below), plus a self-contained task brief |
+| Rests on this session's context — edits to what was just decided, a rebuild, a check run — whatever its size; or a quick fix (change a setting, answer a question) | **Just do it** here, no case and no task brief. Size is not a reason to dispatch, and "it could be written into a brief" is not independence |
 
 **Look for it on the books before you open anything — and not only on the board.** The same job may already be an E row in somebody's ledger, or already sitting in somebody's inbox waiting to be dealt with, and neither shows up in the case index. Fill in the two keywords first; one command over the whole library then answers all three:
 

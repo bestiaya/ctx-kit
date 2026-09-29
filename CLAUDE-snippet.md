@@ -12,8 +12,14 @@ The rules only say *what* to do; *how* lives in the seven skills — **a skill's
   the board header), then act; a job that hangs off no milestone is listed separately for review.
 - On hearing "do X", triage first: needs discussion or several rounds of experiment → open a case (ctx-kickoff;
   case directory = the `ctx-kit case library:` line in this file if there is one, else `_ops/CASES/`, else
-  `cases/`); one pass of execution → one row on the board (hung off a goal milestone) + dispatch a new session;
-  a quick small change → just do it.
+  `cases/`); one pass of execution a cold session could do from what is on disk → one row on the board (hung
+  off a goal milestone) + dispatch; a job that rests on this session's context — edits to what was just decided,
+  a rebuild, a check run — is done here whatever its size; a quick small change → just do it.
+- Dispatch gate, before any carrier is picked: a job leaves this session only when a cold session can do it
+  from what is on disk (inputs bounded, the decisions it rests on already written down, acceptance stated, an
+  owner named for exceptions) **and** dispatching buys something — money, waiting time, or noise kept out of
+  this context — worth more than the brief, the hand-over and the rework. Size is not a reason, and "it could
+  be written into a brief" is not independence.
 - Dispatch criteria (the core variable is **directional uncertainty**, not duration): ① a fork in direction
   (design / exploration, the owner may have to steer mid-way) → its own session + a self-contained task brief that
   explicitly marks the "owner stop-and-wait point"; ② a deterministic experiment (pre-registered, closed, nothing
