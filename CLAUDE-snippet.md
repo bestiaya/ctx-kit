@@ -12,14 +12,15 @@ The rules only say *what* to do; *how* lives in the seven skills — **a skill's
   the board header), then act; a job that hangs off no milestone is listed separately for review.
 - On hearing "do X", triage first: needs discussion or several rounds of experiment → open a case (ctx-kickoff;
   case directory = the `ctx-kit case library:` line in this file if there is one, else `_ops/CASES/`, else
-  `cases/`); one pass of execution a cold session could do from what is on disk → one row on the board (hung
-  off a goal milestone) + dispatch; a job that rests on this session's context — edits to what was just decided,
-  a rebuild, a check run — is done here whatever its size; a quick small change → just do it.
-- Dispatch gate, before any carrier is picked: a job leaves this session only when a cold session can do it
-  from what is on disk (inputs bounded, the decisions it rests on already written down, acceptance stated, an
-  owner named for exceptions) **and** dispatching buys something — money, waiting time, or noise kept out of
-  this context — worth more than the brief, the hand-over and the rework. Size is not a reason, and "it could
-  be written into a brief" is not independence.
+  `cases/`); one pass of execution that passes the dispatch gate below → one row on the board (hung off a goal
+  milestone) + dispatch; anything that does not pass it is done here, whatever its size, after clarifying or
+  splitting it if need be; a quick small change → just do it.
+- Dispatch gate, before any carrier is picked: a job leaves this session only when its brief records (1) the
+  inputs it needs, (2) where the decisions it rests on are written down — or where it must stop and wait for the
+  owner, (3) how it is accepted and (4) who takes its exceptions — one missing, no dispatch, and a pasted
+  conversation is not a record of decisions — **and** dispatching saves money, shortens the wait or keeps noise
+  out of this context by more than the brief, the hand-over and the rework cost. Size is not a reason either
+  way; a job found mid-way to rest on something unrecorded stops and waits.
 - Dispatch criteria (the core variable is **directional uncertainty**, not duration): ① a fork in direction
   (design / exploration, the owner may have to steer mid-way) → its own session + a self-contained task brief that
   explicitly marks the "owner stop-and-wait point"; ② a deterministic experiment (pre-registered, closed, nothing
