@@ -1,0 +1,5 @@
+interface:
+  display_name: "ctx-profile"
+  short_description: "管理个人配置；保存核心论断、精彩表达和个人想法，保留背景出处；查询保持只读。"
+policy:
+  allow_implicit_invocation: true

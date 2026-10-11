@@ -1,0 +1,3 @@
+interface:
+  display_name: "ctx-kickoff"
+  short_description: "分诊复杂工作、建案或复用活跃案，并按案号与任期设置会话名。"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "方法说明文档写作"
+  short_description: "按实际用途撰写流程指南、判断方法与概念说明，保留主线、依据和边界。"
+  default_prompt: "使用 $ctx-method-doc，根据已有材料为目标读者写一份面向实践的方法说明，明确阅读主线及适用边界。"

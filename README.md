@@ -1,273 +1,89 @@
-# ctx-kit
+# context-kit · 多会话协作工具包
 
-**Current release: ctx-kit v0.13.0** — the same number `.claude-plugin/plugin.json` carries; `scripts/release-check.py` reports drift if the two disagree.
+版本：**v0.14.0**。公开源码：[bestiaya/ctx-kit](https://github.com/bestiaya/ctx-kit)。
 
-中文 / Chinese: [README.zh-CN.md](README.zh-CN.md) · The seven skill prompts are English only — each one tells the session to speak the user's language and to write the case file in it, so working in Chinese through the English prompts loses nothing; docs 01–06 are in Chinese for now. The English prompts gloss the nine case-file section names in Chinese — `A Goal (目标)` and so on — so that a case written in either language stays readable to a session working in the other.
+让复杂任务跨会话继续：任务板找到工作，案文件保存当前状态，持笔明确谁负责更新，收件位追踪跨会话事项。
 
-**ctx-kit is for work that doesn't fit in one session. If your work ships inside one session, you don't need it.**
+Claude 与 Codex 共用方法、工作流和模板；平台目录只维护安装、工具调用和证据差异。
 
-## TL;DR
+## 从哪里开始
 
-**In one line**: a session lifecycle toolkit for claude CLI — it makes "state lives on disk, the session is disposable" the default action, so the work outlives the session. (claude CLI is the agent you talk to: it runs the model, carries the tools, keeps the session. The model can be swapped; your session lives in that layer.)
+- 使用 Claude：看 [Claude 安装说明](claude/README.md)。
+- 使用 Codex：看 [Codex 安装说明](codex/README.md)。
+- 理解方法：[背景](docs/BACKGROUND.md) → [方法](docs/METHOD.md) → [操作手册](docs/HANDBOOK.md)。
+- 有疑问：看 [FAQ](docs/FAQ.md)。
 
-**Where it works**: built for claude CLI (Claude Code) — the seven commands are its skills, and the hook and the audit script read its session logs. Case files are plain markdown, so another agent can read them: Codex took over a live case once. The command layer for Codex doesn't exist, though; that would be a separate build.
+| 你要做的事 | 工作流 |
+|---|---|
+| 开一个需要多轮推进的工作 | `ctx-kickoff`：确定项目、关联目标、建案或复用案、命名 |
+| 看多个任务目前到哪里了 | `ctx-status`：读板与案，汇报状态和待处理事项 |
+| 把当前工作交给后续会话，或结束某个案 | `ctx-handoff`：识别交接或结案；支持“这个案不用了”，保留历史并安置余项 |
+| 接着一个已有案继续，或恢复旧案 | `ctx-takeover`：识别终态、按明确恢复意图重开，再核验与认领 |
+| 把方案交给另一方审核，或回收意见 | `ctx-review`：围绕目标讨论，CLI 发起并回收，确认后再改 |
+| 检查协作记录和上下文开销 | `ctx-checkup`：检查一致性，按平台证据审核 |
+| 管理个人配置、手动议题与关键事项 | `ctx-profile`：七个动作统一入口，查看与历史查询不自动保存 |
+| 把工作或判断的方法讲清楚，供读者实践 | `ctx-method-doc`：按用途组织流程指南、判断方法或概念说明 |
 
-**Who it's for**: people who use an agent for work bigger than one session — writing code, product design, research, writing. Work like that gets more expensive the longer a session runs, has to survive a change of session, of agent, even of machine, and rarely arrives one job at a time. Quick work that ships inside a single session — a PRD, a set of user stories, a chunk of code — doesn't need any of this.
+`ctx-profile` 的 `init/show/update/adapt/export/topic/task` 分别用于建立、查看、修改、接入、导出个人上下文，以及手动议题和全局事项；无动作默认查看。详见 [个人上下文流程](workflows/profile.md)。个人配置不复制项目状态，topic/task 按明确保存请求写入。适配与安装分别授权，生成入口不等于原生客户端已验证；不会自动恢复已清理的 Claude 环境。
 
-**Three problems it solves**:
+`ctx-review to claude` 或自然语言送审，默认通过 Claude CLI 讨论并回收意见。审核聚焦整体判断、实质异议和推荐方案，不默认逐链接核验；讨论结果经用户确认后再改文件。调用方管理版本与有限轮次，用户也可明确选择人工转读；详见 [方案送审流程](workflows/review.md)。
 
-1. Context overload in long sessions: the money goes into re-writing what has already been said back into cache; let the session go cold, come back, and you pay for the whole thing again; auto-compact keeps the thread and drops the detail.
-2. The information cliff when you change session, model or machine, or get auto-compacted — and have to tell the whole story again.
-3. Recording, tracking and resuming several jobs at once, and passing word between them **over the agent's own cross-session messaging** — SendMessage / ListAgents since v2.1.224 (2026-08-07), idle subscription notify_when_idle since v2.1.236 (2026-08-19). No secret sauce: the transport ships with claude CLI, and what this kit adds around it is an address, a letterbox and one check before the send (how to arrange several sessions and pass word between them: [recipe 5](06-RECIPES.md#配方-5多会话并行--跨会话通讯) and [sample B](06-RECIPES.md#样例-ba-会话定标准b-会话执行a-有新想法怎么告诉-b) in 06).
+`ctx-method-doc` 沉淀面向实践的方法说明写法，按工作顺序、判断过程或概念关系选择主线，保留认可原句与来源边界。详见 [写作流程](workflows/method-doc.md)；普通 README、案卷、短邮件和纯数据报告沿用各自文类，不自动套用。
 
-**The data** (four measurements; each link opens the source and the sample):
+## 文件分工
 
-- A fresh session picking the work up spends **7-8%** of one cold re-entry into the old session on its opening round — the switch as a whole, closing out included, costs more than one such re-entry, so what it saves is the re-entries you no longer make (the arithmetic is in [01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生), and priced out in comparison 2 below)
-- **56-57%** of a long session's total spend bought one thing: saying again what was already said — that is a share of where the bill went, not a saving anyone has banked ([01 §3.3](01-BACKGROUND.md#33-对照-5调缓存参数--改生命周期纪律))
-- One auto-compact fired at a 999k context, and the first request after it rebuilt at **~61k** — how much task information the compaction dropped was not measured ([01 §3.6](01-BACKGROUND.md#36-auto-compact-实录与-compact-的账面盲区))
-- A session grown to 830k tokens closed out into **one ~14KB case file** — enough state for that takeover, all four spot-checks passed, though the same pilot honestly listed a batch of things that had not made it onto disk (the list is in [01 §3.4](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生))
-
----
-
-## Sound familiar?
-
-### "Now I have to explain it all over again"
-
-**The kind of work**: one job that runs across several days and several sittings — a bug hunt, a design, a migration — picked up again tomorrow, possibly in another session, on another agent, on another machine.
-
-**What it solves**: you hit a usage limit, it died mid-task, the context filled up and got auto-compacted, you moved to another machine, another model, another agent — after any of those the work continues, without you re-telling the story.
-
-**In their words** (typical phrasing from a three-source sampling of public discussion; users' own words, nothing tied to a person):
-
-> - It "forgets everything between sessions" — I told it that yesterday.
-> - It's like "babysitting an intern with amnesia".
-> - It "died mid-task"; I "hit the limit" and the job stopped halfway.
-> - "Every session starts cold", so I keep my own note about "where I left off".
-> - Move to another machine and it can't pick up — the memory is written into a local directory, and the transcript itself goes stale.
-
-**The data**: a fresh session's opening round costs 7-8% of one cold re-entry into the old one, though the whole switch — closing out plus taking over — costs more than one such re-entry; a session grown to 830k tokens closed out into one ~14KB case file, which carried enough state for that takeover (readings from 01 §3.4, Claude taking over from Claude; both pilots also listed, honestly, a batch of things that had not made it onto disk).
-
-**How it goes**:
-
-1. While you work, it writes each conclusion straight into a **case file** — one md file holding the whole state of this job: the goal, what has been settled, the dead ends, the next step.
-2. When the session should be thrown away, say "close out" (`/ctx-handoff`): anything that hasn't reached the file goes in now, and the session retires.
-3. Open a fresh session and say "take over C-07" (`/ctx-takeover C-NN`): it reads that file and nothing else — old transcripts are off-limits — then recites the goal and the state back for you to spot-check.
-4. Moving to another machine or another agent is the same move; the file is plain markdown, and Codex took over a live case once. If you want a different model, don't switch inside the old session: measured once, not a single cached token came back (01 §3.8).
-5. If you'd rather hand the job off, tell it first (`/ctx-kickoff`): it asks you exactly one question — discuss it here, or write it up as a brief and dispatch it to a fresh session.
-
-### "The longer I keep this session alive, the more it costs"
-
-**The kind of work**: one long session kept alive because closing it would mean telling the whole story again — a discussion that keeps going, a review, a batch of changes worked through in one stretch.
-
-**What it solves**: three kinds of wasted money — let a session go cold and coming back re-bills the whole context; keep a long session alive and most of the money buys a re-copy of what was already said; let auto-compact take over and the detail goes with it. One move removes all three: close out in time, take over in a fresh session. Being able to see the bill is a side benefit.
-
-**In their words** (same sampling):
-
-> - A long session gets more expensive the longer you keep it; the money buys nothing new, it buys a re-copy of what was already said.
-> - You come back after a break and the whole context is billed again ("the prompt cache has expired").
-> - "Auto compact is the worst" — the summary lands and the detail is gone ("the summary is lossy").
-> - You hit a limit and still can't see where the tokens went ("Real cost, no visibility").
-> - "Spending more time managing the AI" than doing the actual work.
-
-**The data**: leave a session for an hour or so, come back, and the whole context is paid for again — that one re-entry costs your watermark × 2 (01 §3.2). Audit two long-lived sessions and 56-57% of the total spend went into re-writing the same content into cache — that is where the money went, not a net saving on offer (01 §3.3). Compact preserves "we can keep talking" and drops detail on the way — one measured run fired at a 999k context and rebuilt at ~61k on the first request after, and how much task information went with it was not measured (01 §3.6). Close out and take over instead, and the successor's opening round costs 7-8% of one cold re-entry — the switch as a whole costs more than one, so what you save is the re-entries you no longer make (01 §3.4). That is what those three leaks look like once they are plugged.
-
-**How it goes**:
-
-1. When a session gets expensive it asks whether you want to close out — it only closes when you say "close out" (`/ctx-handoff`); then a fresh session takes over and carries on. **That one move is where the money is saved**, and the earlier you make it the more you keep.
-2. Don't lean on compact. It preserves "we can keep talking"; what you need preserved is the conclusions and the state. Close a session when it's done instead of putting it on life support.
-3. Don't dispatch subagents from an expensive session — the moment one comes back, the whole context is billed again at whatever it weighs by then.
-4. Check the bill once a week: say "weekly checkup" (`/ctx-checkup`) and it lists where the tokens went and which sessions should be closed, so you can confirm the money went where you wanted it to go.
-
-### "Several sessions in flight — which one is waiting on me, and how far did it get?"
-
-**The kind of work**: several jobs moving side by side, each in its own session, where what one of them settles is a premise the next one is working from — and one person making the calls for all of them.
-
-**What it solves**: when several jobs are moving at once, one place answers "where do things stand" — what is waiting on your decision, what is finished, what got discussed and never landed.
-
-**In their words** (same sampling):
-
-> - Two sessions running and "no idea what the other session just changed" unless I go and look.
-> - One session refactors the helpers while the other writes tests for them, and merging the two is a mess.
-> - Several sessions open, and working out which one needs a decision means "cmd-tabbing between terminal tabs".
-> - The project grows, the next step slips, and you end up "not knowing how much is actually finished".
-> - What you discussed is scattered across sessions, and a to-do said out loud is a to-do lost.
-
-**The data**: in one pilot, closing out turned up a whole list of things that had been discussed but never written into any file (01 §3.4), and a few bookkeeping errors got self-reported along with it. Without that sweep, all of it leaves with the session.
-
-**How it goes**:
-
-1. At the start of a project, say "new project" (`/ctx-init`): it reads your own docs first, proposes what the project is for, which milestones it has and which routines keep running, on a single screen with a source cited per cell, and writes nothing until you nod.
-2. After that you just say what you want (`/ctx-kickoff`): it triages by itself — whatever needs following up gets a file on the spot, whatever one session can finish gets a line.
-3. Park a to-do with "note this down"; it files it where it belongs and tells you where it went.
-4. When one job settles something the next one was working from, the case itself is the address: its header line names the session currently holding the pen, and the **inbox** — the letterbox at the end of every case file — takes the line when nobody is there to take the message. The transport is claude CLI's own cross-session messaging; what this kit adds is the address, the letterbox that keeps a message for a case whose session is closed or not yet opened, and the check run in the same breath as the send: is that session live, has it retired, is it still the one holding this case. Skip the check and the message goes astray — measured twice, once into a session that had already retired, once with an address read forty minutes earlier, by which time the case had changed hands. Nothing is lost either way: a live pen-holder gets the message, and where there is none the line waits in the inbox until somebody takes the case.
-5. To find out where things stand, ask (`/ctx-status`): it reads everything on record and reports back in plain language.
-6. When a job is done, "close out" also means closing the case: marked closed, with a last sweep for anything discussed but never written down.
-
-These three weren't invented at a desk. They were grouped out of what users themselves complain about on X, GitHub and Reddit; how the grouping was done and how big the sample was is the last row of the evidence table below.
-
----
-
-## Do you need it? Three questions
-
-The three questions are one question: **is the work bigger than one session?**
-
-1. Will this session get more expensive the longer it lives? — you talk to it until you can't bear to close it, and you're back tomorrow.
-2. Does the work outlive the session? — you'll continue tomorrow, possibly in another session, another agent, even another machine.
-3. Is more than one job in flight? — you need one place that answers "where do things stand".
-
-This is what work that doesn't fit looks like:
-
-- A bug hunt in its third day: hypothesis, experiment, rule out, repeat. The case file is the lab notebook; a fresh session reads it and picks the hunt up.
-- Research and technology selection: the decisions land in one place together with their "why", so nobody has to do archaeology six months later.
-- A large refactor or migration: hundreds of files in batches, several sessions in parallel, with the ledger and the per-wave spot checks in the files.
-- Several things moving at once: a project, a client and a side project all in flight together, with one board to answer "where do things stand".
-
-Three no's — say, a quick job that ships inside one session — and **you don't need ctx-kit; don't install it**. Whichever question is a "yes" switches on that layer: (1) the cost discipline, (2) the case file, (3) the board. Which kind of work needs which layers is in 02-METHOD ch. 5.
-
-Three objections come up often, so here are my answers. ① "Just copy-paste and ask it to summarise" — I have not run a controlled comparison between summary handoff and case files, so I don't claim a winner; that boundary is written down in 05-FAQ Q22. ② "A handoff file depends on discipline, and a few hours later you get lazy" — true, which is why closing out is one command and the spot-check is a required step: the discipline lives in the skill, not in your memory. ③ "I've never had these problems" — most likely true. Your work hasn't outgrown one session yet, and three no's means don't install it.
-
-## What it is, what it stands on, what it isn't
-
-One rule: **state lives on disk, the session is disposable** — conclusions get written into the file as they are made, so any session can be closed and a new one opened at will. That rule wasn't reasoned out — I ran into it, the day a subscription expired mid-flight and a pile of unfinished work sat locked inside a dying session (the story is in 05-FAQ Q23).
-
-It believes five things:
-
-- **A session is a consumable; the work is the thing** — for work to outlive a session, its state has to live in a file outside it.
-- **Two roots, one direction** — cost says "keep the watermark low, work in one stretch, then throw it away"; continuity says "the state has to be on disk". Both point at the same move.
-- **Discipline before tooling** — every practice here holds without installing anything, and by hand it works just as well; the kit only removes "remembering to do it" and "remembering how".
-- **Verifiable beats describable** — numbers carry a source, the wording stays within what the evidence supports, and a handoff has to survive a spot-check.
-- **You do three things only** — say what you want, ask where things stand, make the calls — plus two housekeeping calls, close out and the weekly check; the model judges the rest. And it says up front when you don't need it.
-
-The concept model is one sentence: state lives in three things — the board, the case, the artifact — and the session can be thrown away at any time (each of those words is explained in the glossary at the end).
-
-The board is one file per project, kept by hand rather than generated — in practice the session writes it while the work goes on and you confirm what lands: the overall goal, a **milestone** table (one line each — what is true once it lands, plus its status), a **routine** table (rhythm, health reading, last / next), an index of the cases, and the one-offs that aren't worth a case. Milestones are labels, not a layer above the cases: a case or a one-off carries one or more of them, and work that fits none of them is written down as a "candidate milestone" for you to decide on — add a milestone to the plan, or drop the work. `/ctx-init` proposes the header and you confirm it; after that each case edits its own row. Generating the board from a script is optional, and nothing here depends on it.
-
-Along the way you get planning and task management that is good enough — the third scenario above is exactly that. It doesn't schedule dates, doesn't allocate people, doesn't keep a risk register; one case is one markdown file, and there is no system.
-
-What it doesn't solve: it isn't a cache-tuning tool (inside a session the cache hits almost every time, so there is nothing left to tune), and it doesn't change how you write code. It governs when a session opens, when it closes and where the state lives. It also isn't a cross-agent tool: the commands and the hook exist only inside claude CLI, and moving to another agent means taking the files with you (Codex took over a live case once) and building that command layer again over there.
-
-One honest boundary: the yellow and red watermark lines **are set by cost, not by quality**. On the quality side there is only the vendor's qualitative acknowledgement — more tokens, worse accuracy and recall (context rot; no official percentage anywhere). This kit has measured none of that locally and doesn't use it as the basis for any threshold (see column two of 01).
-
-## Why believe it: the paired comparisons
-
-Eight comparisons; click a row and you land on that subsection of 01, with its readings and its sample.
-
-| Comparison | One side | The other | Verdict |
-|---|---|---|---|
-| [1 warm re-entry \| cold re-entry](01-BACKGROUND.md#32-对照-1热回访--冷回访) | back within 15 minutes: all warm | after an hour away: 147 of 160 cold | the tax is on the watermark, not on how long you were gone |
-| [2 keeping the old session \| closing out into a new one](01-BACKGROUND.md#34-对照-2继续养着老会话--收口换生) | one cold re-entry into the old session: 1.38M / 1.62M equivalent units | the successor's opening round: 101k / 125k | the opening round is 7-8% of going back once; the whole switch, closing out included, is 132-138% of it |
-| [3 no compact \| compact and keep going](01-BACKGROUND.md#35-对照-34压缩到底划不划算) | six requests, ~478k equivalent units | ~283k after compacting | on the readings taken it pays back on the 2nd request — the compaction's own summary request was not billed in the transcript when this was measured (2026-08), so it is not in that estimate |
-| [4 compact then leave \| compact then keep going](01-BACKGROUND.md#35-对照-34压缩到底划不划算) | a rebuild paid for and never used | see the row above | compacting then leaving is a pure loss; close out and take over instead |
-| [5 tuning cache settings \| changing the lifecycle discipline](01-BACKGROUND.md#33-对照-5调缓存参数--改生命周期纪律) | in-session hit rate already above 99% | repeated re-writes are 56-57% of total spend | all the leverage is on the discipline side |
-| [6 same model \| switching model mid-session](01-BACKGROUND.md#38-对照-6同模型接续--换模型接续切模型缓存实测) | same model, the cache is still read | switch and not one cached token comes back | caches are model-scoped; switching means paying for the whole context again |
-| [7 reading the whole case file \| progressive loading](01-BACKGROUND.md#39-对照-7整读案文件--渐进加载) | whole file: most of the characters go to old experiment rows | header, first four sections and the active rows only | takeover reports how much it loaded; trim when that gets large |
-| [8 the author's own scenarios \| users' own words (three-source sampling)](01-BACKGROUND.md#310-对照-8作者自述场景--用户自述痛点三路取样) | an earlier draft: four scenarios written by the author | 220 items sampled from three streams of public discussion: session about to die 74 / long sessions expensive 55 / one place for all the work 30 / dispatch a job 22 / other 39 (18 of those dissenting) | the first two are real pain; the last two are quiet, and "dispatch" folded into "take over" |
-
-Every number comes from 01, which also defines "equivalent units" — the one billing unit that puts writes, cache reads and output on the same scale. The first seven comparisons can each be recomputed with a script; the eighth is a sample count, and its method and limits are written up in 01 §3.10.
-
-One measurement sits outside 01: [handing a task to a fresh session, six cases](docs/evidence/2026-09-05-handover-cost.md) measures how much of a case file a takeover actually loads — 93,073 characters down to 53,339.
-
-## What gets installed
-
-What goes in: seven skills, two CLAUDE.md rule blocks, two hooks (a warning before an auto-compact, and the once-per-turn watermark doorbell), four scripts (the weekly audit, the doorbell itself, the takeover loader, and the case-file lint — whose own hook is opt-in and is not switched on for you) and one `digest` subagent.
-
-**Check your version first** — `claude --version`. What each layer needs (versions from the [claude CLI changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)):
-
-| What it powers | Minimum version | If yours is older |
-|---|---|---|
-| Skills — the seven commands themselves | v2.0.20 ("Added support for Claude Skills") | Nothing here runs; `claude update` first |
-| Installing as a plugin (`claude plugin …`) | v2.0.12, when the plugin system shipped — the changelog doesn't date the `claude plugin` command-line form itself | Use `/plugin` inside a session, or install by hand (below) |
-| Cross-session messaging — `SendMessage` / `ListAgents` | v2.1.224 on macOS and Linux; native Windows v2.1.239 (the changelog entry "Windows: cross-session messaging is now available") | Only the several-sessions-at-once recipe is affected; everything else runs |
-| Idle notice — `notify_when_idle` | v2.1.236, macOS and Linux | You go and ask "done yet?" instead of being told |
-| The weekly audit script (`cache-audit.py`) | Any python3 on your PATH — the kit is otherwise plain markdown and shell | The six commands still run; only `/ctx-checkup` has nothing to read |
-| Session titles in the UI | No version line — the Desktop app has the title tool, a plain terminal doesn't | Titles are skipped and it says so; the pen-holder line in the case file is the real handoff signal |
-
-Three steps — two commands and one paste:
-
-```bash
-claude plugin marketplace add bestiaya/ctx-kit
-claude plugin install ctx-kit@ctx-kit
+```text
+docs/          共用背景、方法、操作手册、FAQ
+workflows/     协作、个人上下文与方法说明文档写作的唯一维护源
+templates/     任务板、案、任务书、交付与审核记录模板
+claude/        Claude 安装、平台规则、历史实验与现有辅助工具
+codex/         Codex 安装、原生会话工具适配与待验证依据
+scripts/       打包、结构检查、个人主档与原生历史读取工具
+tests/         安装包可搬移、覆盖保护与历史脚本的验证
 ```
 
-Third step (manual, required): paste both code blocks from [CLAUDE-snippet.md](CLAUDE-snippet.md), each one whole, into your project `CLAUDE.md` (or `~/.claude/CLAUDE.md`). A plugin can ship skills, a hook, a script and a subagent — it **cannot ship a resident rule block**, and the proactive behaviour — triage before acting, hand big reads to a subagent, offer to close out past the line — depends on those rules being resident.
+技能源码入口引用共用内容。打包时把依赖复制进每个 skill；生成副本不单独维护，安装后不依赖本仓库路径。
 
-**One side effect to know before you install**: closing out (`/ctx-handoff`) doesn't only write files — it `git add`s the files this session edited, commits them and **pushes** to the current branch's upstream. On a protected or shared branch, decide where you want that to land before you start. If it can't push (no remote, no permission, a conflict, not a git project at all) it says "not pushed + why" in the reply rather than going quiet. And if your case library sits in a git-ignored directory — this repository's own does — the case files are written to disk and never committed: close-out reports that too, it is a legitimate setup rather than a failure, and syncing that directory to another machine is then your job.
+两端发布包各含八个技能；`ctx-profile` 另携带三个标准库脚本，可以单独搬移执行。发布输入采用白名单，不包含个人主档、正式 config、案、交付或本机个人绝对路径。打包不修改已安装的技能或全局接入配置。
 
-**The other one is the weekly check**: `/ctx-checkup` does not only read. It writes a dated file to `CHECKUP/<date>.md` beside your case library, fills in section G of the case files it manages to pair up, updates that routine's row on the board, and puts a `✕` on sessions of this project that look abandoned — anything it is unsure of it leaves alone and reports instead. It also **spends money**: measuring the resident floor runs two one-turn headless sessions of your own project, which is two requests you are billed for.
+真实工作记录留在目标项目既有的案库、任务与交付目录。安装不会创建真实任务或认领持笔。
 
-<details><summary>Manual install (no plugin)</summary>
+直接说“终止 C-07”“看当前进展”“重新做 C-07”即可，不必记新 skill 或子命令。进展默认聚焦活跃案，同时报告已结束案的收尾异常；说“包括历史案”可查看结案原因与替代关系。详见 [操作手册](docs/HANDBOOK.md#案不用了做完了或被替代)。
 
-Copy `skills/ctx-*` into `~/.claude/skills/`, `agents/digest.md` into `~/.claude/agents/`, and all four of `scripts/cache-audit.py`, `scripts/ctx-watermark.py`, `scripts/case-lint.py` and `scripts/takeover-load.py` into `~/.claude/scripts/` (create the directory if it is not there — with no plugin root and no `CLAUDE_CONFIG_DIR`, that is the one place the kit's scripts are looked for; leave the lint out and the opt-in hook in 04's "install and self-check" finds nothing and stays silent for ever, and leave the loader out and every takeover says it cannot find the script to run), then merge the `hooks` object from `hooks/hooks.json` into `~/.claude/settings.json` (the compact warning shows a macOS notification and falls back to stderr elsewhere). Paste the rule blocks as above.
+## 两个仍待审核的问题
 
-**If your claude CLI configuration lives somewhere other than `~/.claude`** — that is, you have `CLAUDE_CONFIG_DIR` set — install into that directory instead and read `$CLAUDE_CONFIG_DIR` for `~/.claude` throughout this section. Every place the kit resolves an install root tries three, in one fixed order: the plugin root, then `CLAUDE_CONFIG_DIR`, then `~/.claude`. That holds for the hook, both skills that run a script, the lint and the sync script alike, and the sync script prints the root it picked on its `# installed:` line.
+1. 缓存冷却时，交接后再开会话能否节省整体开销；500k 和一小时间隔目前只是候选观察条件。
+2. 当前 GPT 模型在超过实际可用窗口 50% 后，复杂任务表现是否有稳定退化。
 
-After every `git pull`, `scripts/sync-installed.sh --check` lists where the installed copies have drifted from the repository, and `--apply` copies the repository over them — backing up whatever it overwrites into `~/.claude/ctx-kit-backup-<timestamp>/` first, and never deleting anything. (For maintainers, `scripts/release-check.py` checks that the version number, the skill count and the skill names agree across the plugin manifest, both READMEs and the docs before a release.)
-</details>
+公开资料、推论、历史实验与本地实测分开记录。Codex 不预设自动 takeover 阈值，详见 [Codex 证据与审核计划](codex/EVIDENCE.md)。
 
-Three self-checks afterwards. **Run all three in an interactive session you open yourself; a headless `claude -p` reading is not one of these three.** What is on record: this project ran the three headless on 2026-09-09 and got FAIL on 1 (it wrote about 300 lines without triaging), FAIL on 2 (31,093 characters read without dispatching) and PASS on 3. Nobody has run them interactively, so those readings say what happens headless and nothing about what happens in front of you.
+## 维护与验证
 
-1. In a fresh session, say "I want to do X" and watch whether it triages before it starts working. **Pass** = the first thing that comes back is a sentence naming which of the three routes this is and why — case / one-off / quick fix. Getting straight to work is a fail, and so is a list of questions back.
-2. Hand it a read of more than 30,000 characters (`LC_ALL=en_US.UTF-8 wc -m`) and watch whether it dispatches the `digest` subagent instead of reading it inline. **Pass** = a `digest` subagent call is visible in the session. The reply saying it summarised the file is not the reading; the call is.
-3. Drop both lines low for a moment (`CTXKIT_WATERMARK_YELLOW` / `CTXKIT_WATERMARK_RED`, see just below) and take three turns — the first has no reading to go on yet: the session should quote its current watermark back at you, offer to close out, and then stay quiet inside that band. **Pass** = the second turn carries the reading and the offer, and the turn after that is quiet; silence on the first turn is correct. Both lines, not just yellow: past yellow alone a discussion / lead session waits for a batch boundary, so its silence is correct and would read as a failure. No reading at all means the hook isn't installed; a reading with no offer means the rule block isn't loaded; an offer repeated every turn means the once-per-band half of the rule was not taken in.
+需要 Python 3.9+；打包及仓库检查只用标准库。在本目录运行：
 
-The yellow and red lines — 400k and 500k by default — are **a spending preference, not a price tier and not a quality cliff**. Neither of those would hold the line up: the whole 1M window bills at the standard rate with no price step at 200k, and on quality the vendor publishes no scale at all, only "longer is worse". What is left is that rewriting the same context over and over stops being worth the money. Where this pair sits is measured rather than guessed: nine sessions from two projects over two days, audited on 2026-09-07, all peaked past 300k, four past 400k and one past 500k (513k the highest, p50 217k–321k), so the old 300k yellow rang on every one of them while each still had work left in it — between 43k and 213k more tokens, a median of 99k, and under 100k on five of the nine. Hence yellow at 400k, with red kept the same 100k above. The cost of staying is worth saying out loud: **at 500k a turn carries roughly 3.3x the residency cost it does at 150k** — 150k being this kit's first yellow line, kept here only as the comparison baseline — because every turn re-reads the whole context. Staying in the session or closing out is your call, not the tool's — so the lines are yours to move: set `CTXKIT_WATERMARK_YELLOW` / `CTXKIT_WATERMARK_RED` (in tokens; `400000` and `400k` both work) in the `env` block of `settings.json` rather than editing anything in the kit.
+```bash
+python3 scripts/check_kit.py
+python3 -m unittest discover -s tests -v
+python3 scripts/build_package.py --platform codex --output /tmp/context-kit-codex
+```
 
-**Upgrading from an earlier version**: this one renames the board's second section from "Global plan" to a **milestone** table plus a **routine** table. An existing board does not have to be rebuilt — run `/ctx-init` again and its review mode proposes the rename, keeping the rows you already have. The manual steps — where the rows of the old "track" layer go, how the case index gains its seventh column — are [recipe 7](06-RECIPES.md#配方-7老板面迁到新板里程碑--例行) in 06.
+最后一条仅写入指定的新目录；不修改用户配置，不联网、不安装、不 commit/push。目录已存在则拒绝覆盖。
 
-**Uninstall**: remove ctx-kit in `/plugin`, or for a manual install `rm -rf ~/.claude/skills/ctx-* ~/.claude/agents/digest.md ~/.claude/scripts/cache-audit.py ~/.claude/scripts/ctx-watermark.py ~/.claude/scripts/case-lint.py ~/.claude/scripts/takeover-load.py ~/.claude/ctx-kit-backup-*` (the last one is the backups the sync script keeps). Then delete the blocks you pasted into `CLAUDE.md` and `~/.claude/settings.json` — that is everything the kit puts on your machine. **With `CLAUDE_CONFIG_DIR` set, every `~/.claude` in that command is `$CLAUDE_CONFIG_DIR`, and the pasted block sits in `$CLAUDE_CONFIG_DIR/settings.json`**: that is where the install went, and the manual-install note saying so sits inside the collapsed block above, out of this line's reach. The `$HOME/.claude` written inside the hook command is not an install path — it is the command's last fallback, and it stays as it is. What stays behind is yours, not the kit's: the board and the case library `/ctx-init` created, and the commits and remote history `/ctx-handoff` pushed. Nothing deletes those for you; keep them or clear them yourself.
+源码链接检查按发布输入清单执行（根入口、共享资源及两端安装源），不扫描案、交付、验收目录或快照；发布源引用非发布文件仍会报错。生成包则检查包内全部 Markdown，继续拒绝缺失或越界依赖。
 
-## The seven commands
+原文件迁移对应关系及行为差异见 [迁移说明](docs/MIGRATION.md)。
 
-Seven skills, seven commands. Saying it in plain words and typing the command are the same thing.
+## 从 v0.13 升级
 
-| When | Say | What it does |
-|---|---|---|
-| Starting a project | "new project", or `/ctx-init` | Reads your own docs first, proposes the goal, the milestones and the routines with a source cited per cell, writes nothing until you confirm |
-| Something new to do, or a to-do to park | "I want to do X" / "note this down", or `/ctx-kickoff` | Routes it to case / one-off / quick fix, creates the case file on the spot, then asks one question — discuss here or dispatch |
-| This session is getting expensive, or a batch of work is done | "close out", or `/ctx-handoff` | Distils the discussion into a takeover-ready case file, persists whatever hasn't been saved, **commits and pushes the files it touched this round**, then retires the session |
-| A fresh session continuing the last one | "take over C-07", or `/ctx-takeover C-NN` | Reads the case file only, old transcripts off-limits; signs as pen-holder, saves its checks in a takeover record, recites just this case in at most ten lines for your spot-check |
-| You want to know where things stand | "what's the status", or `/ctx-status` | Reads the board and the case files, reports the goal chain with its milestones and routines, where each case stands, pending decisions and one-offs in plain language |
-| Once a week, checking the bill | "weekly checkup", or `/ctx-checkup` | Runs the cache audit, flags the sessions over the pre-registered lines, backfills archive pointers in the case files — and writes, see the note below |
-| You want a document or a page a person can read | "for human" / "give me an html to look at", or `/ctx-forhuman` | Derives a human-readable layer of at most one screen from what is already on record — what it is and who it is for first, a plain sentence per step, IDs kept to brackets or their own column — and runs three self-checks before handing it over |
+本版采用共用流程加 Claude/Codex 双端入口。`ctx-init` 不再独立提供，项目开工使用 `ctx-kickoff` 和任务板模板；`ctx-forhuman` 已退役。旧版水位提示、case-lint、takeover-load 与旧同步脚本不随本版加载，历史保留在原版本中。新版不按固定时间或 token 水位强制交接。
 
-Case files live in `_ops/CASES/` when that directory already exists, otherwise in `cases/` — or anywhere you like: put one line, `ctx-kit case library: docs/cases`, in your project `CLAUDE.md` and all seven skills read it from there.
+Claude 插件用户可沿用此 marketplace：
 
-## Reading order
+```text
+/plugin marketplace add bestiaya/ctx-kit
+/plugin install ctx-kit@ctx-kit
+```
 
-1. [README.md](README.md) (this file) — whether to use it, and how to start.
-2. [04-HANDBOOK.md](04-HANDBOOK.md), the quick guide — step by step: how to use it and what it can do.
-3. [06-RECIPES.md](06-RECIPES.md), best practice and worked samples — recipes per kind of work, making the use cases concrete.
-4. [02-METHOD.md](02-METHOD.md), the method — why it is designed this way, with the criteria and the thresholds.
-5. [01-BACKGROUND.md](01-BACKGROUND.md), background and measurements — the single source of every number here, with measured and un-measured kept strictly apart.
-6. [05-FAQ.md](05-FAQ.md), answers — one real question at a time, including "where did this come from" and "does ordinary development need it", plus whether a few popular claims hold up.
-7. [03-PLAYBOOK.md](03-PLAYBOOK.md), the tool-definition template — how this tool got defined, written for people building tools; users can skip it.
+手动安装与 Codex 安装请先按平台说明生成自足技能包，不要把源码薄入口单独复制。已有安装先核对旧技能和 hook 配置；源码更新不会自动删除机器上的旧配置。
 
-Docs 01–06 are all in Chinese for now.
-
-## Found something wrong? Say so
-
-Open an issue at [github.com/bestiaya/ctx-kit/issues](https://github.com/bestiaya/ctx-kit/issues) — there is a template, and one sentence is a perfectly good report. What helps most is what you ran, what you expected and what actually happened, plus any number you saw: every reading in these docs came from someone writing exactly that down.
-
-## Words used here
-
-- **board** — one per project, kept by hand rather than generated by a script (the session writes it, you confirm): the overall goal, a milestone table, a routine table, an index of the cases, and the one-offs; one line each.
-- **milestone** — one line in the board's milestone table: what is true once it lands, plus its status. It is a label a case or a one-off carries, not a layer above them; work that fits none of them is written down as a "candidate milestone" for you to decide on.
-- **routine** — one line in the board's routine table: something you keep doing to a rhythm, with a health reading and last / next. No finish line and no ledger; when a routine turns up a problem worth converging on, that problem gets a case.
-- **case / case file** — one problem area worth converging on, one md file each: goal, plan, decisions made, decisions waiting on you, the experiment list, handoff notes.
-- **one-off** — a job not worth a case: one line on the board and one deliverable; it carries a milestone like a case does.
-- **artifact** — an attachment to a case or a one-off: task briefs, raw data, deliverables, drafts; one file each, append-only.
-- **experiment row** — one line in a case's experiment list: what it asks, how far it got, the verdict, what it changed in the plan.
-- **session** — one conversation between you and claude CLI; a temporary carrier, not a ledger.
-- **close out** — settle a session's state onto disk; the session retires immediately after.
-- **take over** — a fresh session picks a case up from the case file alone: signs for it, recites it, waits for your spot-check.
-- **dispatch** — hand a well-defined job off as a self-contained brief, and only look at what comes back.
-- **compact** — the client's built-in move that squeezes a long session into a summary: it keeps "we can keep talking" and drops the detail.
-- **subagent** — a temporary session the main one sends out for a small job; it returns the result and nothing else.
-- **inbox** — the last section of a case file, and that case's own address: any other session with something for this case appends a line there and touches nothing else. A line stays until the case's holder writes it off, so a case with nobody on it still receives.
-- **scenario** — this file uses the word two ways and keeps them apart. A **business scenario** is what kind of work it is — days long, several sittings, several jobs at once — and it works as the door filter: it answers "is this me?". A **moment scenario** is the moment it hurts, in the words people use for it — "now I have to explain it all over again" — and it works as the hook: it is what you recognise yourself in. Each of the three headings above is a moment scenario, with its business scenario on the line underneath.
-- **watermark** — how much context a session has used (in tokens); a "high watermark" session is one past the line.
-- **agent** — the layer of software that runs the model, carries the tools and keeps the session; claude CLI (Claude Code) is one of them. The model can be swapped; your session lives in this layer.
-
----
-
-<sub>Data source: measured 2026-08-18 (claude CLI · 1M context window · Opus/Fable models). Before you change model or client, run `scripts/cache-audit.py --all` over your own logs and re-measure three numbers: TTL bucket duration, write-price multiplier, shared-header byte count.</sub>
+公开提交不包含真实案卷、运行日志、个人主档、本机配置或凭据。维护者在提交前运行 `python3 scripts/check_public.py`，检查暂存/跟踪清单，而不是对整个本地目录执行全量上传。

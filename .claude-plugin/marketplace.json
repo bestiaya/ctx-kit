@@ -1,6 +1,6 @@
 {
   "name": "ctx-kit",
-  "description": "Marketplace for ctx-kit — a session lifecycle toolkit for Claude Code: state lives on disk, sessions are disposable.",
+  "description": "Shared context and collaboration workflows for Claude Code and Codex.",
   "owner": {
     "name": "ctx-kit contributors"
   },
@@ -8,7 +8,7 @@
     {
       "name": "ctx-kit",
       "source": "./",
-      "description": "Session lifecycle toolkit for Claude Code: state lives on disk, sessions are disposable. Close out long, expensive sessions into takeover-ready case files; a fresh session (or a different agent) picks up from the file alone."
+      "description": "Shared task, handoff, review and personal-context workflows for Claude Code and Codex. Eight skills per platform; private project records stay local."
     }
   ]
 }

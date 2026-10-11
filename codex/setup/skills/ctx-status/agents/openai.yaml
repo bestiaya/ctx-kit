@@ -1,0 +1,3 @@
+interface:
+  display_name: "ctx-status"
+  short_description: "查看活跃案、待办与收尾异常；按需查询已完成或已终止的历史案。"

@@ -1,0 +1,3 @@
+interface:
+  display_name: "ctx-takeover"
+  short_description: "核验并接手已有案，支持按明确恢复意图重开旧案后继续推进。"

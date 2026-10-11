@@ -1,0 +1,3 @@
+interface:
+  display_name: "ctx-checkup"
+  short_description: "审核协作与案生命周期记录，以及缓存开销和上下文质量的真实证据。"

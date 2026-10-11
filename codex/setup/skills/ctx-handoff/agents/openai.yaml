@@ -1,0 +1,3 @@
+interface:
+  display_name: "ctx-handoff"
+  short_description: "支持工作交接、完成结案、终止不用的案或合并案，保留历史并处置余项。"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "ctx-review"
+  short_description: "把方案送交指定审核方，固定材料并回收意见；沿用当前项目的案与收件位。"
+  default_prompt: "使用 $ctx-review to claude，围绕当前目标讨论方案，给我整体判断、实质异议和推荐方案，确认后再改文件。"
