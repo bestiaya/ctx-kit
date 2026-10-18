@@ -69,6 +69,8 @@ Claude 使用 `--platform claude --output /tmp/ctx-kit-claude`。输出目录必
 
 完成一次交接后，告诉我们：**新会话漏了什么，你又解释了什么？** 在 [issue](https://github.com/bestiaya/ctx-kit/issues/new?template=feedback.md) 留一段脱敏描述即可，请勿公开真实对话、案文件或其他私有材料。
 
+也欢迎在 [Codex 社区讨论](https://github.com/openai/codex/discussions/54976) 中分享你目前的交接方式和遇到的问题。
+
 如果它对你有帮助，欢迎 **star 仓库**，让其他开发者更容易找到。
 
 [背景](docs/BACKGROUND.md) · [方法](docs/METHOD.md) · [FAQ](docs/FAQ.md) · [维护与验证](docs/MAINTAINING.md) · [MIT 许可证](LICENSE)

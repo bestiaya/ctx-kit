@@ -71,6 +71,8 @@ The quick-start guide is in English; the shared workflow instructions and detail
 
 After one handoff, tell us: **what did the new session miss, and what did you have to explain again?** A short, redacted [issue](https://github.com/bestiaya/ctx-kit/issues/new?template=feedback.md) is enough. Please keep private conversations and project records out of public reports.
 
+You can also [discuss your current handoff workflow](https://github.com/openai/codex/discussions/54976) in the Codex community thread.
+
 If this is useful for your workflow, **star the repository** to help other developers find it.
 
 [Background](docs/BACKGROUND.md) · [Method](docs/METHOD.md) · [FAQ](docs/FAQ.md) · [Maintenance and verification](docs/MAINTAINING.md) · [MIT license](LICENSE)
