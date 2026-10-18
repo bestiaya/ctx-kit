@@ -57,7 +57,6 @@ def build_package(platform, output, root=ROOT):
         snippet = "AGENTS-snippet.md" if platform == "codex" else "CLAUDE-snippet.md"
         shutil.copyfile(root / platform / "setup" / snippet, output / snippet)
         if platform == "claude":
-            shutil.copytree(root / "claude/setup/agents", output / "agents")
             shutil.copyfile(root / "claude/setup/hooks.json", output / "hooks.json")
         destination = ".agents/skills" if platform == "codex" else ".claude/skills"
         config = "AGENTS.md" if platform == "codex" else "CLAUDE.md"
@@ -70,7 +69,7 @@ def build_package(platform, output, root=ROOT):
             "不需要原源码 checkout；源码更新后重新打包，不手工维护生成副本。\n\n"
             "ctx-profile 另带 scripts/ 主档与历史读取工具，个人主档及配置不随包发布。\n"
             "安装技能不会初始化主档或适配客户端；这些动作按用户明确授权分别执行。\n\n"
-            + ("agents/digest.md 与 hooks.json 是可选项；合并 hook 时只取 hooks 字段，不覆盖 settings。\n\n" if platform == "claude" else "")
+            + ("hooks.json 是可选项；合并时只取 hooks 字段，不覆盖 settings。\n\n" if platform == "claude" else "")
             + "本包尚未安装。不会修改客户端配置、真实案文件或运行中的会话。\n"
             "卸载仅移除本次安装的技能/可选组件和合入片段，保留项目工作记录。\n",
             encoding="utf-8",

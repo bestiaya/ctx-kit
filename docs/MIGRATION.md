@@ -9,7 +9,7 @@
 | `02-METHOD.md` | `docs/METHOD.md`：通用协作；Claude 阈值移入平台规则 |
 | `04-HANDBOOK.md` | `docs/HANDBOOK.md`：共用操作 |
 | `05-FAQ.md` | `docs/FAQ.md`：共用问题，链接平台依据 |
-| `03-setup/` | `claude/setup/`；原 hook、digest、audit 脚本保留 |
+| `03-setup/` | `claude/setup/`；原 hook、audit 脚本保留，digest 已于 2026-10-12 移除 |
 | 五个 skill 的通用步骤 | `workflows/`，平台入口引用同一源 |
 
 历史全文仍在 Git 中。原样本路径是历史线索，不保证在其他机器存在；本次未复跑实验。
@@ -38,6 +38,14 @@
 ## 2026-10-15 案头与记录文件分开、接手阅读预算
 
 案改为案头加三份记录文件（决策、实验、过程），九节名与语义不变，只改所在文件：案头只放当前推进状态与未结事项，目标 10,000 字符、15,000 整理线；接手到第一个实际动作的阅读合计 30,000 字符以内，均按 Unicode 字符计。接手先比来件 ID 再开新件，记录文件按下一步定点读；交接时把已结内容移入记录文件并写继任阅读表，案头字符数记入交接回执。原“案头+A–D 10,000 绿线、15,000 瘦身线”改为历史口径。旧的单文件案照常可读，不强制改历史；超线案由持笔拆分。新增 `templates/CASE-RECORDS.md`，随包自动纳入；检查脚本未加，规则跑通后再定。
+
+## 2026-10-12 移除 Claude 插件分发与 digest
+
+按用户决定，仓库不再提供 `.claude-plugin/` 清单，Claude 端只保留生成自足技能包后复制安装这一种方式，与 Codex 一致。此前通过 marketplace 安装的用户先在客户端卸载该插件，再按 [Claude 安装说明](../claude/README.md) 安装，避免插件与手动安装的同名技能同时生效。
+
+digest agent 从源码和 Claude 发布包中移除。读料与委派不再由工具包规定固定阈值，按用户个人配置的约定和当前授权处理；`>30k 一次性材料可交 digest` 这条历史策略随之删除。已安装的 `.claude/agents/digest.md` 或 `~/.claude/agents/digest.md` 不会被自动删除，自己装过的按需移除。
+
+PreCompact hook 仍是可选项，只通过手动合并 `hooks.json` 的 `hooks` 字段启用。版本号以根 README 为准。
 
 ## 2026-10-08 结案与终止
 

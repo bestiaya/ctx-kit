@@ -10,14 +10,14 @@ assignees: ""
      the fields are here so you do not have to guess what would help. -->
 
 **What you did**
-The command or the sentence you said (`/ctx-takeover C-NN`, "close out", …), and which of the seven skills it ran.
+The command or the sentence you said (`/ctx-takeover C-NN`, "close out", …), and which skill it ran.
 
 **What you expected, and what happened instead**
 One line each. If a block errored, paste the error rather than describing it.
 
 **Where it happened**
-- Install: plugin / manual
-- ctx-kit version (`.claude-plugin/plugin.json`) and `claude --version`
+- Install: Claude / Codex, project-level or user-level
+- ctx-kit version (top of `README.md`) and the client version (`claude --version` or the Codex equivalent)
 - Operating system
 
 **Readings, if you have them**

@@ -1,6 +1,6 @@
 # Claude 版
 
-原有 Claude 工具迁至 `setup/`，历史实验保存在 [EVIDENCE](EVIDENCE.md)。协作方法、工作流和模板与 Codex 共用；差异见 [平台规则](setup/PLATFORM.md)。原缓存脚本、digest 和提醒 hook 保留，计价结论未重新验证。
+原有 Claude 工具迁至 `setup/`，历史实验保存在 [EVIDENCE](EVIDENCE.md)。协作方法、工作流和模板与 Codex 共用；差异见 [平台规则](setup/PLATFORM.md)。原缓存脚本和提醒 hook 保留，计价结论未重新验证。
 
 ## 安装
 
@@ -10,18 +10,16 @@
 python3 scripts/build_package.py --platform claude --output /tmp/context-kit-claude
 ```
 
-包含八个 `skills/ctx-*`（原五个协作技能、`ctx-profile`、`ctx-review` 与 `ctx-method-doc`）、`agents/digest.md`、`CLAUDE-snippet.md`、`hooks.json`、`INSTALL.md` 和文件哈希清单。每个 skill 带齐依赖，不能只复制源码入口；也可仅复制需要的技能。
+包含八个 `skills/ctx-*`（原五个协作技能、`ctx-profile`、`ctx-review` 与 `ctx-method-doc`）、`CLAUDE-snippet.md`、`hooks.json`、`INSTALL.md` 和文件哈希清单。每个 skill 带齐依赖，不能只复制源码入口；也可仅复制需要的技能。
 
 在目标项目根目录，先确认没有同名安装（有则备份并明确替换范围），再复制：
 
 ```bash
-mkdir -p .claude/skills .claude/agents
+mkdir -p .claude/skills
 cp -R /tmp/context-kit-claude/skills/ctx-* .claude/skills/
-# digest 为可选，确认没有同名 agent 后复制
-cp /tmp/context-kit-claude/agents/digest.md .claude/agents/
 ```
 
-也可使用 `~/.claude/skills/` 与 `~/.claude/agents/`，避免重复生效。把包内常驻片段合入目标项目的 `CLAUDE.md`；可选 hook 只合并 `hooks` 部分到 `.claude/settings.json`，保留已有配置，不复制 `_note`。安装不会自动完成这些合并。
+也可使用 `~/.claude/skills/`，避免重复生效。把包内常驻片段合入目标项目的 `CLAUDE.md`；可选 hook 只合并 `hooks` 部分到 `.claude/settings.json`，保留已有配置，不复制 `_note`。安装不会自动完成这些合并。
 
 ## 使用与验证
 
@@ -41,4 +39,4 @@ cp /tmp/context-kit-claude/agents/digest.md .claude/agents/
 
 原 `03-setup/` 路径已迁移，更新自行保存的路径；旧安装不会被本次源码变更自动修改。先备份所选同名技能再明确替换，其他技能不动。
 
-卸载仅移除本次安装的技能、自己安装的 digest 和合入的指令/hook 段。个人主档、目标项目的案与交付保留。行为调整见 [迁移说明](../docs/MIGRATION.md)。
+卸载仅移除本次安装的技能和合入的指令/hook 段。个人主档、目标项目的案与交付保留。行为调整见 [迁移说明](../docs/MIGRATION.md)。

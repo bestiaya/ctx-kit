@@ -26,6 +26,8 @@ def source_files(root):
     """Publication inputs only; never inspect cases, deliveries or snapshots."""
     root = Path(root)
     yield root / "README.md"
+    yield root / "README.zh-CN.md"
+    yield root / "LICENSE"
     yield from resources(root)
     for name in PROFILE_SCRIPTS:
         yield root / "scripts" / name
@@ -40,7 +42,6 @@ def source_files(root):
         if platform == "claude":
             yield setup / "scripts/cache-audit.py"
             yield setup / "hooks.json"
-            yield from sorted(p for p in (setup / "agents").rglob("*") if p.is_file())
         if platform == "codex":
             yield setup / "scripts/token-audit.py"
 

@@ -18,7 +18,8 @@ from check_kit import PROFILE_SCRIPTS, WORKFLOWS, link_errors, source_errors
 def copy_publication_source(destination):
     """Independent fixture boundary: no live project records or generated bundles."""
     destination.mkdir()
-    shutil.copyfile(ROOT / "README.md", destination / "README.md")
+    for name in ("README.md", "README.zh-CN.md", "LICENSE"):
+        shutil.copyfile(ROOT / name, destination / name)
     for directory in ("docs", "workflows", "templates", "claude", "codex"):
         shutil.copytree(ROOT / directory, destination / directory,
                         ignore=shutil.ignore_patterns("__pycache__"))
@@ -73,7 +74,7 @@ class PackagingTests(unittest.TestCase):
                                                  cwd=tmp, env={}, capture_output=True, text=True)
                         self.assertEqual(history.returncode, 0, history.stderr)
                 if platform == "claude":
-                    self.assertTrue((moved / "agents/digest.md").is_file())
+                    self.assertFalse((moved / "agents").exists())
                     self.assertIn("PreCompact", json.loads((moved / "hooks.json").read_text())["hooks"])
                     script = moved / "skills/ctx-checkup/scripts/cache-audit.py"
                     empty_logs = tmp / "empty-logs"

@@ -1,0 +1,5 @@
+invoice_id,status,amount_cents
+INV-101,unpaid,250
+INV-102,paid,900
+INV-103,unpaid,500
+INV-104,unpaid,125
