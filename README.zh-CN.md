@@ -22,6 +22,8 @@ ctx-kit 是面向 **Claude Code 和 Codex** 的文件协作工作流。它让 ag
 
 ## 安装
 
+**直接下载技能包：**[Codex ZIP](https://github.com/bestiaya/ctx-kit/releases/download/v0.15.0/ctx-kit-codex-v0.15.0.zip) · [Claude ZIP](https://github.com/bestiaya/ctx-kit/releases/download/v0.15.0/ctx-kit-claude-v0.15.0.zip) · [SHA256SUMS](https://github.com/bestiaya/ctx-kit/releases/download/v0.15.0/SHA256SUMS)。解压后按包内 `INSTALL.md` 安装到目标项目，无需自己打包。试用示例仍从源码仓库取得。
+
 当前源码版本：**v0.15.0**。打包需要 Python 3.9+，仅使用标准库。
 
 在 macOS / Linux shell 中执行：

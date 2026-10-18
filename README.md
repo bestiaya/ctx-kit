@@ -22,6 +22,8 @@ The example uses fictional project data and explicit checks. It is a walkthrough
 
 ## Install
 
+**Ready-to-copy packages:** [Codex ZIP](https://github.com/bestiaya/ctx-kit/releases/download/v0.15.0/ctx-kit-codex-v0.15.0.zip) · [Claude ZIP](https://github.com/bestiaya/ctx-kit/releases/download/v0.15.0/ctx-kit-claude-v0.15.0.zip) · [SHA256SUMS](https://github.com/bestiaya/ctx-kit/releases/download/v0.15.0/SHA256SUMS). Extract the archive and follow `INSTALL.md` inside for project-level installation; no build is needed. The walkthrough fixture is in the source checkout.
+
 Current source version: **v0.15.0**. Requires Python 3.9+ to build the packages; the builder uses only the standard library.
 
 In a macOS or Linux shell:
