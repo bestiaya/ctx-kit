@@ -17,7 +17,7 @@
 
 ## 输入与边界
 
-- 可读：{{paths_or_sources}}
+- 可读：{{每件写路径或节，到节、事项 ID 或行范围；写读取时机（开工前 / 做到某事时）与要回答什么，写法同案头继任阅读表}}
 - 可写：{{explicit_output_scope}}
 - 不可触碰：{{real_constraints_only}}
 - 工作目录/分支：{{cwd_and_branch_if_relevant}}
